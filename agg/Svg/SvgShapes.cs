@@ -44,19 +44,19 @@ namespace MatterHackers.Agg.Svg
 		/// <summary>
 		/// The outline of <paramref name="element"/>, or null when it is not a shape or is a shape that draws
 		/// nothing (a zero-size rect, a circle without a radius). Percentages are of the viewport,
-		/// <paramref name="viewportWidth"/> by <paramref name="viewportHeight"/>.
+		/// <paramref name="viewportWidth"/> by <paramref name="viewportHeight"/>; em and ex are of the element's <paramref name="fontSize"/>.
 		/// </summary>
-		public static VertexStorage ToPath(SvgElement element, double viewportWidth, double viewportHeight)
+		public static VertexStorage ToPath(SvgElement element, double viewportWidth, double viewportHeight, double fontSize = SvgLength.DefaultFontSize)
 		{
 			double diagonal = Math.Sqrt((viewportWidth * viewportWidth + viewportHeight * viewportHeight) / 2);
-			double X(string name) => SvgLength.Parse(element[name], 0, viewportWidth);
-			double Y(string name) => SvgLength.Parse(element[name], 0, viewportHeight);
+			double X(string name) => SvgLength.Parse(element[name], 0, viewportWidth, fontSize);
+			double Y(string name) => SvgLength.Parse(element[name], 0, viewportHeight, fontSize);
 			switch (element.Name)
 			{
 				case "rect":
 					return Rect(X("x"), Y("y"), X("width"), Y("height"), element["rx"] == null ? -1 : X("rx"), element["ry"] == null ? -1 : Y("ry"));
 				case "circle":
-					double r = SvgLength.Parse(element["r"], 0, diagonal);
+					double r = SvgLength.Parse(element["r"], 0, diagonal, fontSize);
 					return Ellipse(X("cx"), Y("cy"), r, r);
 				case "ellipse":
 					// rx/ry "auto" (or one of them missing) takes the other, as SVG 2 says.

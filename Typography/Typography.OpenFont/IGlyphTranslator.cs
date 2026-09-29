@@ -81,6 +81,14 @@ namespace Typography.OpenFont
         //for TrueType Font
         public static void Read(this IGlyphTranslator tx, GlyphPointF[] glyphPoints, ushort[] contourEndPoints, float scale = 1)
         {
+            // A glyph with no TrueType outline (a colour bitmap from CBDT, as Noto Color Emoji has, or a CFF glyph)
+            // has no points or contours; it reads as an empty outline rather than throwing.
+            if (glyphPoints == null || contourEndPoints == null)
+            {
+                tx.BeginRead(0);
+                tx.EndRead();
+                return;
+            }
 
             int startContour = 0;
             int cpoint_index = 0;//current point index

@@ -88,6 +88,81 @@ namespace MatterHackers.Agg.Svg
 			return result;
 		}
 
+		/// <summary>
+		/// <paramref name="element"/>'s <paramref name="attribute"/> (transform, gradientTransform or
+		/// patternTransform) about its transform-origin, as usvg resolves it: the origin's percentages and keywords
+		/// are of the viewport, whatever the element's units, so a bounding-box gradient's "0.5 0.5" is its centre.
+		/// </summary>
+		public static Affine Resolve(SvgElement element, string attribute, double viewportWidth, double viewportHeight)
+			=> Resolve(element[attribute], element["transform-origin"], viewportWidth, viewportHeight);
+
+		/// <summary>The transform list <paramref name="text"/> about the transform-origin <paramref name="origin"/>.</summary>
+		public static Affine Resolve(string text, string origin, double viewportWidth, double viewportHeight)
+		{
+			Affine transform = Parse(text);
+			if (!(Origin(origin, viewportWidth, viewportHeight) is (double x, double y)))
+			{
+				return transform;
+			}
+
+			return Affine.NewTranslation(-x, -y) * transform * Affine.NewTranslation(x, y);
+		}
+
+		/// <summary>
+		/// A CSS transform-origin (svgtypes' rules): one or two keywords or lengths, then an optional z length. One
+		/// value names a side or a length and centres the other axis; two with left/right/top/bottom may come in
+		/// either order. Null when it does not parse.
+		/// </summary>
+		private static (double X, double Y)? Origin(string text, double viewportWidth, double viewportHeight)
+		{
+			string[] parts = (text ?? "").Split(new[] { ' ', '\t', '\n', '\r', ',' }, StringSplitOptions.RemoveEmptyEntries);
+			if (parts.Length == 0 || parts.Length > 3)
+			{
+				return null;
+			}
+
+			// Each part: its percentage when a keyword, and whether it can sit on the x or y axis.
+			(string Length, bool Horizontal, bool Vertical, bool Keyword)? Part(string part)
+			{
+				switch (part.ToLowerInvariant())
+				{
+					case "left": return ("0%", true, false, true);
+					case "right": return ("100%", true, false, true);
+					case "top": return ("0%", false, true, true);
+					case "bottom": return ("100%", false, true, true);
+					case "center": return ("50%", true, true, false);
+					default: return double.IsNaN(SvgLength.Parse(part, double.NaN, 1)) ? null : (part, true, true, false);
+				}
+			}
+
+			var first = Part(parts[0]);
+			var second = parts.Length > 1 ? Part(parts[1]) : ("50%", true, true, false);
+			if (first == null || second == null || (parts.Length == 3 && (parts[2].EndsWith("%") || double.IsNaN(SvgLength.Parse(parts[2], double.NaN)))))
+			{
+				return null;
+			}
+
+			var (a, b) = (first.Value, second.Value);
+			if (parts.Length == 1 && !a.Horizontal)
+			{
+				(a, b) = (b, a);
+			}
+			else if (parts.Length > 1 && (a.Keyword || b.Keyword))
+			{
+				if (a.Vertical && !a.Horizontal || b.Horizontal && !b.Vertical)
+				{
+					(a, b) = (b, a);
+				}
+
+				if (!a.Horizontal || !b.Vertical)
+				{
+					return null;
+				}
+			}
+
+			return (SvgLength.Parse(a.Length, 0, viewportWidth), SvgLength.Parse(b.Length, 0, viewportHeight));
+		}
+
 		private static Affine? Create(string name, List<double> a)
 		{
 			switch (name)

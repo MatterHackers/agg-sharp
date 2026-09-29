@@ -32,14 +32,15 @@ namespace MatterHackers.Agg.Svg
 	/// <summary>SVG numbers, number lists and lengths (with units and percentages) in user units.</summary>
 	public static class SvgLength
 	{
-		/// <summary>The font size em and ex are relative to until text is supported: resvg's and browsers' default.</summary>
-		public const double DefaultFontSize = 16;
+		/// <summary>The root's font size when none is given: usvg's default (browsers use 16).</summary>
+		public const double DefaultFontSize = 12;
 
 		/// <summary>
 		/// <paramref name="text"/> as a length in user units, or <paramref name="fallback"/> when it is missing or
-		/// not a length. A percentage is of <paramref name="percentOf"/>.
+		/// not a length. A percentage is of <paramref name="percentOf"/>; em is <paramref name="fontSize"/> (the
+		/// element's own) and ex half of it, as usvg takes it.
 		/// </summary>
-		public static double Parse(string text, double fallback, double percentOf = 0)
+		public static double Parse(string text, double fallback, double percentOf = 0, double fontSize = DefaultFontSize)
 		{
 			if (string.IsNullOrWhiteSpace(text))
 			{
@@ -71,9 +72,9 @@ namespace MatterHackers.Agg.Svg
 				case "in":
 					return number * 96;
 				case "em":
-					return number * DefaultFontSize;
+					return number * fontSize;
 				case "ex":
-					return number * DefaultFontSize / 2;
+					return number * fontSize / 2;
 				default:
 					return fallback;
 			}

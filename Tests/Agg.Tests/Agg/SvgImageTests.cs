@@ -154,5 +154,16 @@ namespace MatterHackers.Agg.Tests.Agg
 			await Assert.That(At(image, 49, 75).alpha).IsEqualTo((byte)0);
 			await Assert.That(At(image, 75, 49).alpha).IsEqualTo((byte)0);
 		}
+
+		[Test]
+		public async Task AnSvgImageDrawsNoImagesOfItsOwn()
+		{
+			// As in usvg, an SVG image's own <image> elements are not drawn (resvg's recursive-2: a document including
+			// itself shows once, with an empty frame inside). The nested document's red rect shows; its raster does not.
+			string nested = Uri.EscapeDataString($"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'><rect width='5' height='10' fill='red'/><image x='5' width='5' height='10' href='{AnyRaster}'/></svg>");
+			ImageBuffer image = Render($"<image width=\"100\" height=\"100\" xlink:href=\"data:image/svg+xml,{nested}\"/>");
+			await Assert.That(Is(At(image, 25, 50), 255, 0, 0)).IsTrue();
+			await Assert.That(At(image, 75, 50).alpha).IsEqualTo((byte)0);
+		}
 	}
 }

@@ -35,23 +35,24 @@ namespace MatterHackers.Agg.Svg
 	/// <summary>
 	/// Lays out a &lt;text&gt; element - its text runs and &lt;tspan&gt;s, x/y/dx/dy lists, text-anchor, letter- and
 	/// word-spacing and text-decoration - as outlines in user space, one path per run of characters that share a
-	/// style. Each font-family in the list is offered to the document's <see cref="SvgDocument.FontResolver"/> in
+	/// style. With <see cref="SvgDocument.Fonts"/> set, the face is CSS-matched from it (family, weight, style,
+	/// stretch). Otherwise each font-family in the list is offered to the document's <see cref="SvgDocument.FontResolver"/> in
 	/// turn; with none, or none it knows, text is drawn in the embedded Liberation Sans (Bold for bold weights):
 	/// agg has no font lookup of its own, and Liberation Sans is metric-compatible with Arial/Helvetica.
 	/// </summary>
 	internal static class SvgText
 	{
 		/// <summary>The paths to draw, in order: underlines and overlines under their glyphs, line-throughs over them.</summary>
-		public static List<(VertexStorage Path, SvgStyle Style)> Layout(SvgElement text, SvgStyle textStyle, double viewportWidth, double viewportHeight, double viewportDiagonal, Func<string, bool, TypeFace> fontResolver = null)
+		public static List<(VertexStorage Path, SvgStyle Style)> Layout(SvgElement text, SvgStyle textStyle, double viewportWidth, double viewportHeight, double viewportDiagonal, Func<string, bool, TypeFace> fontResolver = null, SvgFontSet fonts = null)
 		{
 			var characters = new List<Character>();
-			var positioned = new List<(SvgElement Element, int Start, int End)>();
-			Collect(text, textStyle, viewportDiagonal, fontResolver, characters, positioned);
+			var positioned = new List<(SvgElement Element, int Start, int End, double FontSize)>();
+			Collect(text, null, 0, textStyle, viewportDiagonal, fontResolver, fonts, characters, positioned);
 			Collapse(characters);
 
 			// x/y/dx/dy lists give the positions of an element's characters (those left after collapsing), counted
 			// from its first; an inner element's lists override its ancestors' (positioned is in document order).
-			foreach ((SvgElement element, int start, int end) in positioned)
+			foreach ((SvgElement element, int start, int end, double fontSize) in positioned)
 			{
 				int first = characters.FindIndex(c => c.Index >= start);
 				int last = characters.FindLastIndex(c => c.Index < end);
@@ -60,10 +61,11 @@ namespace MatterHackers.Agg.Svg
 					continue;
 				}
 
-				Assign(element["x"], viewportWidth, characters, first, last, (c, v) => c.X = v);
-				Assign(element["y"], viewportHeight, characters, first, last, (c, v) => c.Y = v);
-				Assign(element["dx"], viewportWidth, characters, first, last, (c, v) => c.Dx = v);
-				Assign(element["dy"], viewportHeight, characters, first, last, (c, v) => c.Dy = v);
+				Assign(element["x"], viewportWidth, fontSize, characters, first, last, (c, v) => c.X = v);
+				Assign(element["y"], viewportHeight, fontSize, characters, first, last, (c, v) => c.Y = v);
+				Assign(element["dx"], viewportWidth, fontSize, characters, first, last, (c, v) => c.Dx = v);
+				Assign(element["dy"], viewportHeight, fontSize, characters, first, last, (c, v) => c.Dy = v);
+				AssignRotate(element["rotate"], characters, first, last);
 			}
 
 			// Pen positions; a new absolute x or y starts a text chunk, which text-anchor shifts as a whole.
@@ -91,6 +93,7 @@ namespace MatterHackers.Agg.Svg
 				}
 
 				penX += c.Advance;
+				c.Baseline += c.BaselineShift;
 				chunks[chunks.Count - 1] = (chunks[chunks.Count - 1].Start, i + 1);
 			}
 
@@ -123,7 +126,7 @@ namespace MatterHackers.Agg.Svg
 					if (glyph != null)
 					{
 						// Font units run y up; SVG's user space runs y down.
-						var toUser = Affine.NewScaling(c.Scale, -c.Scale) * Affine.NewTranslation(c.Left, c.Baseline);
+						var toUser = Affine.NewScaling(c.Scale, -c.Scale) * Affine.NewRotation(c.Rotate * Math.PI / 180) * Affine.NewTranslation(c.Left, c.Baseline);
 						foreach (VertexData vertex in new VertexSourceApplyTransform(glyph, toUser).Vertices())
 						{
 							if (!vertex.IsStop)
@@ -186,12 +189,23 @@ namespace MatterHackers.Agg.Svg
 		}
 
 		/// <summary>The characters under <paramref name="element"/> in document order, each with the style it draws in.</summary>
-		private static void Collect(SvgElement element, SvgStyle style, double viewportDiagonal, Func<string, bool, TypeFace> fontResolver, List<Character> characters, List<(SvgElement, int, int)> positioned)
+		/// <param name="parent">The element's parent, null for the &lt;text&gt;: the baseline properties are not inherited
+		/// but, as in usvg, fall back to the direct parent's.</param>
+		/// <param name="shiftUp">The baseline-shift of the tspans enclosing this one, summed, in user units up.</param>
+		private static void Collect(SvgElement element, SvgElement parent, double shiftUp, SvgStyle style, double viewportDiagonal, Func<string, bool, TypeFace> fontResolver, SvgFontSet fonts, List<Character> characters, List<(SvgElement, int, int, double)> positioned)
 		{
 			int slot = positioned.Count;
 			int start = characters.Count;
-			positioned.Add((element, start, start));
-			TypeFace face = Face(style, fontResolver);
+			positioned.Add((element, start, start, style.FontSize));
+			TypeFace face = Face(style, fontResolver, fonts);
+			if (parent != null)
+			{
+				// usvg ignores the <text>'s own baseline-shift and sums the tspans' (sub and super not yet: agg's
+				// TypeFace does not read the OS/2 script offsets they need).
+				shiftUp += ParseBaselineShift(element["baseline-shift"], style.FontSize);
+			}
+
+			double baselineShift = -shiftUp + AlignmentShift(element, parent, face, style.FontSize);
 			foreach (object item in element.Content)
 			{
 				if (item is string run)
@@ -200,7 +214,12 @@ namespace MatterHackers.Agg.Svg
 					{
 						int code = char.IsSurrogatePair(run, i) ? char.ConvertToUtf32(run, i++) : run[i];
 						TypeFace drawing = face.ResolveFace(code);
-						characters.Add(new Character { Index = characters.Count, Code = code, Style = style, Face = drawing, Scale = style.FontSize / drawing.UnitsPerEm });
+						if (fonts != null && !drawing.HasGlyph(code) && fonts.FallbackFor(face, code) is TypeFace fallback)
+						{
+							drawing = fallback;
+						}
+
+						characters.Add(new Character { Index = characters.Count, Code = code, Style = style, Face = drawing, Scale = style.FontSize / drawing.UnitsPerEm, BaselineShift = baselineShift });
 					}
 				}
 				else if (item is SvgElement child && child.Name == "tspan")
@@ -208,20 +227,29 @@ namespace MatterHackers.Agg.Svg
 					SvgStyle childStyle = SvgStyle.Compute(child, style, viewportDiagonal);
 					if (!childStyle.DisplayNone)
 					{
-						Collect(child, childStyle, viewportDiagonal, fontResolver, characters, positioned);
+						Collect(child, element, shiftUp, childStyle, viewportDiagonal, fontResolver, fonts, characters, positioned);
 					}
 				}
 			}
 
-			positioned[slot] = (element, start, characters.Count);
+			positioned[slot] = (element, start, characters.Count, style.FontSize);
 		}
 
 		/// <summary>
 		/// The first face <paramref name="fontResolver"/> gives for the style's font-family list (names unquoted, in
 		/// order), else Liberation Sans in the style's weight.
 		/// </summary>
-		private static TypeFace Face(SvgStyle style, Func<string, bool, TypeFace> fontResolver)
+		private static TypeFace Face(SvgStyle style, Func<string, bool, TypeFace> fontResolver, SvgFontSet fonts)
 		{
+			if (fonts != null)
+			{
+				IEnumerable<string> families = (style.FontFamily ?? "").Split(',').Select(f => f.Trim().Trim('\'', '"').Trim()).Where(f => f.Length > 0);
+				if (fonts.Match(families, style.FontWeight, style.FontStyle, style.FontStretch) is TypeFace matched)
+				{
+					return matched;
+				}
+			}
+
 			if (fontResolver != null && style.FontFamily != null)
 			{
 				foreach (string family in style.FontFamily.Split(','))
@@ -264,7 +292,67 @@ namespace MatterHackers.Agg.Svg
 			}
 		}
 
-		private static void Assign(string list, double percentOf, List<Character> characters, int first, int last, Action<Character, double> set)
+		/// <summary>
+		/// A baseline-shift length (up, a percentage of the font size); sub, super, baseline and anything else are 0.
+		/// </summary>
+		private static double ParseBaselineShift(string value, double fontSize)
+		{
+			return value == null ? 0 : SvgLength.Parse(value, 0, fontSize, fontSize);
+		}
+
+		/// <summary>
+		/// How far down to move the glyphs so the baseline dominant-baseline or alignment-baseline names sits on the
+		/// text's y. These are Chrome's (and usvg's) hardcoded positions from the face's ascent, descent and x-height,
+		/// not the font's BASE table, which few fonts have.
+		/// </summary>
+		private static double AlignmentShift(SvgElement element, SvgElement parent, TypeFace face, double fontSize)
+		{
+			string Find(string name) => element[name] is string own && own != "inherit" ? own : parent?[name];
+			string baseline = Find("alignment-baseline");
+			if (baseline == null || baseline == "auto" || baseline == "baseline")
+			{
+				baseline = Find("dominant-baseline");
+			}
+
+			double scale = fontSize / face.UnitsPerEm;
+			double ascent = face.Ascent * scale;
+			double descent = face.Descent * scale;
+			return baseline switch
+			{
+				"before-edge" or "text-before-edge" => ascent,
+				"middle" => face.X_height * scale / 2,
+				"central" => ascent - (ascent - descent) / 2,
+				"after-edge" or "text-after-edge" or "ideographic" => descent,
+				"hanging" => ascent * 0.8,
+				"mathematical" => ascent / 2,
+				_ => 0,
+			};
+		}
+
+		/// <summary>
+		/// rotate: one angle per character, in degrees clockwise about its origin; characters past the list's end
+		/// take its last angle. A list with anything but plain numbers in it ("5mm") is ignored whole, as usvg does.
+		/// </summary>
+		private static void AssignRotate(string list, List<Character> characters, int first, int last)
+		{
+			var angles = new List<double>();
+			foreach (string value in (list ?? "").Split(new[] { ',', ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+			{
+				if (!double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double angle))
+				{
+					return;
+				}
+
+				angles.Add(angle);
+			}
+
+			for (int i = 0; angles.Count > 0 && first + i <= last; i++)
+			{
+				characters[first + i].Rotate = angles[Math.Min(i, angles.Count - 1)];
+			}
+		}
+
+		private static void Assign(string list, double percentOf, double fontSize, List<Character> characters, int first, int last, Action<Character, double> set)
 		{
 			if (string.IsNullOrWhiteSpace(list))
 			{
@@ -274,7 +362,7 @@ namespace MatterHackers.Agg.Svg
 			string[] values = list.Split(new[] { ',', ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 			for (int i = 0; i < values.Length && first + i <= last; i++)
 			{
-				set(characters[first + i], SvgLength.Parse(values[i], 0, percentOf));
+				set(characters[first + i], SvgLength.Parse(values[i], 0, percentOf, fontSize));
 			}
 		}
 
@@ -287,6 +375,10 @@ namespace MatterHackers.Agg.Svg
 			public TypeFace Face;
 			public double Scale;
 			public double? X, Y, Dx, Dy;
+			/// <summary>Degrees clockwise, from the rotate lists.</summary>
+			public double Rotate;
+			/// <summary>From baseline-shift, dominant-baseline and alignment-baseline, in user units down.</summary>
+			public double BaselineShift;
 			public double Left, Baseline, Advance;
 		}
 	}

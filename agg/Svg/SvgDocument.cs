@@ -130,6 +130,12 @@ namespace MatterHackers.Agg.Svg
 		/// </summary>
 		public Func<string, bool, TypeFace> FontResolver { get; set; }
 
+		/// <summary>
+		/// Faces text is matched against by family, weight, style and stretch (CSS font matching); when set it is
+		/// used instead of <see cref="FontResolver"/>, which cannot ask for italic or condensed faces.
+		/// </summary>
+		public SvgFontSet Fonts { get; set; }
+
 		/// <summary>How many SVG images deep this document is drawn; stops an image chain that includes itself.</summary>
 		internal int NestingDepth { get; set; }
 
@@ -167,7 +173,10 @@ namespace MatterHackers.Agg.Svg
 
 		public static SvgDocument Parse(string svgText)
 		{
-			var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Ignore, XmlResolver = null };
+			// The internal DTD subset is read so its <!ENTITY> declarations expand, in attribute values and as
+			// markup, as roxmltree (resvg's parser) does. With no resolver the external DTD is never fetched, and
+			// the expansion cap stops an entity that expands to itself many times over.
+			var settings = new XmlReaderSettings { DtdProcessing = DtdProcessing.Parse, XmlResolver = null, MaxCharactersFromEntities = 10_000_000 };
 			using var reader = XmlReader.Create(new StringReader(svgText), settings);
 			XDocument xml = XDocument.Load(reader);
 			SvgElement root = Convert(xml.Root, null);

@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.Svg
 			}
 
 			// Tile space - (0, 0) at the tile's top-left - to pixels; agg's a * b applies a first.
-			Affine tileToPixels = Affine.NewTranslation(x, y) * SvgTransform.Parse(Get("patternTransform")) * userToPixels;
+			Affine tileToPixels = Affine.NewTranslation(x, y) * SvgTransform.Resolve(Get("patternTransform"), Get("transform-origin"), viewportWidth, viewportHeight) * userToPixels;
 			double scaleX = Math.Sqrt(tileToPixels.sx * tileToPixels.sx + tileToPixels.shy * tileToPixels.shy);
 			double scaleY = Math.Sqrt(tileToPixels.shx * tileToPixels.shx + tileToPixels.sy * tileToPixels.sy);
 			int pixelWidth = (int)Math.Min(MaxTileSize, Math.Max(1, Math.Ceiling(width * scaleX - 1e-6)));

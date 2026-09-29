@@ -127,5 +127,68 @@ namespace MatterHackers.Agg.Tests.Agg
 			await Assert.That((int)At(image, 80, 50).red).IsEqualTo(Grey(.805)).Within(2);
 			await Assert.That((int)At(image, 80, 50).alpha).IsEqualTo(255);
 		}
+
+		[Test]
+		public async Task AFocusOutsideTheCircleLeavesTheAreaBehindTheConeUnpainted()
+		{
+			// resvg's focal-point-correction case: the cone from the focus to the circle does not reach the bottom
+			// right corner, so it stays unpainted rather than the focus being pulled inside the circle.
+			ImageBuffer image = Render("<radialGradient id=\"g\" gradientUnits=\"userSpaceOnUse\" cx=\"10\" cy=\"10\" r=\"75\" fx=\"83.33\" fy=\"75\">"
+				+ $"{WhiteToBlack}</radialGradient><rect width=\"100\" height=\"100\" fill=\"url(#g)\"/>");
+			await Assert.That((int)At(image, 95, 95).alpha).IsEqualTo(0);
+			await Assert.That((int)At(image, 10, 10).red).IsEqualTo(0);
+			await Assert.That((int)At(image, 10, 10).alpha).IsEqualTo(255);
+		}
+
+		[Test]
+		public async Task ALinearGradientTakesNoGeometryFromARadialGradientItLinksTo()
+		{
+			// y2 on the radialGradient is ignored (usvg only copies x1..y2 from a linearGradient), spreadMethod is not.
+			ImageBuffer image = Render("<radialGradient id=\"r\" y2=\"1\" spreadMethod=\"reflect\"/>"
+				+ $"<linearGradient id=\"g\" xlink:href=\"#r\" x2=\"0.5\">{WhiteToBlack}</linearGradient><rect width=\"100\" height=\"100\" fill=\"url(#g)\"/>");
+			await Assert.That((int)At(image, 30, 10).red).IsEqualTo((int)At(image, 30, 90).red).Within(1);
+
+			// Reflected about x 50: pixel 74 (centre 74.5) mirrors pixel 25 (centre 25.5).
+			await Assert.That((int)At(image, 74, 50).red).IsEqualTo((int)At(image, 25, 50).red).Within(2);
+		}
+
+		[Test]
+		public async Task StopColorTakesCurrentColorAndInherit()
+		{
+			ImageBuffer current = Render("<linearGradient id=\"g\" color=\"lime\"><stop offset=\"0\" stop-color=\"lime\"/><stop offset=\"1\" stop-color=\"currentColor\"/></linearGradient>"
+				+ "<rect width=\"100\" height=\"100\" fill=\"url(#g)\"/>");
+			await Assert.That(At(current, 50, 50)).IsEqualTo(new Color(0, 255, 0, 255));
+
+			ImageBuffer inherited = Render("<linearGradient id=\"g\" stop-color=\"lime\"><stop offset=\"0\" stop-color=\"lime\"/><stop offset=\"1\" stop-color=\"inherit\"/></linearGradient>"
+				+ "<rect width=\"100\" height=\"100\" fill=\"url(#g)\"/>");
+			await Assert.That(At(inherited, 50, 50)).IsEqualTo(new Color(0, 255, 0, 255));
+		}
+
+		[Test]
+		public async Task EqualOffsetsAtTheStartKeepTheFirstStopForThePaddedArea()
+		{
+			// resvg's stops-with-equal-offset-5: usvg nudges the second 0 up by an epsilon, so the area padded before
+			// the vector is the first stop's black while the vector itself starts at lime.
+			ImageBuffer image = Render("<linearGradient id=\"g\" gradientUnits=\"userSpaceOnUse\" x1=\"20\" x2=\"80\"><stop offset=\"0\" stop-color=\"black\"/>"
+				+ "<stop offset=\"0\" stop-color=\"lime\"/><stop offset=\"1\" stop-color=\"lime\"/></linearGradient><rect width=\"100\" height=\"100\" fill=\"url(#g)\"/>");
+			await Assert.That(At(image, 10, 50)).IsEqualTo(new Color(0, 0, 0, 255));
+			await Assert.That(At(image, 50, 50)).IsEqualTo(new Color(0, 255, 0, 255));
+		}
+
+		[Test]
+		public async Task AFocalRadiusStartsTheRampAtItsCircle()
+		{
+			// SVG 2's fr: the ramp runs from the focal circle (radius 20) out to r (50); inside it is the first stop.
+			string Gradient(string fr) => $"<radialGradient id=\"g\" gradientUnits=\"userSpaceOnUse\" cx=\"50\" cy=\"50\" r=\"50\" fr=\"{fr}\">{WhiteToBlack}</radialGradient>"
+				+ "<rect width=\"100\" height=\"100\" fill=\"url(#g)\"/>";
+			ImageBuffer inner = Render(Gradient("20"));
+			await Assert.That((int)At(inner, 60, 50).red).IsEqualTo(255);
+			await Assert.That((int)At(inner, 85, 50).red).IsEqualTo(Grey((35.5 - 20) / 30)).Within(3);
+
+			// A focal circle larger than r: the ramp runs inward from 60 to 50, and past 60 is the first stop.
+			ImageBuffer outer = Render(Gradient("60"));
+			await Assert.That((int)At(outer, 50, 50).red).IsEqualTo(0);
+			await Assert.That((int)At(outer, 1, 1).red).IsEqualTo(255);
+		}
 	}
 }

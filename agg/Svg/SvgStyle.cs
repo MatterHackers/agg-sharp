@@ -134,8 +134,17 @@ namespace MatterHackers.Agg.Svg
 		/// <summary>font-family as written (a comma-separated list, names possibly quoted), or null; inherited.</summary>
 		public string FontFamily { get; private set; }
 
-		/// <summary>font-weight bold, bolder or 600 and up: drawn in a bold face rather than a regular one.</summary>
-		public bool FontBold { get; private set; }
+		/// <summary>font-weight 600 and up: drawn in a bold face rather than a regular one.</summary>
+		public bool FontBold => FontWeight >= 600;
+
+		/// <summary>font-weight as a number from 100 to 900 (normal is 400), bolder and lighter stepping from the parent's.</summary>
+		public int FontWeight { get; private set; } = 400;
+
+		/// <summary>font-style: "normal", "italic" or "oblique".</summary>
+		public string FontStyle { get; private set; } = "normal";
+
+		/// <summary>font-stretch as a CSS width class, 1 (ultra-condensed) to 9 (ultra-expanded); 5 is normal.</summary>
+		public int FontStretch { get; private set; } = 5;
 
 		/// <summary>text-anchor: "start", "middle" or "end".</summary>
 		public string TextAnchor { get; private set; } = "start";
@@ -163,6 +172,12 @@ namespace MatterHackers.Agg.Svg
 
 		/// <summary>The element's own opacity (not inherited: a group's is applied to its composited layer).</summary>
 		public double Opacity { get; private set; } = 1;
+
+		/// <summary>The element's mix-blend-mode (not inherited): how its layer mixes with what is drawn behind it.</summary>
+		public string MixBlendMode { get; private set; } = "normal";
+
+		/// <summary>isolation: isolate (not inherited): the element's children blend only with each other.</summary>
+		public bool Isolate { get; private set; }
 
 		/// <summary>display="none": the element and its children draw nothing.</summary>
 		public bool DisplayNone { get; private set; }
@@ -199,35 +214,77 @@ namespace MatterHackers.Agg.Svg
 			style.FillOpacity = Clamp01(SvgLength.ParseNumber(Get("fill-opacity"), style.FillOpacity));
 			style.StrokeOpacity = Clamp01(SvgLength.ParseNumber(Get("stroke-opacity"), style.StrokeOpacity));
 			style.Opacity = Clamp01(SvgLength.ParseNumber(Get("opacity"), 1));
-			style.StrokeWidth = SvgLength.Parse(Get("stroke-width"), style.StrokeWidth, viewportDiagonal);
-			style.MiterLimit = Math.Max(1, SvgLength.ParseNumber(Get("stroke-miterlimit"), style.MiterLimit));
-			style.DashOffset = SvgLength.Parse(Get("stroke-dashoffset"), style.DashOffset, viewportDiagonal);
-
+			style.MixBlendMode = Get("mix-blend-mode")?.Trim() ?? "normal";
+			style.Isolate = Get("isolation")?.Trim() == "isolate";
+			// First: em and ex in the lengths below are this element's font size. In font-size itself they, and
+			// percentages, are the parent's; named sizes step 1.2 apart from it (usvg's convert_named_font_size).
 			if (Get("font-size") is string fontSize)
 			{
-				style.FontSize = fontSize.Trim().EndsWith("em")
-					? SvgLength.ParseNumber(fontSize.Trim().TrimEnd('m', 'e'), 1) * style.FontSize
-					: SvgLength.Parse(fontSize, style.FontSize, style.FontSize);
+				int? step = fontSize.Trim() switch
+				{
+					"xx-small" => -3,
+					"x-small" => -2,
+					"small" or "smaller" => -1,
+					"medium" => 0,
+					"large" or "larger" => 1,
+					"x-large" => 2,
+					"xx-large" => 3,
+					_ => null,
+				};
+				style.FontSize = step is int named
+					? style.FontSize * Math.Pow(1.2, named)
+					: SvgLength.Parse(fontSize, style.FontSize, style.FontSize, style.FontSize);
 			}
+
+			style.StrokeWidth = SvgLength.Parse(Get("stroke-width"), style.StrokeWidth, viewportDiagonal, style.FontSize);
+			style.MiterLimit = Math.Max(1, SvgLength.ParseNumber(Get("stroke-miterlimit"), style.MiterLimit));
+			style.DashOffset = SvgLength.Parse(Get("stroke-dashoffset"), style.DashOffset, viewportDiagonal, style.FontSize);
 
 			if (Get("font-family") is string family)
 			{
 				style.FontFamily = family;
 			}
 
+			// usvg's steps: bolder from normal goes to 700 and lighter to 200, as Chrome and Inkscape draw them; a
+			// weight that is not one of the nine keywords' numbers is ignored.
 			switch (Get("font-weight"))
 			{
-				case "bold":
-				case "bolder":
-					style.FontBold = true;
-					break;
 				case "normal":
+					style.FontWeight = 400;
+					break;
+				case "bold":
+					style.FontWeight = 700;
+					break;
+				case "bolder":
+					style.FontWeight = Math.Min(900, style.FontWeight + (style.FontWeight == 400 ? 300 : 100));
+					break;
 				case "lighter":
-					style.FontBold = false;
+					style.FontWeight = Math.Max(100, style.FontWeight - (style.FontWeight == 400 ? 200 : 100));
 					break;
-				case string weight when double.TryParse(weight, NumberStyles.Float, CultureInfo.InvariantCulture, out double numeric):
-					style.FontBold = numeric >= 600;
+				case "100" or "200" or "300" or "400" or "500" or "600" or "700" or "800" or "900":
+					style.FontWeight = int.Parse(Get("font-weight"), CultureInfo.InvariantCulture);
 					break;
+			}
+
+			if (Get("font-style") is "normal" or "italic" or "oblique")
+			{
+				style.FontStyle = Get("font-style");
+			}
+
+			if (Get("font-stretch") is string stretch)
+			{
+				style.FontStretch = stretch switch
+				{
+					"ultra-condensed" => 1,
+					"extra-condensed" => 2,
+					"condensed" or "narrower" => 3,
+					"semi-condensed" => 4,
+					"semi-expanded" => 6,
+					"expanded" or "wider" => 7,
+					"extra-expanded" => 8,
+					"ultra-expanded" => 9,
+					_ => 5,
+				};
 			}
 
 			if (Get("text-anchor") is string anchor)
@@ -240,8 +297,8 @@ namespace MatterHackers.Agg.Svg
 				style.TextDecoration = decoration == "none" ? null : decoration;
 			}
 
-			style.LetterSpacing = Get("letter-spacing") == "normal" ? 0 : SvgLength.Parse(Get("letter-spacing"), style.LetterSpacing, style.FontSize);
-			style.WordSpacing = Get("word-spacing") == "normal" ? 0 : SvgLength.Parse(Get("word-spacing"), style.WordSpacing, style.FontSize);
+			style.LetterSpacing = Get("letter-spacing") == "normal" ? 0 : SvgLength.Parse(Get("letter-spacing"), style.LetterSpacing, style.FontSize, style.FontSize);
+			style.WordSpacing = Get("word-spacing") == "normal" ? 0 : SvgLength.Parse(Get("word-spacing"), style.WordSpacing, style.FontSize, style.FontSize);
 
 			switch (Get("fill-rule"))
 			{
@@ -344,6 +401,8 @@ namespace MatterHackers.Agg.Svg
 		{
 			var copy = (SvgStyle)this.MemberwiseClone();
 			copy.Opacity = 1;
+			copy.MixBlendMode = "normal";
+			copy.Isolate = false;
 			copy.DisplayNone = false;
 			return copy;
 		}

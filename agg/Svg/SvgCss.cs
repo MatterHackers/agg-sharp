@@ -39,6 +39,8 @@ namespace MatterHackers.Agg.Svg
 	/// </summary>
 	internal static class SvgCss
 	{
+		private static readonly string[] CssOnlyProperties = { "mix-blend-mode", "isolation" };
+
 		/// <summary>Merges the sheets and every element's style attribute into its <see cref="SvgElement.Attributes"/>.</summary>
 		public static void Apply(SvgElement root)
 		{
@@ -49,6 +51,12 @@ namespace MatterHackers.Agg.Svg
 
 			foreach (SvgElement element in root.DescendantsAndSelf())
 			{
+				// CSS-only properties (SVG 2, no presentation attribute): as attributes they mean nothing.
+				foreach (string cssOnly in CssOnlyProperties)
+				{
+					element.Attributes.Remove(cssOnly);
+				}
+
 				// OrderBy is stable, so rules of equal specificity stay in document order: the later one wins.
 				List<Rule> matched = rules.Where(r => r.Selector.Matches(element)).OrderBy(r => r.Selector.Specificity).ToList();
 				foreach (Rule rule in matched)

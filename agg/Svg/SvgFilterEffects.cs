@@ -112,33 +112,63 @@ namespace MatterHackers.Agg.Svg
 			return MorphologyAxis(across, width, region, dilate, radiusY, false);
 		}
 
+		/// <summary>
+		/// One pass of <see cref="Morphology"/> along rows or columns, van Herk/Gil-Werman style: running extremes
+		/// over blocks of the window's width make each pixel two comparisons whatever the radius, so a huge radius
+		/// (filters/feMorphology/huge-radius) costs what a small one does. A radius past the line's length is cut to
+		/// it: its window already takes in the whole line and the transparency beyond it.
+		/// </summary>
 		private static byte[] MorphologyAxis(byte[] source, int width, SvgPixelRect region, bool dilate, int radius, bool horizontal)
 		{
 			var result = new byte[source.Length];
-			for (int y = region.Bottom; y < region.Top; y++)
+			int lines = horizontal ? region.Top - region.Bottom : region.Right - region.Left;
+			int length = horizontal ? region.Right - region.Left : region.Top - region.Bottom;
+			if (lines <= 0 || length <= 0)
 			{
-				for (int x = region.Left; x < region.Right; x++)
-				{
-					int i = (y * width + x) * 4;
-					for (int c = 0; c < 4; c++)
-					{
-						int value = dilate ? 0 : 255;
-						for (int k = -radius; k <= radius; k++)
-						{
-							int sx = horizontal ? x + k : x;
-							int sy = horizontal ? y : y + k;
-							bool inside = sx >= region.Left && sx < region.Right && sy >= region.Bottom && sy < region.Top;
-							int sample = inside ? source[(sy * width + sx) * 4 + c] : 0;
-							value = dilate ? Math.Max(value, sample) : Math.Min(value, sample);
-						}
+				return result;
+			}
 
-						result[i + c] = (byte)value;
+			radius = Math.Clamp(radius, 0, length);
+			int window = 2 * radius + 1;
+			int padded = length + 2 * radius;
+			var line = new byte[padded];
+			var forward = new byte[padded];
+			var backward = new byte[padded];
+			int step = horizontal ? 4 : width * 4;
+			for (int l = 0; l < lines; l++)
+			{
+				int start = horizontal ? ((region.Bottom + l) * width + region.Left) * 4 : (region.Bottom * width + region.Left + l) * 4;
+				for (int c = 0; c < 4; c++)
+				{
+					// Pixels outside the region count as transparent: the padding either side is zero.
+					Array.Clear(line);
+					for (int k = 0; k < length; k++)
+					{
+						line[radius + k] = source[start + k * step + c];
+					}
+
+					for (int k = 0; k < padded; k++)
+					{
+						forward[k] = k % window == 0 ? line[k] : Pick(forward[k - 1], line[k], dilate);
+					}
+
+					for (int k = padded - 1; k >= 0; k--)
+					{
+						backward[k] = k == padded - 1 || (k + 1) % window == 0 ? line[k] : Pick(backward[k + 1], line[k], dilate);
+					}
+
+					// The window for output k is padded k .. k + 2r: its tail of one block, its head of the next.
+					for (int k = 0; k < length; k++)
+					{
+						result[start + k * step + c] = Pick(backward[k], forward[k + 2 * radius], dilate);
 					}
 				}
 			}
 
 			return result;
 		}
+
+		private static byte Pick(byte a, byte b, bool max) => max ? Math.Max(a, b) : Math.Min(a, b);
 
 		/// <summary>feTile: <paramref name="tile"/> of <paramref name="source"/> (its input's subregion) repeated across the region.</summary>
 		public static byte[] Tile(byte[] source, int width, SvgPixelRect region, SvgPixelRect tile)

@@ -100,7 +100,7 @@ namespace MatterHackers.Agg.Svg
 			};
 
 			SvgStyle style = SvgStyle.Compute(root, null, context.Diagonal);
-			if (!style.DisplayNone)
+			if (!style.DisplayNone && SvgSwitch.ConditionsPass(root))
 			{
 				WithOpacity(context, premultipliedTarget, style.Opacity, target => DrawChildren(context, root, style, toPixels, target, 0));
 			}
@@ -169,20 +169,23 @@ namespace MatterHackers.Agg.Svg
 		private static void Draw(Context context, SvgElement element, SvgStyle parentStyle, Affine parentTransform, ImageBuffer target, int useDepth)
 		{
 			SvgStyle style = SvgStyle.Compute(element, parentStyle, context.Diagonal);
-			if (style.DisplayNone)
+			if (style.DisplayNone || !SvgSwitch.ConditionsPass(element))
 			{
 				return;
 			}
 
 			// agg's a * b applies a first: the element's own transform, then everything above it.
-			Affine transform = SvgTransform.Parse(element["transform"]) * parentTransform;
+			Affine transform = SvgTransform.Resolve(element, "transform", context.ViewportWidth, context.ViewportHeight) * parentTransform;
 			bool filtered = SvgFilter.Applies(element);
 			bool clipped = SvgClipMask.Applies(context, element);
 
 			// Order, as in resvg: filter, then clip-path and mask, then opacity last - so a filter that replaces the
 			// drawing (a flood, say) is still faded by the element's opacity.
+			// A blend mode or isolation also needs the element on a layer of its own: the layer is what blends with
+			// the backdrop, and a fresh transparent layer is the isolated backdrop its children blend with.
+			bool layered = filtered || clipped || style.MixBlendMode != "normal" || style.Isolate;
 			double opacity = style.Opacity;
-			Action<ImageBuffer> draw = layer => DrawElement(context, element, style, filtered || clipped ? 1 : opacity, transform, layer, useDepth);
+			Action<ImageBuffer> draw = layer => DrawElement(context, element, style, layered ? 1 : opacity, transform, layer, useDepth);
 			if (filtered)
 			{
 				Action<ImageBuffer> unfiltered = draw;
@@ -195,7 +198,11 @@ namespace MatterHackers.Agg.Svg
 				draw = layer => SvgClipMask.Draw(context, element, transform, layer, unclipped);
 			}
 
-			if (filtered || clipped)
+			if (style.MixBlendMode != "normal" || style.Isolate)
+			{
+				WithBlendedLayer(target, opacity, style.MixBlendMode, draw);
+			}
+			else if (filtered || clipped)
 			{
 				WithOpacity(context, target, opacity, draw);
 			}
@@ -215,8 +222,14 @@ namespace MatterHackers.Agg.Svg
 			{
 				case "g":
 				case "a":
-				case "switch":
 					WithOpacity(context, target, opacity, layer => DrawChildren(context, element, style, transform, layer, useDepth));
+					break;
+				case "switch":
+					if (SvgSwitch.Chosen(element) is SvgElement chosen)
+					{
+						WithOpacity(context, target, opacity, layer => Draw(context, chosen, style, transform, layer, useDepth));
+					}
+
 					break;
 				case "svg":
 					Affine nested = NestedViewport(context, element) * transform;
@@ -229,7 +242,14 @@ namespace MatterHackers.Agg.Svg
 						Affine offset = Affine.NewTranslation(
 							SvgLength.Parse(element["x"], 0, context.ViewportWidth),
 							SvgLength.Parse(element["y"], 0, context.ViewportHeight)) * transform;
-						WithOpacity(context, target, opacity, layer => Draw(context, referenced, style, offset, layer, useDepth + 1));
+						if (referenced.Name == "symbol")
+						{
+							WithOpacity(context, target, opacity, layer => DrawSymbol(context, element, referenced, style, transform, layer, useDepth + 1));
+						}
+						else
+						{
+							WithOpacity(context, target, opacity, layer => Draw(context, referenced, style, offset, layer, useDepth + 1));
+						}
 					}
 
 					break;
@@ -244,14 +264,14 @@ namespace MatterHackers.Agg.Svg
 					// Each run's own visibility decides: a visible tspan shows inside a hidden text.
 					WithOpacity(context, target, opacity, layer =>
 					{
-						foreach ((VertexStorage run, SvgStyle runStyle) in SvgText.Layout(element, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver).Where(r => r.Style.Visible))
+						foreach ((VertexStorage run, SvgStyle runStyle) in SvgText.Layout(element, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver, context.Document.Fonts).Where(r => r.Style.Visible))
 						{
 							DrawShape(context, run, runStyle, transform, layer);
 						}
 					});
 					break;
 				default:
-					VertexStorage path = SvgShapes.ToPath(element, context.ViewportWidth, context.ViewportHeight);
+					VertexStorage path = SvgShapes.ToPath(element, context.ViewportWidth, context.ViewportHeight, style.FontSize);
 					if (path != null && style.Visible)
 					{
 						// Markers draw over the shape (paint-order is not read), inside its opacity.
@@ -263,6 +283,54 @@ namespace MatterHackers.Agg.Svg
 					}
 
 					break;
+			}
+		}
+
+		/// <summary>
+		/// A &lt;symbol&gt; drawn by a &lt;use&gt;, as usvg does: the use's x/y/width/height (100% by default) are a new
+		/// viewport the symbol's viewBox fits into, clipped unless the symbol's overflow is visible or auto. Only the
+		/// use's own width/height change what percentages inside are of. The symbol's transform is ignored - SVG 1.1
+		/// gives a symbol none, and the resvg suite follows 1.1 there.
+		/// </summary>
+		private static void DrawSymbol(Context context, SvgElement use, SvgElement symbol, SvgStyle useStyle, Affine useTransform, ImageBuffer target, int useDepth)
+		{
+			double x = SvgLength.Parse(use["x"], 0, context.ViewportWidth);
+			double y = SvgLength.Parse(use["y"], 0, context.ViewportHeight);
+			double width = SvgLength.Parse(use["width"], context.ViewportWidth, context.ViewportWidth);
+			double height = SvgLength.Parse(use["height"], context.ViewportHeight, context.ViewportHeight);
+			Affine contentToPixels = Affine.NewTranslation(x, y) * useTransform;
+			if (SvgViewport.ParseViewBox(symbol["viewBox"]) is RectangleDouble viewBox && width > 0 && height > 0)
+			{
+				contentToPixels = SvgViewport.ViewBoxTransform(viewBox, symbol["preserveAspectRatio"], width, height) * contentToPixels;
+			}
+
+			SvgStyle symbolStyle = SvgStyle.Compute(symbol, useStyle, context.Diagonal);
+			(double viewportWidth, double viewportHeight) = (context.ViewportWidth, context.ViewportHeight);
+			context.ViewportWidth = use["width"] != null && width > 0 ? width : viewportWidth;
+			context.ViewportHeight = use["height"] != null && height > 0 ? height : viewportHeight;
+			try
+			{
+				string overflow = symbol["overflow"];
+				Action<ImageBuffer> drawChildren = layer => DrawChildren(context, symbol, symbolStyle, contentToPixels, layer, useDepth);
+				Action<ImageBuffer> draw = drawChildren;
+				if (overflow != "visible" && overflow != "auto" && width > 0 && height > 0)
+				{
+					draw = layer =>
+					{
+						ImageBuffer content = SvgClipMask.NewLayer(layer);
+						drawChildren(content);
+						ImageBuffer coverage = SvgClipMask.NewLayer(layer);
+						coverage.NewGraphics2D().Render(new VertexSourceApplyTransform(SvgShapes.Rect(x, y, width, height, 0, 0), useTransform), Color.White);
+						SvgClipMask.Multiply(content, coverage, (pixels, i) => pixels[i + ImageBuffer.OrderA]);
+						CompositeLayer(layer, content, 1);
+					};
+				}
+
+				WithOpacity(context, target, symbolStyle.Opacity, draw);
+			}
+			finally
+			{
+				(context.ViewportWidth, context.ViewportHeight) = (viewportWidth, viewportHeight);
 			}
 		}
 
@@ -400,7 +468,10 @@ namespace MatterHackers.Agg.Svg
 				return;
 			}
 
+			// A bare rasterizer has no clip box, and the renderer writes every span it is given: without this a shape
+			// reaching past the target indexes outside its rows.
 			var rasterizer = new ScanlineRasterizer();
+			rasterizer.SetVectorClipBox(0, 0, target.Width, target.Height);
 			rasterizer.filling_rule(evenOdd ? Util.filling_rule_e.fill_even_odd : Util.filling_rule_e.fill_non_zero);
 			rasterizer.add_path(pixels);
 			new ScanlineRenderer().GenerateAndRender(rasterizer, new scanline_unpacked_8(), target, new span_allocator(), paint.Spans);
@@ -448,6 +519,36 @@ namespace MatterHackers.Agg.Svg
 			var layer = new ImageBuffer(target.Width, target.Height, 32, new BlenderPreMultBGRA());
 			draw(layer);
 			CompositeLayer(target, layer, opacity);
+		}
+
+		/// <summary>
+		/// Draws onto a transparent layer, then mixes it (faded by <paramref name="opacity"/>) into
+		/// <paramref name="target"/> with a CSS blend mode - the target being the nearest isolated group's layer,
+		/// or the canvas.
+		/// </summary>
+		private static void WithBlendedLayer(ImageBuffer target, double opacity, string blendMode, Action<ImageBuffer> draw)
+		{
+			if (opacity <= 0)
+			{
+				return;
+			}
+
+			var layer = new ImageBuffer(target.Width, target.Height, 32, new BlenderPreMultBGRA());
+			draw(layer);
+			byte[] source = layer.GetBuffer();
+			if (opacity < 1)
+			{
+				int scale = (int)Math.Round(opacity * 255);
+				for (int i = 0; i < source.Length; i++)
+				{
+					source[i] = (byte)((source[i] * scale + 127) / 255);
+				}
+			}
+
+			byte[] destination = target.GetBuffer();
+			byte[] blended = SvgFilterPrimitives.Blend(source, destination, target.Width, new SvgPixelRect(0, 0, target.Width, target.Height), blendMode);
+			Array.Copy(blended, destination, Math.Min(blended.Length, destination.Length));
+			target.MarkImageChanged();
 		}
 
 		/// <summary>Premultiplied source-over of <paramref name="layer"/> scaled by <paramref name="opacity"/>.</summary>

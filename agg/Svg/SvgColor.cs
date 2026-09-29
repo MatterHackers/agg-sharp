@@ -59,7 +59,15 @@ namespace MatterHackers.Agg.Svg
 					.Split(new[] { ',', ' ', '/', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
 				if ((function == "rgb" || function == "rgba") && (args.Length == 3 || args.Length == 4))
 				{
-					color = new Color(Channel(args[0]), Channel(args[1]), Channel(args[2]), args.Length == 4 ? Alpha(args[3]) : 255);
+					// As svgtypes: the first channel decides. After a percentage the others may be either (a bare
+					// number is then a fraction); after a number a percentage makes the colour invalid.
+					bool percent = args[0].EndsWith("%");
+					if (!percent && (args[1].EndsWith("%") || args[2].EndsWith("%")))
+					{
+						return false;
+					}
+
+					color = new Color(Channel(args[0], percent), Channel(args[1], percent), Channel(args[2], percent), args.Length == 4 ? Alpha(args[3]) : 255);
 					return true;
 				}
 
@@ -70,6 +78,13 @@ namespace MatterHackers.Agg.Svg
 				}
 
 				return false;
+			}
+
+			// CSS's transparent, which svgtypes names alongside the 147 SVG colours.
+			if (value.Equals("transparent", StringComparison.OrdinalIgnoreCase))
+			{
+				color = new Color(0, 0, 0, 0);
+				return true;
 			}
 
 			if (NamedColors.TryGetValue(value.ToLowerInvariant(), out int rgb))
@@ -110,10 +125,14 @@ namespace MatterHackers.Agg.Svg
 			}
 		}
 
-		/// <summary>An rgb() channel: 0..255, or a percentage of 255; clamped.</summary>
-		private static int Channel(string arg)
+		/// <summary>
+		/// An rgb() channel: 0..255, or in a percentage colour a percentage (or a fraction) of 255; clamped. A
+		/// percentage is scaled by 255.0 / 100 first, as resvg's reference images were rendered: in doubles 2.55 * 50
+		/// is just under 127.5, so 50% is 127, where svgtypes 0.15's (50 / 100) * 255 rounds to 128.
+		/// </summary>
+		private static int Channel(string arg, bool percentColour)
 		{
-			double value = arg.EndsWith("%") ? Number(arg.TrimEnd('%')) / 100 * 255 : Number(arg);
+			double value = arg.EndsWith("%") ? 255.0 / 100 * Number(arg.TrimEnd('%')) : percentColour ? Number(arg) * 255 : Number(arg);
 			return (int)Math.Round(Math.Max(0, Math.Min(255, value)), MidpointRounding.AwayFromZero);
 		}
 

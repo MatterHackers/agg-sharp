@@ -61,7 +61,7 @@ namespace MatterHackers.Agg.Tests.Agg
 				("#00ff0080", new Color(0, 255, 0, 128)),
 				("#123456", new Color(0x12, 0x34, 0x56, 255)),
 				("rgb(0, 128, 0)", new Color(0, 128, 0, 255)),
-				("rgb(100%, 0%, 50%)", new Color(255, 0, 128, 255)),
+				("rgb(100%, 0%, 50%)", new Color(255, 0, 127, 255)), // 50% is 127 in resvg's references (SvgParsingTests)
 				("rgba(10, 20, 30, 0.5)", new Color(10, 20, 30, 128)),
 				("hsl(120, 100%, 25%)", new Color(0, 128, 0, 255)),
 				("hsl(120, 100%, 25%, 0.5)", new Color(0, 128, 0, 128)),

@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using MatterHackers.Agg.Transform;
 
@@ -68,6 +69,9 @@ namespace MatterHackers.Agg.Svg
 
 		private const int MaxHrefDepth = 16;
 
+		/// <summary>Rust's f32::EPSILON, which usvg moves equal offsets by (C#'s float.Epsilon is the smallest subnormal).</summary>
+		private const float Epsilon = 1.1920929e-7f;
+
 		/// <summary>
 		/// Resolves <paramref name="server"/> (a linearGradient or radialGradient) for a shape whose user-space
 		/// bounding box is <paramref name="bounds"/>, drawn with <paramref name="userToPixels"/>, at
@@ -82,7 +86,26 @@ namespace MatterHackers.Agg.Svg
 			}
 
 			List<SvgElement> chain = HrefChain(document, server);
-			string Get(string name) => chain.Select(e => e[name]).FirstOrDefault(v => v != null);
+
+			// Geometry (x1.., cx..) only comes from a gradient of this one's kind, and the search stops at the first
+			// link of the other kind; units, spread and transform come from either (usvg's resolve_lg_attr).
+			string Get(string name, bool geometry = false)
+			{
+				foreach (SvgElement e in chain)
+				{
+					if (geometry && e.Name != server.Name)
+					{
+						break;
+					}
+
+					if (e[name] != null)
+					{
+						return e[name];
+					}
+				}
+
+				return null;
+			}
 
 			List<(double Offset, Color Color)> stops = Stops(chain, opacity);
 			if (stops.Count == 0)
@@ -112,16 +135,17 @@ namespace MatterHackers.Agg.Svg
 			}
 
 			// agg's a * b applies a first: gradient space, then gradientTransform, then its units, then to pixels.
-			Affine toPixels = SvgTransform.Parse(Get("gradientTransform")) * units * userToPixels;
+			Affine toPixels = SvgTransform.Resolve(Get("gradientTransform"), Get("transform-origin"), viewportWidth, viewportHeight) * units * userToPixels;
 
 			Affine gradientToUser;
 			IGradient function;
+			SvgFocalCone cone = null;
 			if (server.Name == "linearGradient")
 			{
-				double x1 = SvgLength.Parse(Get("x1"), 0, percentWidth);
-				double y1 = SvgLength.Parse(Get("y1"), 0, percentHeight);
-				double x2 = SvgLength.Parse(Get("x2"), percentWidth, percentWidth);
-				double y2 = SvgLength.Parse(Get("y2"), 0, percentHeight);
+				double x1 = SvgLength.Parse(Get("x1", true), 0, percentWidth);
+				double y1 = SvgLength.Parse(Get("y1", true), 0, percentHeight);
+				double x2 = SvgLength.Parse(Get("x2", true), percentWidth, percentWidth);
+				double y2 = SvgLength.Parse(Get("y2", true), 0, percentHeight);
 				double length = Math.Sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
 				if (length <= 0)
 				{
@@ -134,30 +158,34 @@ namespace MatterHackers.Agg.Svg
 			}
 			else
 			{
-				double cx = SvgLength.Parse(Get("cx"), percentWidth / 2, percentWidth);
-				double cy = SvgLength.Parse(Get("cy"), percentHeight / 2, percentHeight);
-				double r = SvgLength.Parse(Get("r"), percentDiagonal / 2, percentDiagonal);
-				double fx = SvgLength.Parse(Get("fx"), cx, percentWidth);
-				double fy = SvgLength.Parse(Get("fy"), cy, percentHeight);
+				double cx = SvgLength.Parse(Get("cx", true), percentWidth / 2, percentWidth);
+				double cy = SvgLength.Parse(Get("cy", true), percentHeight / 2, percentHeight);
+				double r = SvgLength.Parse(Get("r", true), percentDiagonal / 2, percentDiagonal);
+				double fx = SvgLength.Parse(Get("fx", true), cx, percentWidth);
+				double fy = SvgLength.Parse(Get("fy", true), cy, percentHeight);
+
+				// SVG 2's focal radius. A negative one is an error (UB in the suite); it is read as none.
+				double fr = Math.Max(0, SvgLength.Parse(Get("fr", true), 0, percentDiagonal));
 				if (r <= 0)
 				{
 					return new SvgServerPaint(Premultiply(stops[stops.Count - 1].Color), null);
 				}
 
-				// The focus in gradient units. One on or outside the circle is pulled just inside it, as resvg
-				// does (SVG 1.1 section 13.2.3 moves it onto the circle, where the cone degenerates).
+				// The focus in gradient units. One on or near the circle, or outside it, is drawn as the two-point cone
+				// resvg draws rather than pulled inside (SVG 1.1 section 13.2.3's correction is not what resvg does),
+				// since agg's gradient_radial_focus degenerates there.
 				double focusX = (fx - cx) / r * GradientUnits;
 				double focusY = (fy - cy) / r * GradientUnits;
-				double focusDistance = Math.Sqrt(focusX * focusX + focusY * focusY);
-				double maxFocus = GradientUnits * .99;
-				if (focusDistance > maxFocus)
-				{
-					focusX *= maxFocus / focusDistance;
-					focusY *= maxFocus / focusDistance;
-				}
-
 				gradientToUser = Affine.NewScaling(r / GradientUnits) * Affine.NewTranslation(cx, cy);
-				function = new gradient_radial_focus(GradientUnits, focusX, focusY);
+				if (fr > 0 || Math.Sqrt(focusX * focusX + focusY * focusY) > GradientUnits * .99)
+				{
+					cone = new SvgFocalCone(GradientUnits, focusX, focusY, fr / r * GradientUnits);
+					function = cone;
+				}
+				else
+				{
+					function = new gradient_radial_focus(GradientUnits, focusX, focusY);
+				}
 			}
 
 			switch (Get("spreadMethod"))
@@ -178,7 +206,7 @@ namespace MatterHackers.Agg.Svg
 
 			pixelsToGradient.invert();
 			var spans = new span_gradient(new span_interpolator_linear(pixelsToGradient), function, new StopColors(stops), 0, GradientUnits);
-			return new SvgServerPaint(null, spans);
+			return new SvgServerPaint(null, cone == null ? spans : new SvgFocalCone.Spans(spans, cone, new span_interpolator_linear(pixelsToGradient)));
 		}
 
 		/// <summary><paramref name="server"/>, then each gradient its href leads to, stopping at a loop or a non-gradient.</summary>
@@ -199,30 +227,116 @@ namespace MatterHackers.Agg.Svg
 		}
 
 		/// <summary>
-		/// The first gradient in the chain that has &lt;stop&gt; children supplies them all. Offsets are clamped to
-		/// 0..1 and never go back (SVG 1.1 section 13.2.4); stop-opacity and the paint's opacity scale alpha.
+		/// The first gradient in the chain that has &lt;stop&gt; children supplies them all, read as usvg reads them
+		/// (convert_stops): a missing or unreadable offset repeats the previous one, offsets clamp to 0..1, a run of
+		/// three or more equal offsets keeps only its ends, a second offset of 0 moves up an epsilon (so the padded
+		/// area before the vector keeps the first stop's colour), and an offset that does not advance moves the one
+		/// before it back an epsilon so the step stays hard. Alpha is the colour's alpha times stop-opacity times the
+		/// paint's opacity.
 		/// </summary>
 		private static List<(double Offset, Color Color)> Stops(List<SvgElement> chain, double opacity)
 		{
-			var stops = new List<(double Offset, Color Color)>();
+			var stops = new List<(float Offset, Color Color)>();
 			SvgElement owner = chain.FirstOrDefault(e => e.Children.Any(c => c.Name == "stop"));
 			if (owner == null)
 			{
-				return stops;
+				return new List<(double Offset, Color Color)>();
 			}
 
 			double previous = 0;
 			foreach (SvgElement stop in owner.Children.Where(c => c.Name == "stop"))
 			{
-				double offset = Math.Max(previous, Math.Min(1, Math.Max(0, SvgLength.ParseNumber(stop["offset"], 0))));
+				// previous stays unclamped, as usvg's prev_offset does.
+				double offset = ParseOffset(stop["offset"], previous);
 				previous = offset;
-				Color color = SvgColor.TryParse(stop["stop-color"] ?? "black", out Color parsed) ? parsed : Color.Black;
+				Color color = StopColor(stop);
 				double stopOpacity = Math.Min(1, Math.Max(0, SvgLength.ParseNumber(stop["stop-opacity"], 1)));
 				color.alpha = (byte)Math.Round(color.alpha * stopOpacity * opacity);
-				stops.Add((offset, color));
+				stops.Add(((float)Math.Min(1, Math.Max(0, offset)), color));
 			}
 
-			return stops;
+			for (int i = 0; stops.Count >= 3 && i < stops.Count - 2;)
+			{
+				if (NearlyEqual(stops[i].Offset, stops[i + 1].Offset) && NearlyEqual(stops[i + 1].Offset, stops[i + 2].Offset))
+				{
+					stops.RemoveAt(i + 1);
+				}
+				else
+				{
+					i++;
+				}
+			}
+
+			for (int i = 0; i < stops.Count - 1; i++)
+			{
+				if (NearlyEqual(stops[i].Offset, 0) && NearlyEqual(stops[i + 1].Offset, 0))
+				{
+					stops[i + 1] = (Math.Min(1, stops[i].Offset + Epsilon), stops[i + 1].Color);
+				}
+			}
+
+			for (int i = 1; i < stops.Count; i++)
+			{
+				float before = stops[i - 1].Offset;
+				if (before > stops[i].Offset || NearlyEqual(before, stops[i].Offset))
+				{
+					stops[i - 1] = (Math.Max(0, before - Epsilon), stops[i - 1].Color);
+					stops[i] = (before, stops[i].Color);
+				}
+			}
+
+			return stops.Select(s => ((double)s.Offset, s.Color)).ToList();
+		}
+
+		/// <summary>Equal within 4 units in the last place, as usvg compares stop offsets (float_cmp's approx_eq_ulps).</summary>
+		private static bool NearlyEqual(float a, float b)
+		{
+			if (a == b)
+			{
+				return true;
+			}
+
+			int ia = BitConverter.SingleToInt32Bits(a), ib = BitConverter.SingleToInt32Bits(b);
+			return (ia < 0) == (ib < 0) && Math.Abs((long)ia - ib) <= 4;
+		}
+
+		/// <summary>A number or a percentage; anything else (or nothing) repeats <paramref name="previous"/>.</summary>
+		private static double ParseOffset(string text, double previous)
+		{
+			string value = text?.Trim();
+			if (string.IsNullOrEmpty(value))
+			{
+				return previous;
+			}
+
+			bool percent = value.EndsWith("%");
+			return double.TryParse(percent ? value.Substring(0, value.Length - 1) : value, NumberStyles.Float, CultureInfo.InvariantCulture, out double number)
+				? (percent ? number / 100 : number)
+				: previous;
+		}
+
+		/// <summary>
+		/// stop-color, where "inherit" takes the parent's stop-color (it is not an inherited property) and
+		/// "currentColor" the nearest color property; black when missing or unreadable.
+		/// </summary>
+		private static Color StopColor(SvgElement stop)
+		{
+			string value = stop["stop-color"];
+			if (value == "inherit")
+			{
+				value = stop.Parent?["stop-color"];
+			}
+
+			if (value == "currentColor")
+			{
+				value = null;
+				for (SvgElement e = stop; e != null && (value == null || value == "inherit"); e = e.Parent)
+				{
+					value = e["color"];
+				}
+			}
+
+			return value != null && SvgColor.TryParse(value, out Color parsed) ? parsed : Color.Black;
 		}
 
 		private static Color Premultiply(Color c)

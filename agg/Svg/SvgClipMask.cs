@@ -112,14 +112,14 @@ namespace MatterHackers.Agg.Svg
 				case "switch":
 					foreach (SvgElement child in element.Children)
 					{
-						IncludeBox(ObjectBounds(context, child, depth + 1), SvgTransform.Parse(child["transform"]));
+						IncludeBox(ObjectBounds(context, child, depth + 1), SvgTransform.Resolve(child, "transform", context.ViewportWidth, context.ViewportHeight));
 					}
 
 					break;
 				case "use":
 					if (context.Document.GetElementById(element["href"]) is SvgElement referenced)
 					{
-						Affine offset = SvgTransform.Parse(referenced["transform"]) * Affine.NewTranslation(
+						Affine offset = SvgTransform.Resolve(referenced, "transform", context.ViewportWidth, context.ViewportHeight) * Affine.NewTranslation(
 							SvgLength.Parse(element["x"], 0, context.ViewportWidth),
 							SvgLength.Parse(element["y"], 0, context.ViewportHeight));
 						IncludeBox(ObjectBounds(context, referenced, depth + 1), offset);
@@ -128,7 +128,7 @@ namespace MatterHackers.Agg.Svg
 					break;
 				case "text":
 					SvgStyle style = SvgRenderer.InheritedStyle(context, element);
-					foreach ((VertexStorage run, _) in SvgText.Layout(element, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver))
+					foreach ((VertexStorage run, _) in SvgText.Layout(element, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver, context.Document.Fonts))
 					{
 						Include(run, Affine.NewIdentity());
 					}
@@ -174,7 +174,7 @@ namespace MatterHackers.Agg.Svg
 
 			try
 			{
-				Affine clipToUser = SvgTransform.Parse(clip["transform"]);
+				Affine clipToUser = SvgTransform.Resolve(clip, "transform", context.ViewportWidth, context.ViewportHeight);
 				if (clip["clipPathUnits"] == "objectBoundingBox")
 				{
 					if (!(bounds is RectangleDouble box) || box.Width <= 0 || box.Height <= 0)
@@ -196,7 +196,7 @@ namespace MatterHackers.Agg.Svg
 						continue;
 					}
 
-					Affine childTransform = SvgTransform.Parse(child["transform"]) * toPixels;
+					Affine childTransform = SvgTransform.Resolve(child, "transform", context.ViewportWidth, context.ViewportHeight) * toPixels;
 					ImageBuffer childCoverage = NewLayer(layer);
 					DrawClipChild(context, child, style, childTransform, childCoverage);
 
@@ -236,7 +236,7 @@ namespace MatterHackers.Agg.Svg
 			{
 				if (context.Document.GetElementById(child["href"]) is SvgElement referenced && referenced.Name != "use" && referenced.Name != "g")
 				{
-					Affine offset = SvgTransform.Parse(referenced["transform"]) * Affine.NewTranslation(
+					Affine offset = SvgTransform.Resolve(referenced, "transform", context.ViewportWidth, context.ViewportHeight) * Affine.NewTranslation(
 						SvgLength.Parse(child["x"], 0, context.ViewportWidth),
 						SvgLength.Parse(child["y"], 0, context.ViewportHeight)) * toPixels;
 					DrawClipChild(context, referenced, SvgStyle.Compute(referenced, style, context.Diagonal), offset, coverage);
@@ -248,9 +248,9 @@ namespace MatterHackers.Agg.Svg
 			var paths = new List<(VertexStorage Path, SvgStyle Style)>();
 			if (child.Name == "text")
 			{
-				paths.AddRange(SvgText.Layout(child, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver));
+				paths.AddRange(SvgText.Layout(child, style, context.ViewportWidth, context.ViewportHeight, context.Diagonal, context.Document.FontResolver, context.Document.Fonts));
 			}
-			else if (SvgShapes.ToPath(child, context.ViewportWidth, context.ViewportHeight) is VertexStorage path)
+			else if (SvgShapes.ToPath(child, context.ViewportWidth, context.ViewportHeight, style.FontSize) is VertexStorage path)
 			{
 				paths.Add((path, style));
 			}

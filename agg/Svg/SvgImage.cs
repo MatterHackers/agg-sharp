@@ -24,6 +24,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System;
+using System.IO;
+using System.IO.Compression;
 using System.Text;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.RasterizerScanline;
@@ -39,9 +41,6 @@ namespace MatterHackers.Agg.Svg
 	/// </summary>
 	internal static class SvgImage
 	{
-		/// <summary>How deep SVG images may nest inside SVG images before a (possibly self-including) chain is cut off.</summary>
-		private const int MaxNesting = 8;
-
 		/// <summary>
 		/// Draws <paramref name="element"/> with <paramref name="userToPixels"/> onto the premultiplied
 		/// <paramref name="target"/>; an SVG image is drawn by <paramref name="drawDocument"/>. Draws nothing when the
@@ -49,6 +48,13 @@ namespace MatterHackers.Agg.Svg
 		/// </summary>
 		public static void Draw(SvgDocument document, SvgElement element, Affine userToPixels, ImageBuffer target, double viewportWidth, double viewportHeight, Action<SvgDocument, Affine, ImageBuffer> drawDocument)
 		{
+			// As in usvg, a document drawn as an SVG image draws no images of its own - any, not only ones that
+			// include it again - so a self-including chain shows once.
+			if (document.NestingDepth > 0)
+			{
+				return;
+			}
+
 			byte[] data = Load(document, element["href"], out string mediaType);
 			if (data == null)
 			{
@@ -57,17 +63,23 @@ namespace MatterHackers.Agg.Svg
 
 			SvgDocument svgImage = null;
 			ImageBuffer raster = null;
+			data = Gunzip(data);
 			if (IsSvg(data, mediaType))
 			{
-				if (document.NestingDepth >= MaxNesting)
+				try
 				{
+					svgImage = SvgDocument.Parse(Encoding.UTF8.GetString(data));
+				}
+				catch (System.Xml.XmlException)
+				{
+					// As in usvg, an SVG image that does not parse is skipped, not the document drawing it.
 					return;
 				}
 
-				svgImage = SvgDocument.Parse(Encoding.UTF8.GetString(data));
 				svgImage.ImageDecoder = document.ImageDecoder;
 				svgImage.ResourceResolver = document.ResourceResolver;
 				svgImage.FontResolver = document.FontResolver;
+				svgImage.Fonts = document.Fonts;
 				svgImage.NestingDepth = document.NestingDepth + 1;
 			}
 			else
@@ -167,7 +179,10 @@ namespace MatterHackers.Agg.Svg
 			rectangle.LineTo(area.Left, area.Top);
 			rectangle.ClosePolygon();
 
+			// A bare rasterizer has no clip box, and the renderer writes every span it is given: without this a shape
+			// reaching past the target indexes outside its rows.
 			var rasterizer = new ScanlineRasterizer();
+			rasterizer.SetVectorClipBox(0, 0, target.Width, target.Height);
 			rasterizer.add_path(new VertexSourceApplyTransform(rectangle, userToPixels));
 			new ScanlineRenderer().GenerateAndRender(rasterizer, new scanline_unpacked_8(), target, new span_allocator(), spans);
 			target.MarkImageChanged();
@@ -236,6 +251,30 @@ namespace MatterHackers.Agg.Svg
 		/// Whether <paramref name="data"/> is SVG. The content decides, as it does in resvg - a data: URI's media type
 		/// is often wrong - with the media type as a tie-breaker for text that is not obviously markup.
 		/// </summary>
+		/// <summary>
+		/// An .svgz (gzip-compressed SVG, whether a file or a data: URI) unzipped; other bytes as they are. Told
+		/// apart by gzip's magic number, as usvg does - no image format agg decodes starts with it.
+		/// </summary>
+		private static byte[] Gunzip(byte[] data)
+		{
+			if (data.Length < 2 || data[0] != 0x1F || data[1] != 0x8B)
+			{
+				return data;
+			}
+
+			try
+			{
+				using var gzip = new GZipStream(new MemoryStream(data), CompressionMode.Decompress);
+				var unzipped = new MemoryStream();
+				gzip.CopyTo(unzipped);
+				return unzipped.ToArray();
+			}
+			catch (InvalidDataException)
+			{
+				return data;
+			}
+		}
+
 		private static bool IsSvg(byte[] data, string mediaType)
 		{
 			foreach (byte b in data)

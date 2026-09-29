@@ -42,7 +42,7 @@ namespace MatterHackers.Agg.Tests.Agg
 	// so a run's Top is its lowest point.
 	public class SvgTextTests
 	{
-		private static List<(VertexStorage Path, SvgStyle Style)> Layout(string text)
+		internal static List<(VertexStorage Path, SvgStyle Style)> Layout(string text)
 		{
 			SvgDocument document = SvgDocument.Parse($"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 200 200\">{text}</svg>");
 			SvgElement element = document.Root.Children[0];
