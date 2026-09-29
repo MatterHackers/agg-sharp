@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2022, Lars Brubaker, John Lewin
+Copyright (c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -28,19 +28,15 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using MatterHackers.Agg.SvgTools;
 using MatterHackers.Agg.Image;
-using MatterHackers.Agg.Transform;
+using MatterHackers.Agg.Svg;
 using MatterHackers.VectorMath;
 
 namespace MatterHackers.Agg.UI
 {
     public class SvgWidget : GuiWidget
 	{
-		List<ColoredVertexSource> items = new List<ColoredVertexSource>();
-
 		private ImageBuffer imageBuffer;
 
 		// Deferred-load state for the file-path constructor. The file read, SVG parse and
@@ -85,28 +81,42 @@ namespace MatterHackers.Agg.UI
 			base.OnLoad(args);
 		}
 
+		/// <summary>
+		/// Parses the SVG in <paramref name="stream"/> and rasterizes it at <paramref name="scale"/> pixels per
+		/// document unit, anchored top-left and cropped to <paramref name="width"/> by <paramref name="height"/>
+		/// (both multiplied by <paramref name="scale"/>). A negative width or height takes the document's own.
+		/// </summary>
+		/// <remarks>
+		/// Drawn by the full agg/Svg renderer rather than the older SvgTools.SvgParser, which ignored fill/stroke
+		/// opacity, caps, joins and attributes inherited from a group. That renderer reads strict XML, so a
+		/// malformed document throws here instead of being parsed leniently.
+		/// </remarks>
 		public void LoadSvg(Stream stream, double scale, int width = -1, int height = -1)
 		{
-			items = SvgParser.Parse(stream, false);
+			var document = SvgDocument.Parse(stream);
+			(double docWidth, double docHeight) = document.Size;
 
 			this.Scale = scale;
 
-			width = (int)(width * this.Scale);
-			height = (int)(height * this.Scale);
+			width = (int)((width < 0 ? docWidth : width) * this.Scale);
+			height = (int)((height < 0 ? docHeight : height) * this.Scale);
 
 			imageBuffer = new ImageBuffer(width, height);
 
 			this.MinimumSize = new Vector2(width, height);
 
-			var graphics2D = imageBuffer.NewGraphics2D();
-
-			graphics2D.SetTransform(Affine.NewScaling(this.Scale));
-			foreach (var item in items)
+			// The renderer stretches the document to fill its image, so render at document size times Scale
+			// and copy that into the widget's box top-left, cropping whatever falls outside it.
+			int renderWidth = (int)Math.Round(docWidth * this.Scale);
+			int renderHeight = (int)Math.Round(docHeight * this.Scale);
+			if (renderWidth > 0 && renderHeight > 0 && width > 0 && height > 0)
 			{
-				graphics2D.Render(item.VertexSource, item.Color);
-			}
+				var rendered = SvgRenderer.RenderToImage(document, renderWidth, renderHeight);
 
-			imageBuffer.FlipY();
+				// agg images are y-up, so aligning the tops offsets by the height difference; CopyFrom clips
+				// whatever falls outside the widget's box.
+				imageBuffer.CopyFrom(rendered, rendered.GetBounds(), 0, height - renderHeight);
+			}
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
