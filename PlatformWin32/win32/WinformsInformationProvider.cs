@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -71,6 +71,9 @@ namespace MatterHackers.Agg.Platform
 
 		public WinformsInformationProvider()
 		{
+			// Before GetDpiForSystem below, which answers 96 to a process that has not declared awareness.
+			WindowsDpiAwareness.EnsurePerMonitorV2();
+
 			this.OperatingSystem = GetOSType();
 
 			var size = System.Windows.Forms.Screen.PrimaryScreen.WorkingArea.Size;

@@ -278,6 +278,12 @@ namespace MatterHackers.Agg.UI
 		[DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
 		public bool IsInitialized { get; set; } = false;
 
+		static WinformsSystemWindow()
+		{
+			// Before this process's first top-level window, which is when Windows locks DPI awareness.
+			MatterHackers.Agg.Platform.WindowsDpiAwareness.EnsurePerMonitorV2();
+		}
+
 		public WinformsSystemWindow()
 		{
 			lock (StaticInitLock)
