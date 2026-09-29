@@ -33,7 +33,7 @@ using System.IO;
 using System.Linq;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.ImageProcessing;
-using MatterHackers.Agg.SvgTools;
+using MatterHackers.Agg.Svg;
 using MatterHackers.Agg.UI;
 using MatterHackers.ImageProcessing;
 using MatterHackers.VectorMath;
@@ -319,11 +319,20 @@ namespace MatterHackers.Agg.Platform
 			}
 		}
 
+		/// <summary>
+		/// Renders the SVG at <paramref name="assetPath"/> into a <paramref name="width"/> by <paramref name="height"/>
+		/// image, its document size stretched to fill it.
+		/// </summary>
+		/// <remarks>
+		/// Icons go through the full agg/Svg renderer rather than the older SvgTools.SvgParser, which ignores
+		/// fill/stroke opacity, caps, joins and attributes inherited from a group, and draws circles after paths
+		/// regardless of document order - app icons rely on all of those.
+		/// </remarks>
 		private ImageBuffer RenderSvg(string assetPath, int width, int height)
 		{
 			using (var stream = OpenStream(assetPath))
 			{
-				return SvgParser.ParseAndRender(stream, width, height);
+				return SvgRenderer.RenderToImage(SvgDocument.Parse(stream), width, height);
 			}
 		}
 	}
