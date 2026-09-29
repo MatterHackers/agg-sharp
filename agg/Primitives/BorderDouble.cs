@@ -158,7 +158,7 @@ namespace MatterHackers.Agg
 			{
 				var values = stringValue.Split(',').Select(s =>
 				{
-					double.TryParse(s, out double result);
+					double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out double result);
 					return result;
 				}).ToArray();
 

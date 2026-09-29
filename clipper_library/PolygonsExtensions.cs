@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using MatterHackers.Agg;
 using MatterHackers.Agg.VertexSource;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace ClipperLib
 {
@@ -352,7 +353,7 @@ namespace ClipperLib
                 doubleString = doubleString.Substring(colonIndex + 1);
             }
 
-            return double.Parse(doubleString) * scale;
+            return double.Parse(doubleString, CultureInfo.InvariantCulture) * scale;
         }
     }
 }

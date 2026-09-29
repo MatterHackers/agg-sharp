@@ -524,12 +524,12 @@ namespace MatterHackers.PolygonMesh.Processors
 
 		public static string FormatForStl(Vector3 value)
 		{
-			return string.Format("{0:0.000000} {1:0.000000} {2:0.000000}", value.X, value.Y, value.Z);
+			return string.Format(Culture, "{0:0.000000} {1:0.000000} {2:0.000000}", value.X, value.Y, value.Z);
 		}
 
 		public static string FormatForStl(Vector3Float value)
 		{
-			return string.Format("{0:0.000000} {1:0.000000} {2:0.000000}", value.X, value.Y, value.Z);
+			return string.Format(Culture, "{0:0.000000} {1:0.000000} {2:0.000000}", value.X, value.Y, value.Z);
 		}
 
 		private static bool ParseLine(Mesh meshFromStlFile, string thisLine, out Vector3 vertexPosition)
@@ -549,9 +549,9 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			string[] splitOnSpace = noDoubleSpaces.Split(' ');
 			vertexPosition = default(Vector3);
-			bool goodParse = double.TryParse(splitOnSpace[1], out vertexPosition.X);
-			goodParse &= double.TryParse(splitOnSpace[2], out vertexPosition.Y);
-			goodParse &= double.TryParse(splitOnSpace[3], out vertexPosition.Z);
+			bool goodParse = double.TryParse(splitOnSpace[1], Style, Culture, out vertexPosition.X);
+			goodParse &= double.TryParse(splitOnSpace[2], Style, Culture, out vertexPosition.Y);
+			goodParse &= double.TryParse(splitOnSpace[3], Style, Culture, out vertexPosition.Z);
 			return goodParse;
 		}
 

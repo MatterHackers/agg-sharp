@@ -786,12 +786,12 @@ namespace MatterHackers.Agg
                 int spacePos = stringWithNumber.IndexOf(" ", charPos);
                 if (spacePos == -1)
                 {
-                    string newString = string.Format("{0}{1:0.#####}", stringWithNumber.Substring(0, charPos + 1), numberToPutIn);
+                    string newString = string.Format(CultureInfo.InvariantCulture, "{0}{1:0.#####}",stringWithNumber.Substring(0, charPos + 1), numberToPutIn);
                     return newString;
                 }
                 else
                 {
-                    string newString = string.Format("{0}{1:0.#####}{2}", stringWithNumber.Substring(0, charPos + 1), numberToPutIn, stringWithNumber.Substring(spacePos));
+                    string newString = string.Format(CultureInfo.InvariantCulture, "{0}{1:0.#####}{2}",stringWithNumber.Substring(0, charPos + 1), numberToPutIn, stringWithNumber.Substring(spacePos));
                     return newString;
                 }
             }

@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Globalization;
+using System.IO;
 
 namespace MatterHackers.Agg.VertexSource
 {
@@ -11,8 +12,9 @@ namespace MatterHackers.Agg.VertexSource
 			foreach (string line in allLines)
 			{
 				string[] elements = line.Split(',');
-				double x = double.Parse(elements[0]);
-				double y = double.Parse(elements[1]);
+				// The file separates fields with commas, so numbers are always written and read with '.'.
+				double x = double.Parse(elements[0], CultureInfo.InvariantCulture);
+				double y = double.Parse(elements[1], CultureInfo.InvariantCulture);
 				FlagsAndCommand flagsAndCommand = (FlagsAndCommand)System.Enum.Parse(typeof(FlagsAndCommand), elements[2].Trim());
 				for (int i = 3; i < elements.Length; i++)
 				{
@@ -35,8 +37,8 @@ namespace MatterHackers.Agg.VertexSource
 					FlagsAndCommand flagsAndCommand = vertexSource.Vertex(out x, out y);
 					do
 					{
-						outFile.WriteLine("{0}, {1}, {2}", x, y, flagsAndCommand.ToString());
-						flagsAndCommand = vertexSource.Vertex(out x, out y);
+						outFile.WriteLine(string.Format(CultureInfo.InvariantCulture, "{0}, {1}, {2}", x, y, flagsAndCommand.ToString()));
+						flagsAndCommand =vertexSource.Vertex(out x, out y);
 					}
 					while (flagsAndCommand != FlagsAndCommand.Stop);
 				}
@@ -47,7 +49,7 @@ namespace MatterHackers.Agg.VertexSource
 				{
 					foreach (VertexData vertexData in vertexSource.Vertices())
 					{
-						outFile.WriteLine("{0}, {1}, {2}", vertexData.Position.X, vertexData.Position.Y, vertexData.Command.ToString());
+						outFile.WriteLine(string.Format(CultureInfo.InvariantCulture, "{0}, {1}, {2}", vertexData.Position.X, vertexData.Position.Y, vertexData.Command.ToString()));
 					}
 				}
 			}

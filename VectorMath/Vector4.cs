@@ -168,7 +168,7 @@ namespace MatterHackers.VectorMath
 
 			var values = s.Split(',').Select(sValue =>
 			{
-				double.TryParse(sValue, out double number);
+				double.TryParse(sValue, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double number);
 				return number;
 			}).ToArray();
 

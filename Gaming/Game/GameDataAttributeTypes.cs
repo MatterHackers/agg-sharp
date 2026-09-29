@@ -1,5 +1,6 @@
 using MatterHackers.VectorMath;
 using System;
+using System.Globalization;
 using System.Reflection;
 using System.Xml;
 
@@ -120,7 +121,8 @@ namespace Gaming.Game
 
 			string xString = xmlReader.GetAttribute("x");
 			string yString = xmlReader.GetAttribute("y");
-			newVector2D = new Vector2(Convert.ToDouble(xString), Convert.ToDouble(yString));
+			// XmlWriter.WriteValue wrote these invariantly, whatever the machine's culture.
+			newVector2D = new Vector2(Convert.ToDouble(xString, CultureInfo.InvariantCulture), Convert.ToDouble(yString, CultureInfo.InvariantCulture));
 
 			return newVector2D;
 		}

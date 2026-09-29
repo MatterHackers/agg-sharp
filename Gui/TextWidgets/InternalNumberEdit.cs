@@ -29,10 +29,16 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace MatterHackers.Agg.UI
 {
+	/// <remarks>
+	/// Only '.' can be typed as the decimal separator (see the allowed characters below), so the text is
+	/// read and written with the invariant culture: on a comma-decimal machine the current culture would
+	/// read a typed "1.5" as 15 and show 1.5 as "1,5", which the field will not let the user edit.
+	/// </remarks>
 	public class InternalNumberEdit : InternalTextEditWidget
 	{
 		private HashSet<char> allowedChars = null;
@@ -50,7 +56,7 @@ namespace MatterHackers.Agg.UI
 			double maxValue,
 			double increment,
 			int tabIndex)
-			: base(startingValue.ToString(), pointSize, false, tabIndex)
+			: base(startingValue.ToString(CultureInfo.InvariantCulture),pointSize, false, tabIndex)
 		{
 			this.allowDecimals = allowDecimals;
 			this.allowNegatives = allowNegatives;
@@ -217,7 +223,7 @@ namespace MatterHackers.Agg.UI
 				}
 
 				double value = minValue;
-				if (double.TryParse(Text, out value))
+				if (double.TryParse(Text, CultureInfo.InvariantCulture, out value))
 				{
 					return value;
 				}
@@ -236,19 +242,19 @@ namespace MatterHackers.Agg.UI
 				double newValue = ValidateRange(value);
 				if (newValue != Value)
 				{
-					Text = newValue.ToString(format);
+					Text = newValue.ToString(format, CultureInfo.InvariantCulture);
 				}
 				else // lets make sure it has the same text as the value
 				{
 					double currentValue;
-					if (double.TryParse(Text, out currentValue))
+					if (double.TryParse(Text, CultureInfo.InvariantCulture, out currentValue))
 					{
 						// the text does not match the value so set it
-						Text = newValue.ToString(format);
+						Text = newValue.ToString(format, CultureInfo.InvariantCulture);
 					}
 					else // the text cannot be parsed so set it
 					{
-						Text = newValue.ToString(format);
+						Text = newValue.ToString(format, CultureInfo.InvariantCulture);
 						CharIndexToInsertBefore = Text.Length;
 					}
 				}
@@ -371,7 +377,7 @@ namespace MatterHackers.Agg.UI
 				return true;
 			}
 
-			return double.TryParse(typed, out _);
+			return double.TryParse(typed, CultureInfo.InvariantCulture, out _);
 		}
 
 		/// <summary>

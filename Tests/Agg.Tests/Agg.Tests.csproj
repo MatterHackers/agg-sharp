@@ -65,6 +65,7 @@
     <ProjectReference Include="..\..\DataConverters3D\DataConverters3D.csproj" />
     <!-- The lion shape and its demo draw, shared with examples/lion so AggReferenceTests renders it through the same code. -->
     <ProjectReference Include="..\..\examples\LionShape\LionShape.csproj" />
+    <ProjectReference Include="..\..\Gaming\Gaming.csproj" />
     <ProjectReference Include="..\..\geometry3Sharp\geometry3Sharp.csproj" />
     <ProjectReference Include="..\..\Gui\Gui.csproj" />
     <ProjectReference Include="..\..\GuiAutomation\GuiAutomation.csproj" />

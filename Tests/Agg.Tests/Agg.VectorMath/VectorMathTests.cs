@@ -64,6 +64,26 @@ namespace MatterHackers.VectorMath.Tests
 		}
 	}
 
+	public class MathHelperConstantTests
+	{
+		// These were once float literals widened to double, off from the true values by about 1e-7.
+		[Test]
+		public async Task ConstantsAreFullDoublePrecision()
+		{
+			await Assert.That(MathHelper.Pi).IsEqualTo(Math.PI);
+			await Assert.That(MathHelper.Tau).IsEqualTo(2 * Math.PI);
+			await Assert.That(MathHelper.TwoPi).IsEqualTo(2 * Math.PI);
+			await Assert.That(MathHelper.PiOver2).IsEqualTo(Math.PI / 2);
+			await Assert.That(MathHelper.PiOver3).IsEqualTo(Math.PI / 3);
+			await Assert.That(MathHelper.PiOver4).IsEqualTo(Math.PI / 4);
+			await Assert.That(MathHelper.PiOver6).IsEqualTo(Math.PI / 6);
+			await Assert.That(MathHelper.ThreePiOver2).IsEqualTo(3 * Math.PI / 2);
+			await Assert.That(MathHelper.E).IsEqualTo(Math.E);
+			await Assert.That(MathHelper.Log10E).IsEqualTo(Math.Log10(Math.E));
+			await Assert.That(MathHelper.Log2E).IsEqualTo(Math.Log2(Math.E));
+		}
+	}
+
 	public class Vector2Tests
 	{
 		[Test]
