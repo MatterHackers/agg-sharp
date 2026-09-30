@@ -176,6 +176,46 @@ namespace Agg.Tests.Other
 
 		[Test]
 		[NotInParallel]
+		public Task NumberEditReadsTheUsersCommaDecimal() => UnderGerman(async () =>
+		{
+			// A German keyboard writes "2,5"; an invariant read with group separators made that 25.
+			var edit = new InternalNumberEdit(0, 12, true, true, -100, 100, 1, 0);
+			edit.Text = "2,5";
+			await Assert.That(edit.Value).IsEqualTo(2.5);
+
+			// and the comma can be typed at all
+			edit.Text = "3";
+			edit.CharIndexToInsertBefore = 1;
+			var comma = new KeyPressEventArgs(',');
+			edit.OnKeyPress(comma);
+			edit.OnKeyPress(new KeyPressEventArgs('5'));
+			await Assert.That(edit.Text).IsEqualTo("3,5");
+			await Assert.That(edit.Value).IsEqualTo(3.5);
+		});
+
+		[Test]
+		[NotInParallel]
+		public async Task NumberEditDoesNotReadACommaAsAGroupSeparator()
+		{
+			var previous = CultureInfo.CurrentCulture;
+			try
+			{
+				CultureInfo.CurrentCulture = new CultureInfo("en-US");
+				// ',' is not a decimal here and cannot be typed; text that holds one is not a number
+				var edit = new InternalNumberEdit(0, 12, true, true, -100, 100, 1, 0);
+				edit.Text = "2,5";
+				await Assert.That(edit.Value).IsEqualTo(0);
+				edit.Text = "2.5";
+				await Assert.That(edit.Value).IsEqualTo(2.5);
+			}
+			finally
+			{
+				CultureInfo.CurrentCulture = previous;
+			}
+		}
+
+		[Test]
+		[NotInParallel]
 		public Task GameDataVector2RoundTrips() => UnderGerman(async () =>
 		{
 			// XmlWriter always writes numbers invariantly, so the reader must read them that way too.

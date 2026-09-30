@@ -35,9 +35,11 @@ using System.Linq;
 namespace MatterHackers.Agg.UI
 {
 	/// <remarks>
-	/// Only '.' can be typed as the decimal separator (see the allowed characters below), so the text is
-	/// read and written with the invariant culture: on a comma-decimal machine the current culture would
-	/// read a typed "1.5" as 15 and show 1.5 as "1,5", which the field will not let the user edit.
+	/// The field writes its text with the invariant culture ('.'), and reads what the user typed the way
+	/// they may have typed it: invariant first, then the machine's own decimal separator, so on a
+	/// comma-decimal machine both "2.5" and "2,5" are 2.5. Neither read allows group separators - a
+	/// current-culture read with them takes the '.' of "1.5" as a thousands mark under de-DE (15), and an
+	/// invariant one takes the ',' of "2,5" as one (25).
 	/// </remarks>
 	public class InternalNumberEdit : InternalTextEditWidget
 	{
@@ -93,6 +95,11 @@ namespace MatterHackers.Agg.UI
 			if (allowDecimals)
 			{
 				allowedChars.Add('.');
+				// a comma-decimal keyboard writes its own separator, and ReadsAsNumber understands it
+				foreach (var separator in DecimalSeparator)
+				{
+					allowedChars.Add(separator);
+				}
 			}
 			else
 			{
@@ -222,8 +229,7 @@ namespace MatterHackers.Agg.UI
 					return errorReturn;
 				}
 
-				double value = minValue;
-				if (double.TryParse(Text, CultureInfo.InvariantCulture, out value))
+				if (ReadsAsNumber(Text, out double value))
 				{
 					return value;
 				}
@@ -246,8 +252,7 @@ namespace MatterHackers.Agg.UI
 				}
 				else // lets make sure it has the same text as the value
 				{
-					double currentValue;
-					if (double.TryParse(Text, CultureInfo.InvariantCulture, out currentValue))
+					if (ReadsAsNumber(Text, out _))
 					{
 						// the text does not match the value so set it
 						Text = newValue.ToString(format, CultureInfo.InvariantCulture);
@@ -354,7 +359,7 @@ namespace MatterHackers.Agg.UI
 			var typed = TextAfterTyping(keyChar);
 
 			// the starts of a number, on their way to being one
-			if (typed == "." && allowDecimals)
+			if ((typed == "." || typed == DecimalSeparator) && allowDecimals)
 			{
 				return true;
 			}
@@ -364,7 +369,7 @@ namespace MatterHackers.Agg.UI
 				return true;
 			}
 
-			if (typed == "-." && allowDecimals && allowNegatives)
+			if ((typed == "-." || typed == "-" + DecimalSeparator) && allowDecimals && allowNegatives)
 			{
 				return true;
 			}
@@ -377,7 +382,21 @@ namespace MatterHackers.Agg.UI
 				return true;
 			}
 
-			return double.TryParse(typed, CultureInfo.InvariantCulture, out _);
+			return ReadsAsNumber(typed, out _);
+		}
+
+		/// <summary>The decimal separator the user's keyboard writes, "," on a comma-decimal machine.</summary>
+		private static string DecimalSeparator => CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+
+		/// <summary>
+		/// Reads text a user typed: invariant first, so "1.5" is 1.5 everywhere, then the machine's own
+		/// culture, so "1,5" is 1.5 on a comma-decimal machine. See the class remarks for why neither read
+		/// allows group separators.
+		/// </summary>
+		public static bool ReadsAsNumber(string text, out double value)
+		{
+			return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value)
+				|| double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value);
 		}
 
 		/// <summary>
