@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
@@ -470,7 +471,7 @@ namespace MatterHackers.VectorMath
 
 		public override string ToString()
 		{
-			return string.Format("min {0} - max {1}", MinXYZ, MaxXYZ);
+			return string.Format(CultureInfo.InvariantCulture, "min {0} - max {1}", MinXYZ, MaxXYZ);
 		}
 
 		private bool ValidDouble(double value, double largestPossibleValue)

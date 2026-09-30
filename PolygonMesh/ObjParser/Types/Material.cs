@@ -44,15 +44,15 @@ namespace ObjParser.Types
             StringBuilder b = new StringBuilder();
             b.AppendLine("newmtl " + Name);
 
-            b.AppendLine(string.Format("Ka {0}", AmbientReflectivity));
-            b.AppendLine(string.Format("Kd {0}", DiffuseReflectivity));
-            b.AppendLine(string.Format("Ks {0}", SpecularReflectivity));
-            b.AppendLine(string.Format("Tf {0}", TransmissionFilter));
-            b.AppendLine(string.Format("Ke {0}", EmissiveCoefficient));
-            b.AppendLine(string.Format("Ns {0}", SpecularExponent));
-            b.AppendLine(string.Format("Ni {0}", OpticalDensity));
-            b.AppendLine(string.Format("d {0}", Dissolve));
-            b.AppendLine(string.Format("illum {0}", IlluminationModel));
+            b.AppendLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Ka {0}", AmbientReflectivity));
+            b.AppendLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Kd {0}", DiffuseReflectivity));
+            b.AppendLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Ks {0}", SpecularReflectivity));
+            b.AppendLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Tf {0}", TransmissionFilter));
+            b.AppendLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Ke {0}", EmissiveCoefficient));
+            b.AppendLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Ns {0}", SpecularExponent));
+            b.AppendLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "Ni {0}", OpticalDensity));
+            b.AppendLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "d {0}", Dissolve));
+            b.AppendLine(string.Format(System.Globalization.CultureInfo.InvariantCulture, "illum {0}", IlluminationModel));
 
             return b.ToString();
         }

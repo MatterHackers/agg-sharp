@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -44,7 +45,7 @@ namespace g3
 				nTotalE += 0;
 				mapV[mi] = new int[vMeshes[mi].Mesh.MaxVertexID];
 			}
-			writer.WriteLine(string.Format("{0} {1} {2}", nTotalV, nTotalT, nTotalE));
+			writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "{0} {1} {2}", nTotalV, nTotalT, nTotalE));
 
 
 			// write all vertices, and construct vertex re-map
@@ -60,7 +61,7 @@ namespace g3
 				foreach (int vid in mesh.VertexIndices())
 				{
 					Vector3d v = mesh.GetVertex(vid);
-					writer.WriteLine(three_floats, v.x, v.y, v.z);
+					writer.WriteLine(string.Format(CultureInfo.InvariantCulture, three_floats, v.x, v.y, v.z));
 					mapV[mi][vid] = vi;
 					vi++;
 				}
@@ -81,7 +82,7 @@ namespace g3
 					t[0] = mapV[mi][t[0]];
 					t[1] = mapV[mi][t[1]];
 					t[2] = mapV[mi][t[2]];
-					writer.WriteLine(string.Format("3 {0} {1} {2}", t[0], t[1], t[2]));
+					writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "3 {0} {1} {2}", t[0], t[1], t[2]));
 				}
 			}
 

@@ -25,6 +25,7 @@ SOFTWARE.
 #endregion --- License ---
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Newtonsoft.Json;
 
@@ -881,7 +882,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public override string ToString()
 		{
-			return String.Format("({0}, {1})", X, Y);
+			return String.Format(CultureInfo.InvariantCulture, "({0}, {1})", X, Y);
 		}
 
 		#endregion public override string ToString()

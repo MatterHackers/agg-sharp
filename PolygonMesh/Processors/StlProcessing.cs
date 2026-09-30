@@ -148,7 +148,7 @@ namespace MatterHackers.PolygonMesh.Processors
 		public static Mesh Load(string fileName, CancellationToken cancellationToken, Action<double, string> reportProgress = null)
 		{
 			// Early exit if not STL
-			if (Path.GetExtension(fileName).ToUpper() != ".STL")
+			if (Path.GetExtension(fileName).ToUpperInvariant() != ".STL")
 			{
 				return null;
 			}
@@ -324,14 +324,9 @@ namespace MatterHackers.PolygonMesh.Processors
 			var time = new Stopwatch();
 			time.Start();
 
-			// This runs on whichever thread first advances the walk, and does NOT hold across the async
-			// path's chunk boundaries: after a yield the continuation can resume on another thread, carrying
-			// that thread's culture. The parse is safe from that because it never relies on the ambient
-			// culture - Convert parses through the explicit Culture field and every text comparison here is
-			// ordinal. Do not add culture-dependent parsing below on the strength of this line. It stays
-			// because it is a side effect on the caller's thread that predates the split and something may
-			// lean on it.
-			Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
+			// The parse never relies on the thread's culture - Convert parses through the explicit Culture field and
+			// every text comparison here is ordinal - so it does not set one: a set would leak into the caller and
+			// could not follow the async path's continuations onto another thread anyway.
 
 			if (stlStream == null)
 			{
@@ -515,7 +510,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			time.Stop();
             if (time.Elapsed.TotalSeconds > 1)
             {
-                Debug.WriteLine($"STL Load Time: {time.Elapsed.TotalSeconds.ToString("0.00")} seconds");
+                Debug.WriteLine($"STL Load Time: {time.Elapsed.TotalSeconds.ToString("0.00", CultureInfo.InvariantCulture)} seconds");
             }
 
 			stlStream.Close();

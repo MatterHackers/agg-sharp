@@ -38,3 +38,25 @@ dotnet_diagnostic.VSTHRD114.severity = none
 dotnet_diagnostic.VSTHRD115.severity = none
 dotnet_diagnostic.VSTHRD200.severity = none
 dotnet_diagnostic.VSTHRD201.severity = none
+
+# Culture: the I/O folders read and write stored text (files, settings, formulas), which must be the same
+# on every machine whatever the thread's culture. So in these folders a Parse, ToString, string.Format,
+# ToLower or ToUpper that leans on the current culture is an error: CA1305 (pass an IFormatProvider),
+# CA1304 (pass a CultureInfo), CA1311 (say which culture ToLower/ToUpper uses). The sites that were
+# already there carry `#pragma warning disable CAxxxx // culture step N`, naming the MatterCAD's docs/culture_plan.md
+# step that fixes them; MatterCAD's CultureComplianceTests counts those pragmas so they can only go down.
+
+[PolygonMesh/Processors/**.cs]
+dotnet_diagnostic.CA1304.severity = error
+dotnet_diagnostic.CA1305.severity = error
+dotnet_diagnostic.CA1311.severity = error
+
+[VectorMath/**.cs]
+dotnet_diagnostic.CA1304.severity = error
+dotnet_diagnostic.CA1305.severity = error
+dotnet_diagnostic.CA1311.severity = error
+
+[geometry3Sharp/io/**.cs]
+dotnet_diagnostic.CA1304.severity = error
+dotnet_diagnostic.CA1305.severity = error
+dotnet_diagnostic.CA1311.severity = error

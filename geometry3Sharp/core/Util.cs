@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -163,7 +164,7 @@ namespace g3
 		{
 			try
 			{
-				return int.Parse(s);
+				return int.Parse(s, CultureInfo.InvariantCulture);
 			}
 			catch
 			{
@@ -174,7 +175,7 @@ namespace g3
 		{
 			try
 			{
-				return float.Parse(s);
+				return float.Parse(s, CultureInfo.InvariantCulture);
 			}
 			catch
 			{
@@ -185,7 +186,7 @@ namespace g3
 		{
 			try
 			{
-				return double.Parse(s);
+				return double.Parse(s, CultureInfo.InvariantCulture);
 			}
 			catch
 			{

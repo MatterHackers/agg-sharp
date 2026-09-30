@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -395,7 +396,7 @@ namespace g3
 			}
 			else
 			{
-				throw new Exception("gSerialization.Restore: IParametricCurve2D : unknown curve type " + nType.ToString());
+				throw new Exception("gSerialization.Restore: IParametricCurve2D : unknown curve type " + nType.ToString(CultureInfo.InvariantCulture));
 			}
 		}
 

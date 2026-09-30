@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -191,7 +192,7 @@ namespace g3
 			int vi = 3 * vertIdx.a;
 			if (vertIdx.a < 0 || vertIdx.a >= vPositions.Length / 3)
 			{
-				emit_warning("[OBJReader] append_vertex() referencing invalid vertex " + vertIdx.a.ToString());
+				emit_warning("[OBJReader] append_vertex() referencing invalid vertex " + vertIdx.a.ToString(CultureInfo.InvariantCulture));
 				return -1;
 			}
 
@@ -234,7 +235,7 @@ namespace g3
 			int v2 = mapV[t.vIndices[2] - 1];
 			if (v0 == -1 || v1 == -1 || v2 == -1)
 			{
-				emit_warning(string.Format("[OBJReader] invalid triangle:  {0} {1} {2}  mapped to {3} {4} {5}",
+				emit_warning(string.Format(CultureInfo.InvariantCulture, "[OBJReader] invalid triangle:  {0} {1} {2}  mapped to {3} {4} {5}",
 					t.vIndices[0], t.vIndices[1], t.vIndices[2], v0, v1, v2));
 				return -1;
 			}
@@ -246,7 +247,7 @@ namespace g3
 		{
 			if (t.vIndices[0] < 0 || t.vIndices[1] < 0 || t.vIndices[2] < 0)
 			{
-				emit_warning(string.Format("[OBJReader] invalid triangle:  {0} {1} {2}",
+				emit_warning(string.Format(CultureInfo.InvariantCulture, "[OBJReader] invalid triangle:  {0} {1} {2}",
 					t.vIndices[0], t.vIndices[1], t.vIndices[2]));
 				return -1;
 			}
@@ -428,20 +429,20 @@ namespace g3
 						{
 							if (tokens.Length == 7)
 							{
-								vPositions.Add(Double.Parse(tokens[1]));
-								vPositions.Add(Double.Parse(tokens[2]));
-								vPositions.Add(Double.Parse(tokens[3]));
+								vPositions.Add(Double.Parse(tokens[1], CultureInfo.InvariantCulture));
+								vPositions.Add(Double.Parse(tokens[2], CultureInfo.InvariantCulture));
+								vPositions.Add(Double.Parse(tokens[3], CultureInfo.InvariantCulture));
 
-								vColors.Add(float.Parse(tokens[4]));
-								vColors.Add(float.Parse(tokens[5]));
-								vColors.Add(float.Parse(tokens[6]));
+								vColors.Add(float.Parse(tokens[4], CultureInfo.InvariantCulture));
+								vColors.Add(float.Parse(tokens[5], CultureInfo.InvariantCulture));
+								vColors.Add(float.Parse(tokens[6], CultureInfo.InvariantCulture));
 								bVerticesHaveColors = true;
 							}
 							else if (tokens.Length >= 4)
 							{
-								vPositions.Add(Double.Parse(tokens[1]));
-								vPositions.Add(Double.Parse(tokens[2]));
-								vPositions.Add(Double.Parse(tokens[3]));
+								vPositions.Add(Double.Parse(tokens[1], CultureInfo.InvariantCulture));
+								vPositions.Add(Double.Parse(tokens[2], CultureInfo.InvariantCulture));
+								vPositions.Add(Double.Parse(tokens[3], CultureInfo.InvariantCulture));
 
 							}
 							if (tokens.Length != 4 && tokens.Length != 7)
@@ -453,9 +454,9 @@ namespace g3
 						{
 							if (tokens.Length >= 4)
 							{
-								vNormals.Add(float.Parse(tokens[1]));
-								vNormals.Add(float.Parse(tokens[2]));
-								vNormals.Add(float.Parse(tokens[3]));
+								vNormals.Add(float.Parse(tokens[1], CultureInfo.InvariantCulture));
+								vNormals.Add(float.Parse(tokens[2], CultureInfo.InvariantCulture));
+								vNormals.Add(float.Parse(tokens[3], CultureInfo.InvariantCulture));
 							}
 							if (tokens.Length != 4)
 							{
@@ -466,8 +467,8 @@ namespace g3
 						{
 							if (tokens.Length >= 3)
 							{
-								vUVs.Add(float.Parse(tokens[1]));
-								vUVs.Add(float.Parse(tokens[2]));
+								vUVs.Add(float.Parse(tokens[1], CultureInfo.InvariantCulture));
+								vUVs.Add(float.Parse(tokens[2], CultureInfo.InvariantCulture));
 								nMaxUVLength = Math.Max(nMaxUVLength, tokens.Length);
 							}
 							if (tokens.Length != 3)
@@ -559,7 +560,7 @@ namespace g3
 				}
 				catch (Exception e)
 				{
-					emit_warning("error parsing line " + nLines.ToString() + ": " + line + ", exception " + e.Message);
+					emit_warning("error parsing line " + nLines.ToString(CultureInfo.InvariantCulture) + ": " + line + ", exception " + e.Message);
 
 				}
 
@@ -576,7 +577,7 @@ namespace g3
 
 		private int parse_v(string sToken)
 		{
-			int vi = int.Parse(sToken);
+			int vi = int.Parse(sToken, CultureInfo.InvariantCulture);
 			if (vi < 0)
 			{
 				vi = (vPositions.Length / 3) + vi + 1;
@@ -586,7 +587,7 @@ namespace g3
 		}
 		private int parse_n(string sToken)
 		{
-			int vi = int.Parse(sToken);
+			int vi = int.Parse(sToken, CultureInfo.InvariantCulture);
 			if (vi < 0)
 			{
 				vi = (vNormals.Length / 3) + vi + 1;
@@ -596,7 +597,7 @@ namespace g3
 		}
 		private int parse_u(string sToken)
 		{
-			int vi = int.Parse(sToken);
+			int vi = int.Parse(sToken, CultureInfo.InvariantCulture);
 			if (vi < 0)
 			{
 				vi = (vUVs.Length / 2) + vi + 1;
@@ -842,42 +843,42 @@ namespace g3
 				{
 					if (curMaterial != null)
 					{
-						curMaterial.illum = int.Parse(tokens[1]);
+						curMaterial.illum = int.Parse(tokens[1], CultureInfo.InvariantCulture);
 					}
 				}
 				else if (tokens[0] == "d")
 				{
 					if (curMaterial != null)
 					{
-						curMaterial.d = Single.Parse(tokens[1]);
+						curMaterial.d = Single.Parse(tokens[1], CultureInfo.InvariantCulture);
 					}
 				}
 				else if (tokens[0] == "Tr")
 				{     // alternate to d/alpha, [Tr]ansparency is 1-d
 					if (curMaterial != null)
 					{
-						curMaterial.d = 1.0f - Single.Parse(tokens[1]);
+						curMaterial.d = 1.0f - Single.Parse(tokens[1], CultureInfo.InvariantCulture);
 					}
 				}
 				else if (tokens[0] == "Ns")
 				{
 					if (curMaterial != null)
 					{
-						curMaterial.Ns = Single.Parse(tokens[1]);
+						curMaterial.Ns = Single.Parse(tokens[1], CultureInfo.InvariantCulture);
 					}
 				}
 				else if (tokens[0] == "sharpness")
 				{
 					if (curMaterial != null)
 					{
-						curMaterial.sharpness = Single.Parse(tokens[1]);
+						curMaterial.sharpness = Single.Parse(tokens[1], CultureInfo.InvariantCulture);
 					}
 				}
 				else if (tokens[0] == "Ni")
 				{
 					if (curMaterial != null)
 					{
-						curMaterial.Ni = Single.Parse(tokens[1]);
+						curMaterial.Ni = Single.Parse(tokens[1], CultureInfo.InvariantCulture);
 					}
 				}
 				else if (tokens[0] == "map_Ka")
@@ -992,9 +993,9 @@ namespace g3
 			}
 			else
 			{
-				float r = float.Parse(tokens[1]);
-				float g = float.Parse(tokens[2]);
-				float b = float.Parse(tokens[3]);
+				float r = float.Parse(tokens[1], CultureInfo.InvariantCulture);
+				float g = float.Parse(tokens[2], CultureInfo.InvariantCulture);
+				float b = float.Parse(tokens[3], CultureInfo.InvariantCulture);
 				return new Vector3f(r, g, b);
 			}
 		}

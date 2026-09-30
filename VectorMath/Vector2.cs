@@ -1009,7 +1009,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public override string ToString()
 		{
-			return String.Format("({0}, {1})", X, Y);
+			return String.Format(CultureInfo.InvariantCulture, "({0}, {1})", X, Y);
 		}
 
 		#endregion public override string ToString()

@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -123,16 +124,16 @@ namespace ObjParser
                         CurrentMaterial.TransmissionFilter = c;
                         break;
                     case "Ni":
-                        CurrentMaterial.OpticalDensity = float.Parse(parts[1]);
+                        CurrentMaterial.OpticalDensity = float.Parse(parts[1], CultureInfo.InvariantCulture);
                         break;
                     case "d":
-                        CurrentMaterial.Dissolve = float.Parse(parts[1]);
+                        CurrentMaterial.Dissolve = float.Parse(parts[1], CultureInfo.InvariantCulture);
                         break;
                     case "illum":
-                        CurrentMaterial.IlluminationModel = int.Parse(parts[1]);
+                        CurrentMaterial.IlluminationModel = int.Parse(parts[1], CultureInfo.InvariantCulture);
                         break;
                     case "Ns":
-                        CurrentMaterial.SpecularExponent = float.Parse(parts[1]);
+                        CurrentMaterial.SpecularExponent = float.Parse(parts[1], CultureInfo.InvariantCulture);
                         break;
                 }
             }

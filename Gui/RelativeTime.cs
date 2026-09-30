@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 
 namespace MatterHackers.Agg.UI
 {
@@ -102,7 +103,10 @@ namespace MatterHackers.Agg.UI
 
 		public static string GetDetail(TimeBlock timeBlock, DateTime timeToDescribe)
 		{
-			string time = timeToDescribe.ToString("h:mm tt");
+			// The culture's own short time ("3:13 PM" in en-US, "15:13" in de-DE): a fixed "h:mm tt" puts a
+			// 12-hour clock with AM/PM in front of a reader whose clock has 24 hours. ICU puts a narrow no-break
+			// space (U+202F) before "PM", which the UI fonts need not carry, so it is shown as a plain space.
+			string time = timeToDescribe.ToString("t", CultureInfo.CurrentCulture).Replace(' ', ' ');
 			switch (timeBlock)
 			{
 				case TimeBlock.Future:

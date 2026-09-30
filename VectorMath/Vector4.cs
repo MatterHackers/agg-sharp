@@ -896,7 +896,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public override string ToString()
 		{
-			return String.Format("{0}, {1}, {2}, {3}", X, Y, Z, W);
+			return String.Format(System.Globalization.CultureInfo.InvariantCulture, "{0}, {1}, {2}, {3}", X, Y, Z, W);
 		}
 
 		/// <summary>
@@ -906,7 +906,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public string ToString(string format = "")
 		{
-			return X.ToString(format) + ", " + Y.ToString(format) + ", " + Z.ToString(format) + ", " + W.ToString(format);
+			return X.ToString(format, System.Globalization.CultureInfo.InvariantCulture) + ", " + Y.ToString(format, System.Globalization.CultureInfo.InvariantCulture) + ", " + Z.ToString(format, System.Globalization.CultureInfo.InvariantCulture) + ", " + W.ToString(format, System.Globalization.CultureInfo.InvariantCulture);
 		}
 
 		#endregion public override string ToString()

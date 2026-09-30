@@ -24,14 +24,14 @@ namespace ObjParser.Types
         public void LoadFromStringArray(string[] data)
         {
             if (data.Length != 4) return;
-            r = float.Parse(data[1]);
-            g = float.Parse(data[2]);
-            b = float.Parse(data[3]);
+            r = float.Parse(data[1], CultureInfo.InvariantCulture);
+            g = float.Parse(data[2], CultureInfo.InvariantCulture);
+            b = float.Parse(data[3], CultureInfo.InvariantCulture);
         }
 
         public override string ToString()
         {
-            return string.Format("{0} {1} {2}", r, g, b);
+            return string.Format(CultureInfo.InvariantCulture, "{0} {1} {2}", r, g, b);
         }
     }
 }

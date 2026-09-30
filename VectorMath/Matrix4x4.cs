@@ -1301,7 +1301,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public override string ToString()
 		{
-			return string.Format($"{Row0},  {Row1},  {Row2},  {Row3}");
+			return FormattableString.Invariant($"{Row0},  {Row1},  {Row2},  {Row3}");
 		}
 
 		public string ToString(string format)
@@ -1311,26 +1311,26 @@ namespace MatterHackers.VectorMath
 			{
 				string header = $"| C0 | C1 | C2 | C3 |\n";
 				string seperator = $"| --- | --- | --- | --- |\n";
-				string row0 = $"| {Row0[0].ToString(format)} | {Row0[1].ToString(format)} | {Row0[2].ToString(format)} | {Row0[3].ToString(format)} |\n";
-                string row1 = $"| {Row1[0].ToString(format)} | {Row1[1].ToString(format)} | {Row1[2].ToString(format)} | {Row1[3].ToString(format)} |\n";
-                string row2 = $"| {Row2[0].ToString(format)} | {Row2[1].ToString(format)} | {Row2[2].ToString(format)} | {Row2[3].ToString(format)} |\n";
-                string row3 = $"| {Row3[0].ToString(format)} | {Row3[1].ToString(format)} | {Row3[2].ToString(format)} | {Row3[3].ToString(format)} |\n";
+				string row0 = $"| {Row0[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row0[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row0[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row0[3].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} |\n";
+                string row1 = $"| {Row1[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row1[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row1[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row1[3].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} |\n";
+                string row2 = $"| {Row2[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row2[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row2[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row2[3].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} |\n";
+                string row3 = $"| {Row3[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row3[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row3[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} | {Row3[3].ToString(format, System.Globalization.CultureInfo.InvariantCulture)} |\n";
 
                 return $"{header}{seperator}{row0}{row1}{row2}{row3}";
 			}
 			else
 			{
-				var culumn0Width = Math.Max(Math.Max(Row0[0].ToString(format).Length, Row1[0].ToString(format).Length), Math.Max(Row2[0].ToString(format).Length, Row3[0].ToString(format).Length));
-				var culumn1Width = Math.Max(Math.Max(Row0[1].ToString(format).Length, Row1[1].ToString(format).Length), Math.Max(Row2[1].ToString(format).Length, Row3[1].ToString(format).Length));
-				var culumn2Width = Math.Max(Math.Max(Row0[2].ToString(format).Length, Row1[2].ToString(format).Length), Math.Max(Row2[2].ToString(format).Length, Row3[2].ToString(format).Length));
+				var culumn0Width = Math.Max(Math.Max(Row0[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length, Row1[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length), Math.Max(Row2[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length, Row3[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length));
+				var culumn1Width = Math.Max(Math.Max(Row0[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length, Row1[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length), Math.Max(Row2[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length, Row3[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length));
+				var culumn2Width = Math.Max(Math.Max(Row0[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length, Row1[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length), Math.Max(Row2[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length, Row3[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture).Length));
 
 				// add leading 0s and format to the same width
-				string row0 = $"{Row0[0].ToString(format).PadLeft(culumn0Width, '0')}, {Row0[1].ToString(format).PadLeft(culumn1Width, '0')}, {Row0[2].ToString(format).PadLeft(culumn2Width, '0')}, {Row0[3].ToString(format)}\n";
-				string row1 = $"{Row1[0].ToString(format).PadLeft(culumn0Width, '0')}, {Row1[1].ToString(format).PadLeft(culumn1Width, '0')}, {Row1[2].ToString(format).PadLeft(culumn2Width, '0')}, {Row1[3].ToString(format)}\n";
-				string row2 = $"{Row2[0].ToString(format).PadLeft(culumn0Width, '0')}, {Row2[1].ToString(format).PadLeft(culumn1Width, '0')}, {Row2[2].ToString(format).PadLeft(culumn2Width, '0')}, {Row2[3].ToString(format)}\n";
-				string row3 = $"{Row3[0].ToString(format).PadLeft(culumn0Width, '0')}, {Row3[1].ToString(format).PadLeft(culumn1Width, '0')}, {Row3[2].ToString(format).PadLeft(culumn2Width, '0')}, {Row3[3].ToString(format)}\n";
+				string row0 = $"{Row0[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn0Width, '0')}, {Row0[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn1Width, '0')}, {Row0[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn2Width, '0')}, {Row0[3].ToString(format, System.Globalization.CultureInfo.InvariantCulture)}\n";
+				string row1 = $"{Row1[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn0Width, '0')}, {Row1[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn1Width, '0')}, {Row1[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn2Width, '0')}, {Row1[3].ToString(format, System.Globalization.CultureInfo.InvariantCulture)}\n";
+				string row2 = $"{Row2[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn0Width, '0')}, {Row2[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn1Width, '0')}, {Row2[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn2Width, '0')}, {Row2[3].ToString(format, System.Globalization.CultureInfo.InvariantCulture)}\n";
+				string row3 = $"{Row3[0].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn0Width, '0')}, {Row3[1].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn1Width, '0')}, {Row3[2].ToString(format, System.Globalization.CultureInfo.InvariantCulture).PadLeft(culumn2Width, '0')}, {Row3[3].ToString(format, System.Globalization.CultureInfo.InvariantCulture)}\n";
 
-				return string.Format($"{row0}\n{row1}\n{row2}\n{row3}");
+				return FormattableString.Invariant($"{row0}\n{row1}\n{row2}\n{row3}");
 			}
 		}
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -68,8 +69,8 @@ namespace g3
 					return new IOReadResult(IOCode.FileParsingError, "first non-comment line of OFF must be vertex/tri/edge counts, found: " + line);
 				}
 
-				nVertexCount = int.Parse(tokens[0]);
-				nTriangleCount = int.Parse(tokens[1]);
+				nVertexCount = int.Parse(tokens[0], CultureInfo.InvariantCulture);
+				nTriangleCount = int.Parse(tokens[1], CultureInfo.InvariantCulture);
 				//int nEdgeCount = int.Parse(tokens[2]);
 				break;
 			}
@@ -98,16 +99,16 @@ namespace g3
 					emit_warning("found invalid OFF vertex line: " + line);
 				}
 
-				double x = Double.Parse(tokens[0]);
-				double y = Double.Parse(tokens[1]);
-				double z = Double.Parse(tokens[2]);
+				double x = Double.Parse(tokens[0], CultureInfo.InvariantCulture);
+				double y = Double.Parse(tokens[1], CultureInfo.InvariantCulture);
+				double z = Double.Parse(tokens[2], CultureInfo.InvariantCulture);
 				builder.AppendVertex(x, y, z);
 				vi++;
 			}
 			if (vi < nVertexCount)
 			{
 				return new IOReadResult(IOCode.FileParsingError,
-					string.Format("File specified {0} vertices but only found {1}", nVertexCount, vi));
+					string.Format(CultureInfo.InvariantCulture, "File specified {0} vertices but only found {1}", nVertexCount, vi));
 			}
 
 			int ti = 0;
@@ -131,22 +132,22 @@ namespace g3
 					emit_warning("found invalid OFF triangle line: " + line);
 				}
 
-				int nV = int.Parse(tokens[0]);
+				int nV = int.Parse(tokens[0], CultureInfo.InvariantCulture);
 				if (nV != 3)
 				{
 					emit_warning("found non-triangle polygon in OFF, currently unsupported: " + line);
 				}
 
-				int a = int.Parse(tokens[1]);
-				int b = int.Parse(tokens[2]);
-				int c = int.Parse(tokens[3]);
+				int a = int.Parse(tokens[1], CultureInfo.InvariantCulture);
+				int b = int.Parse(tokens[2], CultureInfo.InvariantCulture);
+				int c = int.Parse(tokens[3], CultureInfo.InvariantCulture);
 
 				builder.AppendTriangle(a, b, c);
 				ti++;
 			}
 			if (ti < nTriangleCount)
 			{
-				emit_warning(string.Format("File specified {0} triangles but only found {1}", nTriangleCount, ti));
+				emit_warning(string.Format(CultureInfo.InvariantCulture, "File specified {0} triangles but only found {1}", nTriangleCount, ti));
 			}
 
 			return new IOReadResult(IOCode.Ok, "");

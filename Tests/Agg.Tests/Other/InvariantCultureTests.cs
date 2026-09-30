@@ -34,6 +34,7 @@ using System.Xml;
 using ClipperLib;
 using Gaming.Game;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Tests;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh;
@@ -53,7 +54,7 @@ namespace Agg.Tests.Other
 	/// </summary>
 	/// <remarks>
 	/// CurrentCulture is process-wide for any test that does not set its own, so every test is a keyless
-	/// <c>[NotInParallel]</c> and restores the culture in a finally block.
+	/// <c>[NotInParallel]</c> and runs under a <see cref="CultureScope"/>.
 	/// </remarks>
 	public class InvariantCultureTests
 	{
@@ -61,15 +62,9 @@ namespace Agg.Tests.Other
 
 		private static async Task UnderGerman(Func<Task> test)
 		{
-			CultureInfo saved = CultureInfo.CurrentCulture;
-			try
+			using (new CultureScope(German))
 			{
-				CultureInfo.CurrentCulture = German;
 				await test();
-			}
-			finally
-			{
-				CultureInfo.CurrentCulture = saved;
 			}
 		}
 
@@ -160,19 +155,92 @@ namespace Agg.Tests.Other
 
 		[Test]
 		[NotInParallel]
-		public Task NumberEditReadsAndWritesPointDecimals() => UnderGerman(async () =>
+		public Task NumberEditShowsTheUsersDecimalAndReadsBoth() => UnderGerman(async () =>
 		{
-			// The edit only lets '.' be typed, so its text must use '.' on every machine.
+			// The edit is what the user reads, so it shows their decimal comma; it still reads a typed '.'.
 			var edit = new InternalNumberEdit(1.5, 12, true, true, -100, 100, 1, 0);
-			await Assert.That(edit.Text).IsEqualTo("1.5");
+			await Assert.That(edit.Text).IsEqualTo("1,5");
 			await Assert.That(edit.Value).IsEqualTo(1.5);
 
 			edit.Text = "2.25";
 			await Assert.That(edit.Value).IsEqualTo(2.25);
 
 			edit.Value = 3.5;
-			await Assert.That(edit.Text).IsEqualTo("3.5");
+			await Assert.That(edit.Text).IsEqualTo("3,5");
+			await Assert.That(DisplayNumber.Format(1234.5)).IsEqualTo("1234,5");
 		});
+
+		/// <summary>
+		/// A thousands separator cannot be typed: "1.000" is one under de-DE, and the ',' that would make it
+		/// "1.000,5" is refused, as the ',' after "1" is under en-US.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		[Arguments("de-DE", "1.000", ',')]
+		[Arguments("en-US", "1", ',')]
+		public async Task NumberEditRefusesAGroupingSeparatorAsItIsTyped(string culture, string start, char grouping)
+		{
+			using (new CultureScope(CultureInfo.GetCultureInfo(culture)))
+			{
+				var edit = new InternalNumberEdit(0, 12, true, true, -10000, 10000, 1, 0);
+				edit.Text = start;
+				edit.CharIndexToInsertBefore = start.Length;
+				edit.OnKeyPress(new KeyPressEventArgs(grouping));
+				await Assert.That(edit.Text).IsEqualTo(start);
+			}
+		}
+
+		[Test]
+		[Arguments("de-DE", "1.000", true)]
+		[Arguments("de-DE", "12.500", true)]
+		[Arguments("de-DE", "1.000.000", true)]
+		[Arguments("de-DE", "-1.000", true)]
+		[Arguments("de-DE", "0.500", false)]
+		[Arguments("de-DE", "-0.250", false)]
+		[Arguments("de-DE", "1.5", false)]
+		[Arguments("de-DE", "2.25", false)]
+		[Arguments("de-DE", "1.0000", false)]
+		[Arguments("de-DE", "1234.500", false)]
+		[Arguments("en-US", "1,000", true)]
+		[Arguments("en-US", "1,000,000", true)]
+		[Arguments("en-US", "1.000", false)]
+		[Arguments("en-US", "12,5", false)]
+		public async Task AThousandsGroupedWholeNumberIsAmbiguous(string culture, string text, bool ambiguous)
+		{
+			await Assert.That(DisplayNumber.IsAmbiguousGrouping(text, CultureInfo.GetCultureInfo(culture))).IsEqualTo(ambiguous);
+		}
+
+		/// <summary>
+		/// Committing text the edit cannot read - a German "1.000" is a thousand or one - keeps the last value it
+		/// held rather than reading as 0, so every caller that takes Value at EditComplete gets a real number.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		[Arguments("de-DE", "1.000", "2,5")]
+		[Arguments("en-US", "1,000", "2.5")]
+		[Arguments("en-US", ".", "2.5")]
+		public async Task CommittingUnreadableTextKeepsTheLastValue(string culture, string typed, string shown)
+		{
+			using (new CultureScope(CultureInfo.GetCultureInfo(culture)))
+			{
+				var edit = new InternalNumberEdit(2.5, 12, true, true, -10000, 10000, 1, 0);
+				double committed = double.NaN;
+				edit.EditComplete += (s, e) => committed = edit.Value;
+
+				edit.Text = typed;
+				edit.OnEditComplete(EventArgs.Empty);
+
+				await Assert.That(committed).IsEqualTo(2.5);
+				await Assert.That(edit.Text).IsEqualTo(shown);
+
+				// a readable commit becomes the value kept next time
+				edit.Text = "4";
+				edit.OnEditComplete(EventArgs.Empty);
+				edit.Text = typed;
+				edit.OnEditComplete(EventArgs.Empty);
+				await Assert.That(committed).IsEqualTo(4);
+			}
+		}
 
 		[Test]
 		[NotInParallel]

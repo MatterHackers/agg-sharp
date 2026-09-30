@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -106,7 +107,7 @@ namespace g3
 					options.ProgressFunc(mi, vMeshes.Count - 1);
 				}
 
-				string solid_name = string.Format("mesh_{0}", mi);
+				string solid_name = string.Format(CultureInfo.InvariantCulture, "mesh_{0}", mi);
 				if (options.bCombineMeshes == false)
 				{
 					if (vMeshes[mi].Name != null && vMeshes[mi].Name.Length > 0)
@@ -114,7 +115,7 @@ namespace g3
 						solid_name = vMeshes[mi].Name;
 					}
 
-					writer.WriteLine("solid \"{0}\"", solid_name);
+					writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "solid \"{0}\"", solid_name));
 				}
 
 				foreach (int ti in mesh.TriangleIndices())
@@ -122,16 +123,16 @@ namespace g3
 					Index3i t = mesh.GetTriangle(ti);
 					Vector3d a = mesh.GetVertex(t.a), b = mesh.GetVertex(t.b), c = mesh.GetVertex(t.c);
 					Vector3d n = MathUtil.Normal(a, b, c);
-					writer.WriteLine("facet normal " + three_floats, n.x, n.y, n.z);
-					writer.WriteLine("outer loop" + writer.NewLine + "vertex " + three_floats, a.x, a.y, a.z);
-					writer.WriteLine("vertex " + three_floats, b.x, b.y, b.z);
-					writer.WriteLine("vertex " + three_floats, c.x, c.y, c.z);
+					writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "facet normal " + three_floats, n.x, n.y, n.z));
+					writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "outer loop" + writer.NewLine + "vertex " + three_floats, a.x, a.y, a.z));
+					writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "vertex " + three_floats, b.x, b.y, b.z));
+					writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "vertex " + three_floats, c.x, c.y, c.z));
 					writer.WriteLine("endloop" + writer.NewLine + "endfacet");
 				}
 
 				if (options.bCombineMeshes == false)
 				{
-					writer.WriteLine("endsolid \"{0}\"", solid_name);
+					writer.WriteLine(string.Format(CultureInfo.InvariantCulture, "endsolid \"{0}\"", solid_name));
 				}
 			}
 

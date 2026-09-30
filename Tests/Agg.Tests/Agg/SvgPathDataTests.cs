@@ -165,11 +165,8 @@ namespace MatterHackers.Agg.Tests
 		[NotInParallel]
 		public async Task WrittenPathDataIsCultureInvariant()
 		{
-			var originalCulture = Thread.CurrentThread.CurrentCulture;
-			try
+			using (new CultureScope("de-DE"))
 			{
-				Thread.CurrentThread.CurrentCulture = new CultureInfo("de-DE");
-
 				var storage = new VertexStorage();
 				storage.MoveTo(-1.25, 2.5);
 				storage.LineTo(10.75, 0.125);
@@ -183,10 +180,6 @@ namespace MatterHackers.Agg.Tests
 				await Assert.That(Regex.IsMatch(written, @"\d,\d")).IsFalse();
 				await Assert.That(written).Contains("-1.25");
 				await Assert.That(read.Vertices().Select(v => v.Position)).IsEquivalentTo(storage.Vertices().Select(v => v.Position), CollectionOrdering.Matching);
-			}
-			finally
-			{
-				Thread.CurrentThread.CurrentCulture = originalCulture;
 			}
 		}
 

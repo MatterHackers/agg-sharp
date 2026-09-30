@@ -25,6 +25,7 @@ SOFTWARE.
 #endregion --- License ---
 
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace MatterHackers.VectorMath
@@ -731,7 +732,7 @@ namespace MatterHackers.VectorMath
 		/// <returns></returns>
 		public override string ToString()
 		{
-			return String.Format("V: {0}, W: {1}", Xyz, W);
+			return String.Format(CultureInfo.InvariantCulture, "V: {0}, W: {1}", Xyz, W);
 		}
 
 		#endregion public override string ToString()

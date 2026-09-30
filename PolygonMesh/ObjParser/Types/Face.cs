@@ -61,11 +61,11 @@ namespace ObjParser.Types
             {
                 if (i < TextureVertexIndexList.Length)
                 {
-                    b.AppendFormat(" {0}/{1}", VertexIndexList[i], TextureVertexIndexList[i]);
+                    b.AppendFormat(System.Globalization.CultureInfo.InvariantCulture, " {0}/{1}", VertexIndexList[i], TextureVertexIndexList[i]);
                 }
                 else
                 {
-                    b.AppendFormat(" {0}", VertexIndexList[i]);
+                    b.AppendFormat(System.Globalization.CultureInfo.InvariantCulture, " {0}", VertexIndexList[i]);
                 }
             }
 

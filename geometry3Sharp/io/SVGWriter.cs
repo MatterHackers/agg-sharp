@@ -34,7 +34,7 @@ namespace g3
 				var b = new StringBuilder();
 				if (fill.Length > 0) { b.Append("fill:"); b.Append(fill); b.Append(';'); }
 				if (stroke.Length > 0) { b.Append("stroke:"); b.Append(stroke); b.Append(';'); }
-				if (stroke_width > 0) { b.Append("stroke-width:"); b.Append(stroke_width); b.Append(";"); }
+				if (stroke_width > 0) { b.Append("stroke-width:"); b.Append(stroke_width.ToString(CultureInfo.InvariantCulture)); b.Append(";"); }
 				return b.ToString();
 			}
 		}
@@ -191,13 +191,8 @@ namespace g3
 
 		public IOWriteResult Write(string sFilename)
 		{
-			var current_culture = Thread.CurrentThread.CurrentCulture;
-
 			try
 			{
-				// push invariant culture for write
-				Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-
 				using (var w = new StreamWriter(sFilename))
 				{
 					if (w.BaseStream == null)
@@ -247,14 +242,11 @@ namespace g3
 					w.WriteLine("</svg>");
 				}
 
-				// restore culture
-				Thread.CurrentThread.CurrentCulture = current_culture;
 				return IOWriteResult.Ok;
 
 			}
 			catch (Exception e)
 			{
-				Thread.CurrentThread.CurrentCulture = current_culture;
 				return new IOWriteResult(IOCode.WriterError, "Unknown error : exception : " + e.Message);
 			}
 		}
@@ -357,7 +349,7 @@ namespace g3
 			b.Append("xmlns=\"http://www.w3.org/2000/svg\" ");
 			b.Append("xmlns:xlink=\"http://www.w3.org/1999/xlink\" ");
 			b.Append("x=\"0px\" y=\"0px\" ");
-			b.Append(string.Format("viewBox=\"{0} {1} {2} {3}\" ",
+			b.Append(string.Format(CultureInfo.InvariantCulture, "viewBox=\"{0} {1} {2} {3}\" ",
 								   Math.Round(Bounds.Min.x - BoundsPad, Precision),
 								   Math.Round(Bounds.Min.y - BoundsPad, Precision),
 								   Math.Round(Bounds.Width + 2 * BoundsPad, Precision),
@@ -376,9 +368,9 @@ namespace g3
 			for (int i = 0; i < poly.VertexCount; ++i)
 			{
 				Vector2d v = MapPt(poly[i]);
-				b.Append(Math.Round(v.x, Precision));
+				b.Append(Math.Round(v.x, Precision).ToString(CultureInfo.InvariantCulture));
 				b.Append(',');
-				b.Append(Math.Round(v.y, Precision));
+				b.Append(Math.Round(v.y, Precision).ToString(CultureInfo.InvariantCulture));
 				if (i < poly.VertexCount - 1)
 				{
 					b.Append(' ');
@@ -400,9 +392,9 @@ namespace g3
 			for (int i = 0; i < poly.VertexCount; ++i)
 			{
 				Vector2d v = MapPt(poly[i]);
-				b.Append(Math.Round(v.x, Precision));
+				b.Append(Math.Round(v.x, Precision).ToString(CultureInfo.InvariantCulture));
 				b.Append(',');
-				b.Append(Math.Round(v.y, Precision));
+				b.Append(Math.Round(v.y, Precision).ToString(CultureInfo.InvariantCulture));
 				if (i < poly.VertexCount - 1)
 				{
 					b.Append(' ');
@@ -463,18 +455,18 @@ namespace g3
 
 			// move to start coordinates
 			b.Append("M");
-			b.Append(Math.Round(vStart.x, Precision));
+			b.Append(Math.Round(vStart.x, Precision).ToString(CultureInfo.InvariantCulture));
 			b.Append(",");
-			b.Append(Math.Round(vStart.y, Precision));
+			b.Append(Math.Round(vStart.y, Precision).ToString(CultureInfo.InvariantCulture));
 			b.Append(" ");
 
 			// start arc
 			b.Append("A");
 
 			// radii (write twice because this is actually elliptical arc)
-			b.Append(Math.Round(arc.Radius, Precision));
+			b.Append(Math.Round(arc.Radius, Precision).ToString(CultureInfo.InvariantCulture));
 			b.Append(",");
-			b.Append(Math.Round(arc.Radius, Precision));
+			b.Append(Math.Round(arc.Radius, Precision).ToString(CultureInfo.InvariantCulture));
 			b.Append(" ");
 
 			b.Append("0 ");     // x-axis-rotation
@@ -486,9 +478,9 @@ namespace g3
 			b.Append(sweep);
 
 			// end coordinates
-			b.Append(Math.Round(vEnd.x, Precision));
+			b.Append(Math.Round(vEnd.x, Precision).ToString(CultureInfo.InvariantCulture));
 			b.Append(",");
-			b.Append(Math.Round(vEnd.y, Precision));
+			b.Append(Math.Round(vEnd.y, Precision).ToString(CultureInfo.InvariantCulture));
 
 			b.Append("\" ");     // close path
 
@@ -553,7 +545,7 @@ namespace g3
 		void append_property(string name, double val, StringBuilder b, bool trailSpace = true)
 		{
 			b.Append(name); b.Append("=\"");
-			b.Append(Math.Round(val, Precision));
+			b.Append(Math.Round(val, Precision).ToString(CultureInfo.InvariantCulture));
 			if (trailSpace)
 			{
 				b.Append("\" ");

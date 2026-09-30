@@ -42,7 +42,7 @@ namespace ObjParser.Types
 
         public override string ToString()
         {
-            return string.Format("vt {0} {1}", X, Y);
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture, "vt {0} {1}", X, Y);
         }
     }
 }

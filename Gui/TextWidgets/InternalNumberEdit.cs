@@ -35,11 +35,9 @@ using System.Linq;
 namespace MatterHackers.Agg.UI
 {
 	/// <remarks>
-	/// The field writes its text with the invariant culture ('.'), and reads what the user typed the way
-	/// they may have typed it: invariant first, then the machine's own decimal separator, so on a
-	/// comma-decimal machine both "2.5" and "2,5" are 2.5. Neither read allows group separators - a
-	/// current-culture read with them takes the '.' of "1.5" as a thousands mark under de-DE (15), and an
-	/// invariant one takes the ',' of "2,5" as one (25).
+	/// The field shows its number in the user's culture and reads what they type both ways, through
+	/// <see cref="DisplayNumber"/>: on a comma-decimal machine it shows "2,5" and takes "2.5" or "2,5".
+	/// Keystrokes that would leave text it cannot read - a thousands separator - are refused as typed.
 	/// </remarks>
 	public class InternalNumberEdit : InternalTextEditWidget
 	{
@@ -50,6 +48,9 @@ namespace MatterHackers.Agg.UI
 		private bool allowNegatives;
 		private bool allowDecimals;
 
+		/// <summary>The last value set or committed; an unreadable entry falls back to it (see <see cref="OnEditComplete"/>).</summary>
+		private double lastValue;
+
 		public InternalNumberEdit(double startingValue,
 			double pointSize,
 			bool allowNegatives,
@@ -58,13 +59,14 @@ namespace MatterHackers.Agg.UI
 			double maxValue,
 			double increment,
 			int tabIndex)
-			: base(startingValue.ToString(CultureInfo.InvariantCulture),pointSize, false, tabIndex)
+			: base(DisplayNumber.Format(startingValue), pointSize, false, tabIndex)
 		{
 			this.allowDecimals = allowDecimals;
 			this.allowNegatives = allowNegatives;
 			this.minValue = minValue;
 			this.maxValue = maxValue;
 			this.increment = increment;
+			this.lastValue = startingValue;
 
 			MergeTypingDuringUndo = false;
 
@@ -246,20 +248,21 @@ namespace MatterHackers.Agg.UI
 				}
 
 				double newValue = ValidateRange(value);
+				lastValue = newValue;
 				if (newValue != Value)
 				{
-					Text = newValue.ToString(format, CultureInfo.InvariantCulture);
+					Text = DisplayNumber.Format(newValue, format);
 				}
 				else // lets make sure it has the same text as the value
 				{
 					if (ReadsAsNumber(Text, out _))
 					{
 						// the text does not match the value so set it
-						Text = newValue.ToString(format, CultureInfo.InvariantCulture);
+						Text = DisplayNumber.Format(newValue, format);
 					}
 					else // the text cannot be parsed so set it
 					{
-						Text = newValue.ToString(format, CultureInfo.InvariantCulture);
+						Text = DisplayNumber.Format(newValue, format);
 						CharIndexToInsertBefore = Text.Length;
 					}
 				}
@@ -309,6 +312,18 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnEditComplete(EventArgs e)
 		{
+			// Text the field cannot read - a German "1.000" (a thousand or one), a stray "." - would read as the
+			// error value (0), and every caller that takes Value here would commit that silently. It keeps the last
+			// value the field held instead; an expression ("=...") is the owner's to read and is left alone.
+			if (!(AllowExpressionEntry && Text.TrimStart().StartsWith("="))
+				&& TextValueParser?.Invoke(Text) == null
+				&& !ReadsAsNumber(Text, out _))
+			{
+				Value = lastValue;
+				base.OnEditComplete(e);
+				return;
+			}
+
 			// Reading the value decides where it came from, and writing it back rewrites the text - which
 			// sends any TextChanged listener through the getter again, clearing LastParsedText out from
 			// under the commit. Hold it across the write so the entry the user actually typed is still
@@ -382,7 +397,8 @@ namespace MatterHackers.Agg.UI
 				return true;
 			}
 
-			return ReadsAsNumber(typed, out _);
+			// "1.000" under de-DE is refused when committed, but has to be typeable on the way to "1.0005"
+			return ReadsAsNumber(typed, out _) || DisplayNumber.IsAmbiguousGrouping(typed, CultureInfo.CurrentCulture);
 		}
 
 		/// <summary>The decimal separator the user's keyboard writes, "," on a comma-decimal machine.</summary>
@@ -393,11 +409,7 @@ namespace MatterHackers.Agg.UI
 		/// culture, so "1,5" is 1.5 on a comma-decimal machine. See the class remarks for why neither read
 		/// allows group separators.
 		/// </summary>
-		public static bool ReadsAsNumber(string text, out double value)
-		{
-			return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value)
-				|| double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value);
-		}
+		public static bool ReadsAsNumber(string text, out double value) => DisplayNumber.TryRead(text, out value);
 
 		/// <summary>
 		/// The text this keystroke would leave behind, mirroring the insert the base class is about to do:

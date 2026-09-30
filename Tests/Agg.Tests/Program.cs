@@ -50,6 +50,9 @@ namespace Agg.Tests
 		public static int Main(string[] args)
 #pragma warning restore TUnit0034
 		{
+			// Before anything else, so every thread the run starts inherits it; see TestRunCulture.
+			MatterHackers.Agg.Tests.TestRunCulture.ApplyFromEnvironment();
+
 			// A child launched by a native-abort test runs its probe and exits without starting the test
 			// platform; see NativeAbortProbe.
 			if (MatterHackers.Agg.Tests.NativeAbortProbe.TryRun(args, out int probeExitCode))
