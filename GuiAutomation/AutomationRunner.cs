@@ -352,7 +352,9 @@ namespace MatterHackers.GuiAutomation
 				Thread.Sleep(checkInterval);
 			}
 
-			return false;
+			// One last look after the deadline: a zero-second wait never enters the loop, and the condition
+			// may have come true during the final sleep - either way the answer is the condition, not the clock.
+			return checkConditionSatisfied();
 		}
 
 		/// <summary>
@@ -1502,19 +1504,16 @@ namespace MatterHackers.GuiAutomation
 
 		public bool WaitForImage(ImageBuffer imageNeedle, double secondsToWait, SearchRegion searchRegion = null)
 		{
+			// The answer is the last look, not the clock (see WaitForName).
 			var timeWaited = Stopwatch.StartNew();
-			while (!ImageExists(imageNeedle)
+			bool found;
+			while (!(found = ImageExists(imageNeedle))
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
 				Delay(.05);
 			}
 
-			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
-			{
-				return false;
-			}
-
-			return true;
+			return found;
 		}
 
 		/// <summary>
@@ -1527,8 +1526,11 @@ namespace MatterHackers.GuiAutomation
 			try
 			{
 				// TODO: should have a search region
+				// The answer is the last look, not the clock: judged by elapsed time, a zero-second wait
+				// reported "not found" even with the widget on screen.
 				var timeWaited = Stopwatch.StartNew();
-				while (!NamedWidgetExists(widgetName, null, onlyVisible, predicate)
+				bool found;
+				while (!(found = NamedWidgetExists(widgetName, null, onlyVisible, predicate))
 					&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 				{
 					// The widget tree only changes on the UI thread, so asking again before it has run again
@@ -1537,12 +1539,7 @@ namespace MatterHackers.GuiAutomation
 					WaitForPendingUiWork(WidgetPollWaitMilliseconds);
 				}
 
-				if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
-				{
-					return false;
-				}
-
-				return true;
+				return found;
 			}
 			catch (Exception)
 			{
@@ -1556,8 +1553,10 @@ namespace MatterHackers.GuiAutomation
 		/// <param name="widgetName"></param>
 		public bool WaitForWidgetDisappear(string widgetName, double secondsToWait) // TODO: should have a search region
 		{
+			// As in WaitForName, the answer is the last look rather than the clock.
 			var timeWaited = Stopwatch.StartNew();
-			while (NamedWidgetExists(widgetName)
+			bool stillThere;
+			while ((stillThere = NamedWidgetExists(widgetName))
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
 				// Waiting on the UI thread's queue rather than the clock - the widget can only go away as a
@@ -1565,12 +1564,7 @@ namespace MatterHackers.GuiAutomation
 				WaitForPendingUiWork(WidgetPollWaitMilliseconds);
 			}
 
-			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
-			{
-				return false;
-			}
-
-			return true;
+			return !stillThere;
 		}
 
 		public AutomationRunner WaitForWidgetEnabled(string widgetName, double secondsToWait = DefaultWidgetWaitSeconds) // TODO: should have a search region
@@ -1589,16 +1583,17 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			widget = this.GetWidgetByName(widgetName, out SystemWindow _);
-			if (widget == null
-				|| this.WaitFor(() => widget.ActuallyVisibleOnScreen() && widget.Enabled,
-				secondsToWait - timeWaited.Elapsed.TotalSeconds) == null)
+			if (widget == null)
 			{
 				throw new Exception(WidgetNotFoundMessage("WaitForWidgetEnabled", widgetName));
 			}
 
-			if (timeWaited.Elapsed.TotalSeconds > secondsToWait)
+			// Decided by the widget's state, not the clock (WaitFor never returned null, so the old check
+			// could not fail, while the elapsed-time check failed any zero-second call on an enabled widget).
+			if (!StaticDelay(() => widget.ActuallyVisibleOnScreen() && widget.Enabled,
+				Math.Max(0, secondsToWait - timeWaited.Elapsed.TotalSeconds)))
 			{
-				throw new Exception($"WaitForWidgetEnabled Failed: Time elapsed [{secondsToWait}] seconds");
+				throw new Exception($"WaitForWidgetEnabled Failed: [{widgetName}] not visible and enabled after [{secondsToWait}] seconds");
 			}
 
 			return this;

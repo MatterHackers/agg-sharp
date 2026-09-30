@@ -78,6 +78,46 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// A zero-second wait is a single look: it answers whether the widget is there right now.
+		/// </summary>
+		/// <remarks>
+		/// The waits used to decide their answer by the clock (any elapsed time past secondsToWait meant
+		/// "not found"), so with 0 seconds they reported a missing widget even when it was on screen.
+		/// </remarks>
+		[Test]
+		public async Task ZeroSecondWaitsReportWhatIsThereNow()
+		{
+			var systemWindow = new SystemWindow(300, 200);
+
+			var present = new Button("present", 10, 40);
+			present.Name = "present";
+			systemWindow.AddChild(present);
+
+			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, async (testRunner) =>
+			{
+				testRunner.WaitForName("present");
+
+				await Assert.That(testRunner.WaitForName("present", 0)).IsTrue()
+					.Because("the widget is on screen, so a single look finds it");
+				await Assert.That(testRunner.NameExists("present", 0)).IsTrue()
+					.Because("NameExists is WaitForName by another name");
+				await Assert.That(testRunner.WaitForName("absent", 0)).IsFalse()
+					.Because("no widget has that name");
+				await Assert.That(testRunner.WaitForWidgetDisappear("absent", 0)).IsTrue()
+					.Because("a widget that is not there has already disappeared");
+				await Assert.That(testRunner.WaitForWidgetDisappear("present", 0)).IsFalse()
+					.Because("the widget is still on screen");
+
+				await Assert.That(AutomationRunner.StaticDelay(() => true, 0)).IsTrue()
+					.Because("a condition already met is met, however short the wait");
+
+				testRunner.WaitForWidgetEnabled("present", 0);
+
+				testRunner.MarkTestComplete();
+			});
+		}
+
+		/// <summary>
 		/// A run whose timeout is the expected outcome must not leave a thread dump behind.
 		/// </summary>
 		/// <remarks>
