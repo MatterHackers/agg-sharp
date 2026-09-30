@@ -891,7 +891,27 @@ namespace MatterHackers.Agg.UI
 			{
 				Console.Error.WriteLine($"WinformsSystemWindow paint threw, frame abandoned: {paintException}");
 				UiThread.ReportUnhandledException(paintException);
+
+				// After the report, and contained: a throw out of here would reach WndProc and the modal
+				// dialog every branch of this catch exists to keep the paint away from.
+				try
+				{
+					this.AbandonFrame();
+				}
+				catch (Exception abandonException)
+				{
+					Console.Error.WriteLine($"WinformsSystemWindow could not abandon the frame: {abandonException}");
+				}
 			}
+		}
+
+		/// <summary>
+		/// Closes a frame whose draw threw, so the next paint starts a new frame rather than continuing
+		/// this one. Nothing to do on a CPU surface; the GPU window forgets its viewport and target - see
+		/// <c>WebGpuControl.AbandonFrame</c> for what leaving them was costing.
+		/// </summary>
+		protected virtual void AbandonFrame()
+		{
 		}
 
 		private void PaintFrame(PaintEventArgs paintEventArgs)

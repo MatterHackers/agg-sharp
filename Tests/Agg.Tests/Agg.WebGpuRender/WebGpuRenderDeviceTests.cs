@@ -316,6 +316,34 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		/// <summary>
+		/// Every other descriptor wgpu rejects - here a mip chain three levels deeper than a 1x1 texture can
+		/// hold - has to fail at the same place. wgpu hands back a non-null error texture for it, and the
+		/// only sign was "TextureView with '' label is invalid" out of the next submit that attached it: a
+		/// frame later, anonymous, and (because the device keeps one error) with the rejection itself
+		/// already overwritten. MatterCAD on Linux painted black for a whole session over one of these.
+		/// The throw has to name the texture, which is the one thing that message could not.
+		/// </summary>
+		[Test]
+		public async Task ADescriptorWgpuRejectsThrowsAtCreationNamingTheTexture()
+		{
+			using (var harness = WebGpuRenderTestHarness.Create(16, 16))
+			{
+				var thrown = await Assert.That(() => harness.Device.CreateTexture(new TextureDescriptor(
+						1,
+						1,
+						TextureFormat.Rgba8Unorm,
+						TextureUsage.TextureBinding,
+						4,
+						1,
+						"tooManyMips")))
+					.Throws<InvalidOperationException>();
+
+				await Assert.That(thrown.Message).Contains("tooManyMips");
+				await Assert.That(thrown.Message).Contains("1x1");
+			}
+		}
+
+		/// <summary>
 		/// A render pipeline that declares no bindings is built with a null pipeline layout, and disposing it
 		/// used to hand that null to <c>wgpuPipelineLayoutRelease</c> - a Rust panic that aborts the process.
 		/// Run in a child process (<see cref="NativeAbortProbe"/>) so the unfixed bug fails this test rather

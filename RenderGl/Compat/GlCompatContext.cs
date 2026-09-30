@@ -189,6 +189,14 @@ namespace MatterHackers.RenderGl.Compat
 		/// <summary>Ends the open pass, if any, without submitting.</summary>
 		public void FlushPass() => this.passes.FlushPass();
 
+		/// <inheritdoc/>
+		public void BeginFrame()
+		{
+			this.matrices.Reset();
+			this.state.ClearAttribStack();
+			this.displayLists.AbandonRecording();
+		}
+
 		/// <summary>
 		/// Ends the open pass and submits everything recorded. Recycles the per-draw uniform and vertex
 		/// buffers, which is safe here and only here: queue writes issued after a submit are ordered

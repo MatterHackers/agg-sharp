@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2018, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,14 @@ namespace MatterHackers.RenderGl.OpenGl
 	public interface IGpuContext
 	{
 		bool GlHasBufferObjects { get; }
+
+		/// <summary>
+		/// Starts a frame. Whatever per-frame state the previous frame left unbalanced - matrix and
+		/// attribute pushes without their pops, an immediate-mode Begin without its End, a display list
+		/// still recording - is dropped, so a frame a throw abandoned mid-draw cannot poison the next one.
+		/// See <see cref="GL.BeginFrame"/>.
+		/// </summary>
+		void BeginFrame();
 
 		void Begin(BeginMode mode);
 

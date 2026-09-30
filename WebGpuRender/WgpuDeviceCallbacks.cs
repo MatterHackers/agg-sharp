@@ -86,7 +86,16 @@ namespace MatterHackers.WebGpuRender
 			// An exception must not unwind into the native caller, so everything here is inside a catch-all.
 			try
 			{
-				FromUserdata(userdata)?.ReportUncapturedError($"{type}: {WgpuStrings.ToManaged(message)}");
+				var device = FromUserdata(userdata);
+				string text = $"{type}: {WgpuStrings.ToManaged(message)}";
+
+				// Written out the moment it happens, because the device keeps only the *last* error: the
+				// one that names the cause (a rejected descriptor, say) is overwritten by the one that
+				// names the consequence (a pass that could not be finished), and the exception the host
+				// eventually shows carries only the latter. MatterCAD ran black for a whole session over
+				// an error nothing had recorded.
+				Console.Error.WriteLine($"wgpu uncaptured error on '{device?.Label ?? "unknown device"}': {text}");
+				device?.ReportUncapturedError(text);
 			}
 			catch (Exception)
 			{

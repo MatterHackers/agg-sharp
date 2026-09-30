@@ -278,7 +278,48 @@ namespace MatterHackers.Agg.UI
 			}
 
 			this.frameIsPresentable = frame != null;
+
+			// Before the target is set, so the frame starts with balanced stacks whatever the previous
+			// frame's draw did - abandoned by a throw, it left its pushes outstanding (see GL.BeginFrame).
+			this.Gl.BeginFrame();
 			this.compat.SetRenderTarget(frame ?? this.EnsureScratchTarget(), this.depthTarget);
+		}
+
+		/// <summary>
+		/// Ends a frame whose draw threw partway through. Nothing is presented: what the frame drew before
+		/// the throw is not a picture anyone should see, and the last complete frame stays up instead. But
+		/// the frame still has to be closed - its recording submitted (or, if it was the recording that was
+		/// invalid, dropped by the submit that refuses it) and the target forgotten, so the next
+		/// <see cref="BeginFrame"/> starts a whole frame rather than continuing this one. The swapchain
+		/// texture stays acquired and that next frame draws into it.
+		/// </summary>
+		/// <remarks>
+		/// Before this, a throw skipped the host's present, and so the target stayed set, BeginFrame took
+		/// its "already in a frame" exit, and the host's viewport flag stayed set too: every later frame was
+		/// drawn as a continuation of the abandoned one, into a texture that was never presented, with the
+		/// abandoned draw's matrix pushes still outstanding. The window went black and stayed black.
+		/// </remarks>
+		public void AbandonFrame()
+		{
+			if (!this.isInitialized || this.compat.Passes.ColorTarget == null)
+			{
+				return;
+			}
+
+			try
+			{
+				this.compat.Submit();
+			}
+			catch (Exception submitException)
+			{
+				// Most often the very thing the frame threw over: a recording wgpu rejects. The device has
+				// already dropped it, which is all that was needed here; the throw that abandoned the frame
+				// is the one being reported.
+				Console.Error.WriteLine($"{this.GetType().Name}: the abandoned frame's recording was dropped: {submitException.Message}");
+			}
+
+			this.frameIsPresentable = false;
+			this.compat.SetRenderTarget(null, null);
 		}
 
 		/// <summary>Ends the frame: submits everything recorded and presents it.</summary>

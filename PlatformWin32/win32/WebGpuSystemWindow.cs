@@ -494,6 +494,13 @@ namespace MatterHackers.Agg.UI
 			this.webGpuControl.Present();
 		}
 
+		/// <inheritdoc/>
+		protected override void AbandonFrame()
+		{
+			this.viewPortHasBeenSet = false;
+			this.webGpuControl?.AbandonFrame();
+		}
+
 		private void SetAndClearViewPort()
 		{
 			this.webGpuControl.BeginFrame();
