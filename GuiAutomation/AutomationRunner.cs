@@ -591,26 +591,19 @@ namespace MatterHackers.GuiAutomation
 
 		public bool ImageExists(ImageBuffer imageNeedle, double secondsToWait = DefaultWidgetWaitSeconds, SearchRegion searchRegion = null)
 		{
-			if (secondsToWait > 0)
-			{
-				bool foundImage = WaitForImage(imageNeedle, secondsToWait, searchRegion);
-				if (!foundImage)
-				{
-					return false;
-				}
-			}
+			// WaitForImage always takes at least one look, so a zero-second wait is a single look.
+			return WaitForImage(imageNeedle, secondsToWait, searchRegion);
+		}
 
-			if (searchRegion == null)
-			{
-				searchRegion = GetScreenRegion();
-			}
-
-			if (searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out _, out _, MatchLimit))
-			{
-				return true;
-			}
-
-			return false;
+		/// <summary>
+		/// One look for the image, with no waiting. WaitForImage and ImageExists both end here; it must not
+		/// call either of them back, or the two recurse without end.
+		/// </summary>
+		private bool ImageFoundNow(ImageBuffer imageNeedle, SearchRegion searchRegion)
+		{
+			// No region means a fresh capture of the whole screen on every look.
+			searchRegion ??= GetScreenRegion();
+			return searchRegion.Image.FindLeastSquaresMatch(imageNeedle, out _, out _, MatchLimit);
 		}
 
 		public bool MoveToImage(string imageName, double secondsToWait = DefaultWidgetWaitSeconds, SearchRegion searchRegion = null, Point2D offset = default(Point2D), ClickOrigin origin = ClickOrigin.Center)
@@ -1507,7 +1500,7 @@ namespace MatterHackers.GuiAutomation
 			// The answer is the last look, not the clock (see WaitForName).
 			var timeWaited = Stopwatch.StartNew();
 			bool found;
-			while (!(found = ImageExists(imageNeedle))
+			while (!(found = ImageFoundNow(imageNeedle, searchRegion))
 				&& timeWaited.Elapsed.TotalSeconds < secondsToWait)
 			{
 				Delay(.05);

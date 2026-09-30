@@ -118,6 +118,41 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// Image waits search the region they are given and come back, zero seconds or not.
+		/// </summary>
+		/// <remarks>
+		/// WaitForImage looked through ImageExists with its default two seconds, which waited through
+		/// WaitForImage again - a stack overflow on any image wait - and dropped the caller's region.
+		/// </remarks>
+		[Test]
+		public async Task ImageWaitsSearchTheGivenRegion()
+		{
+			var haystack = new MatterHackers.Agg.Image.ImageBuffer(40, 30);
+			var graphics = haystack.NewGraphics2D();
+			graphics.Clear(Color.White);
+			graphics.FillRectangle(10, 10, 16, 16, Color.Black);
+
+			var blackNeedle = new MatterHackers.Agg.Image.ImageBuffer(6, 6);
+			blackNeedle.NewGraphics2D().Clear(Color.Black);
+			var redNeedle = new MatterHackers.Agg.Image.ImageBuffer(6, 6);
+			redNeedle.NewGraphics2D().Clear(Color.Red);
+
+			await AutomationRunner.ShowWindowAndExecuteTests(new SystemWindow(100, 100), async (testRunner) =>
+			{
+				var region = new SearchRegion(haystack, new ScreenRectangle() { Left = 0, Top = 0, Right = 40, Bottom = 30 }, testRunner);
+
+				await Assert.That(testRunner.WaitForImage(blackNeedle, 0, region)).IsTrue()
+					.Because("the black square is in the given region");
+				await Assert.That(testRunner.ImageExists(blackNeedle, 1, region)).IsTrue()
+					.Because("ImageExists with a wait looks the same way");
+				await Assert.That(testRunner.ImageExists(redNeedle, 0, region)).IsFalse()
+					.Because("nothing red is in the region");
+
+				testRunner.MarkTestComplete();
+			});
+		}
+
+		/// <summary>
 		/// A run whose timeout is the expected outcome must not leave a thread dump behind.
 		/// </summary>
 		/// <remarks>
