@@ -101,6 +101,12 @@ namespace MatterHackers.RenderGl
 		public Matrix4X4 Transform { get; init; } = Matrix4X4.Identity;
 
 		public Color WireFrameColor { get; init; } = default;
+
+		/// <summary>
+		/// Edge line width, in device pixels, for the wire overlay render types. The renderer scales it by
+		/// its supersample factor so the on-screen thickness holds through a supersampled capture.
+		/// </summary>
+		public float WireFrameWidth { get; init; } = SceneRenderModeUtilities.DefaultWireframeWidth;
 	}
 
 	public interface INativeSceneRenderer

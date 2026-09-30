@@ -54,8 +54,8 @@ namespace MatterHackers.RenderGl
 	}
 
 	/// <summary>
-	/// The candidate scene looks. "Current" is the classic look and the default; Onshape-like is the
-	/// contender, compared live (MatterCAD's Debug Lighting menu) before it replaces Current.
+	/// The scene looks. MatterCAD's 3D view applies Onshape-like; "Current" is the classic look, which
+	/// <c>new LightingData()</c> still gives, and MatterCAD's Debug Lighting menu offers it to compare.
 	/// All values are plain data for NodeDesignerScene.wgsl's applyLighting, in eye space.
 	/// </summary>
 	public static class LightingPresets

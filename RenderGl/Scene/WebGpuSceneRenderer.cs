@@ -1984,7 +1984,8 @@ namespace MatterHackers.RenderGl.Scene
 						command.Unlit || drawState.Unlit,
 						useVertexColor,
 						command.AlphaMultiplier,
-						drawState.BedGrid);
+						drawState.BedGrid,
+						command.WireFrameWidth);
 
 					// StageSlot writes into the slot drawSlot currently names, so the counter only moves once
 					// both blocks are staged - and only on a miss, which is what keeps the peel's repeat draws
@@ -2678,7 +2679,8 @@ namespace MatterHackers.RenderGl.Scene
 			bool unlit,
 			bool useVertexColor,
 			float alphaMultiplier,
-			BedRenderCommand bedGrid = null)
+			BedRenderCommand bedGrid = null,
+			float wireframeWidth = SceneRenderModeUtilities.DefaultWireframeWidth)
 		{
 			// The classic path's default when a command carries no wireframe color.
 			var effectiveWireframeColor = wireframeColor.Alpha0To1 > 0 ? wireframeColor : new Color(25, 25, 25);
@@ -2698,7 +2700,7 @@ namespace MatterHackers.RenderGl.Scene
 				48,
 				this.targetWidth,
 				this.targetHeight,
-				SceneRenderModeUtilities.DefaultWireframeWidth * this.SupersampleScale,
+				wireframeWidth * this.SupersampleScale,
 				unlit ? 1 : 0);
 
 			GlUniformBlock.WriteVector4(

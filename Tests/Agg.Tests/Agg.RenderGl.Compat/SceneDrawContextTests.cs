@@ -85,6 +85,25 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		/// <summary>
+		/// The edge width a draw asks for reaches its command, and a draw that asks for none keeps the
+		/// default - which is what keeps every existing caller, and the goldens, unchanged.
+		/// </summary>
+		[Test]
+		public async Task WireFrameWidthReachesTheCommand()
+		{
+			var harness = Harness.Create();
+			var cube = PlatonicSolids.CreateCube(10, 10, 10);
+
+			harness.Context.BeginFrame(harness.World, harness.Viewport, new LightingData());
+			harness.Context.DrawMesh(cube, Color.Red, Matrix4X4.Identity, RenderTypes.Outlines);
+			harness.Context.DrawMesh(cube, Color.Red, Matrix4X4.Identity, RenderTypes.Outlines, wireFrameWidth: 1.75f);
+			harness.Context.EndFrame();
+
+			await Assert.That(harness.Renderer.MeshCommands[0].WireFrameWidth).IsEqualTo(SceneRenderModeUtilities.DefaultWireframeWidth);
+			await Assert.That(harness.Renderer.MeshCommands[1].WireFrameWidth).IsEqualTo(1.75f);
+		}
+
+		/// <summary>
 		/// A screen-width line is a mesh once a scene pass is open - it is baked into world space and
 		/// queued like any other geometry rather than drawn as immediate-mode triangles.
 		/// </summary>

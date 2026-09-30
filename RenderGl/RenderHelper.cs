@@ -125,6 +125,7 @@ namespace MatterHackers.RenderGl
 				RenderType = command.RenderType,
 				MeshToViewTransform = command.MeshToViewTransform,
 				WireFrameColor = command.WireFrameColor,
+				WireFrameWidth = command.WireFrameWidth,
 				MeshChanged = command.MeshChanged,
 				BlendTexture = command.BlendTexture,
 				AllowBspRendering = command.AllowBspRendering,
@@ -194,9 +195,10 @@ namespace MatterHackers.RenderGl
 			bool castsBedShadow = true,
 			bool isSelected = false,
 			bool overrideFaceColors = false,
-			float alphaMultiplier = 1.0f)
+			float alphaMultiplier = 1.0f,
+			float? wireFrameWidth = null)
 		{
-			Render(gl, meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces: forceCullBackFaces, castsBedShadow: castsBedShadow, isSelected: isSelected, overrideFaceColors: overrideFaceColors, alphaMultiplier: alphaMultiplier);
+			Render(gl, meshToRender, partColor, Matrix4X4.Identity, renderType, meshToViewTransform, wireFrameColor, meshChanged, blendTexture, forceCullBackFaces: forceCullBackFaces, castsBedShadow: castsBedShadow, isSelected: isSelected, overrideFaceColors: overrideFaceColors, alphaMultiplier: alphaMultiplier, wireFrameWidth: wireFrameWidth);
 		}
 
 		internal static void Render(GL gl,
@@ -213,7 +215,8 @@ namespace MatterHackers.RenderGl
 			bool castsBedShadow = true,
 			bool isSelected = false,
 			bool overrideFaceColors = false,
-			float alphaMultiplier = 1.0f)
+			float alphaMultiplier = 1.0f,
+			float? wireFrameWidth = null)
 		{
 			if (meshToRender != null)
 			{
@@ -227,6 +230,7 @@ namespace MatterHackers.RenderGl
 						RenderType = renderType,
 						MeshToViewTransform = meshToViewTransform,
 						WireFrameColor = wireFrameColor,
+						WireFrameWidth = wireFrameWidth ?? SceneRenderModeUtilities.DefaultWireframeWidth,
 						MeshChanged = meshChanged,
 						BlendTexture = blendTexture,
 						AllowBspRendering = allowBspRendering,

@@ -183,6 +183,8 @@ namespace MatterHackers.RenderGl
 		/// <param name="isSelected">Whether this mesh is part of the current selection.</param>
 		/// <param name="overrideFaceColors">Ignores per-face colours in favour of <paramref name="color"/>.</param>
 		/// <param name="alphaMultiplier">Scales the final alpha of every colour, per-face ones included.</param>
+		/// <param name="wireFrameWidth">Edge line width in device pixels for the wire overlay render types;
+		/// null keeps <see cref="SceneRenderModeUtilities.DefaultWireframeWidth"/>.</param>
 		void DrawMesh(
 			Mesh mesh,
 			Color color,
@@ -197,7 +199,8 @@ namespace MatterHackers.RenderGl
 			bool castsBedShadow = true,
 			bool isSelected = false,
 			bool overrideFaceColors = false,
-			float alphaMultiplier = 1.0f);
+			float alphaMultiplier = 1.0f,
+			float? wireFrameWidth = null);
 
 		/// <summary>
 		/// Queues the printer bed, with its cast shadow and analytic grid.

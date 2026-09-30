@@ -270,7 +270,8 @@ namespace MatterHackers.RenderGl
 			bool castsBedShadow = true,
 			bool isSelected = false,
 			bool overrideFaceColors = false,
-			float alphaMultiplier = 1.0f)
+			float alphaMultiplier = 1.0f,
+			float? wireFrameWidth = null)
 		{
 			RenderHelper.Render(
 				this.gl,
@@ -287,7 +288,8 @@ namespace MatterHackers.RenderGl
 				castsBedShadow,
 				isSelected,
 				overrideFaceColors,
-				alphaMultiplier);
+				alphaMultiplier,
+				wireFrameWidth);
 		}
 
 		/// <inheritdoc/>
