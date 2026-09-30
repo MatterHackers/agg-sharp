@@ -75,6 +75,8 @@ struct SceneEffect
 	// x = spacing mm, y = grid half width px, z = axis half width px, w = axis height mm.
 	bedGridParams : vec4<f32>,
 	bedGridShadowColor : vec4<f32>,
+	// x = edge solid core width in pixels (0 for lines one device pixel wide or less), yzw unused.
+	edgeParams : vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> transform : Transform;
@@ -209,10 +211,12 @@ fn getEffectiveColor(vertexColor : vec4<f32>) -> vec4<f32>
 	return color;
 }
 
-fn wireframeEdgeFactors(barycentric : vec3<f32>, width : f32) -> vec3<f32>
+// Full strength out to `core` pixels from the edge, then a soft falloff to `width`. The core is zero
+// for the default thin line, which keeps it the single ramp it has always been.
+fn wireframeEdgeFactors(barycentric : vec3<f32>, width : f32, core : f32) -> vec3<f32>
 {
 	let derivatives = fwidth(barycentric);
-	return vec3<f32>(1.0) - smoothstep(vec3<f32>(0.0), derivatives * max(width, 0.375), barycentric);
+	return vec3<f32>(1.0) - smoothstep(derivatives * core, derivatives * max(width, 0.375), barycentric);
 }
 
 // Returns the composed color; `keep` is false where the HLSL would have discarded. WGSL allows discard
@@ -235,7 +239,7 @@ fn composeSceneColor(shadedColor : vec4<f32>, barycentric : vec3<f32>, edgeHints
 		return result;
 	}
 
-	let edgeFactors = wireframeEdgeFactors(barycentric, effect.resolutionAndWidth.z);
+	let edgeFactors = wireframeEdgeFactors(barycentric, effect.resolutionAndWidth.z, effect.edgeParams.x);
 	let visibleEdges = edgeFactors * step(vec3<f32>(0.5), edgeHints);
 	let edge = max(max(visibleEdges.x, visibleEdges.y), visibleEdges.z);
 

@@ -83,11 +83,14 @@ namespace MatterHackers.RenderGl.Scene
 		private const int LightUniformSize = 128;
 
 		/// <summary>
-		/// 12 float4s: the five the classic SceneEffectBuffer starts with plus the seven of the analytic
-		/// bed grid block. Written in full on every draw (zeroed where the bed block does not apply), as
-		/// the classic path writes its whole constant buffer.
+		/// 13 float4s: the five the classic SceneEffectBuffer starts with, the seven of the analytic
+		/// bed grid block and the edge line's parameters. Written in full on every draw (zeroed where the
+		/// bed block does not apply), as the classic path writes its whole constant buffer.
 		/// </summary>
-		private const int EffectUniformSize = 192;
+		private const int EffectUniformSize = 208;
+
+		/// <summary>Byte offset of the edge line parameters, just past the bed grid block.</summary>
+		private const int EdgeParamsOffset = 192;
 
 		/// <summary>
 		/// Bytes between one draw's uniform slot and the next. A bound range's offset must be a multiple of
@@ -2703,6 +2706,12 @@ namespace MatterHackers.RenderGl.Scene
 				wireframeWidth * this.SupersampleScale,
 				unlit ? 1 : 0);
 
+			// The edge's solid core: everything but its last device pixel, which stays the soft falloff. A
+			// line one device pixel wide or less (the default) has no core, so it draws exactly the ramp it
+			// always has; a wider one is solid in the middle instead of one long blur.
+			float edgeCore = Math.Max(wireframeWidth - 1, 0) * this.SupersampleScale;
+			GlUniformBlock.WriteVector4(span, EdgeParamsOffset, edgeCore, 0, 0, 0);
+
 			GlUniformBlock.WriteVector4(
 				span,
 				64,
@@ -2726,7 +2735,7 @@ namespace MatterHackers.RenderGl.Scene
 		{
 			if (bedGrid == null)
 			{
-				span.Slice(80, EffectUniformSize - 80).Clear();
+				span.Slice(80, EdgeParamsOffset - 80).Clear();
 				return;
 			}
 
