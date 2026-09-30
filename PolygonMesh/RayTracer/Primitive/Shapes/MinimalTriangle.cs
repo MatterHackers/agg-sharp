@@ -25,8 +25,14 @@ namespace MatterHackers.RayTracer
 		private byte MajorAxis = 0; // 8 bits
 		private RectangleFloat boundsOnMajorAxis = new RectangleFloat(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue); // 128 bits
 
-		private Vector3Float center; // 96 bits
-		private Vector3Float halfSize; // 96 bits
+		// The box is kept as its corners, not as a centre and half size: (min + max) / 2 and (max - min) / 2
+		// round in float, and centre - halfSize does not come back to min. A cap triangle with one corner at
+		// x = -3.8e-15 and another at 0.98 got a box starting at exactly 0, so a ray straight down x = 0 -
+		// inside the triangle - missed the box, and the hierarchy never tested the triangle at all.
+		private Vector3Float aabbMin; // 96 bits
+		private Vector3Float aabbMax; // 96 bits
+
+		private Vector3Float center => (aabbMin + aabbMax) / 2;
 
 		public int FaceIndex { get; set; } // 32 bits
 		private Func<int, int, Vector3Float> vertexFunc; // 64 bits
@@ -42,10 +48,8 @@ namespace MatterHackers.RayTracer
 			double distanceFromOrigin = Vector3Ex.Dot(v0, planeNormal);
 			Plane = new PlaneFloat(new Vector3Float(planeNormal), (float)distanceFromOrigin);
 
-			var aabbMin = vertex(0).ComponentMin(vertex(1)).ComponentMin(vertex(2));
-			var aabbMax = vertex(0).ComponentMax(vertex(1)).ComponentMax(vertex(2));
-			center = (aabbMin + aabbMax) / 2;
-			halfSize = (aabbMax - aabbMin) / 2;
+			aabbMin = vertex(0).ComponentMin(vertex(1)).ComponentMin(vertex(2));
+			aabbMax = vertex(0).ComponentMax(vertex(1)).ComponentMax(vertex(2));
 
 			var normalLengths = new[] { Math.Abs(planeNormal.X), Math.Abs(planeNormal.Y), Math.Abs(planeNormal.Z) };
 			MajorAxis = (byte)normalLengths.Select((v, i) => new { Axis = i, Value = Math.Abs(v) }).OrderBy(o => o.Value).Last().Axis;
@@ -103,7 +107,7 @@ namespace MatterHackers.RayTracer
 
 		public AxisAlignedBoundingBox GetAxisAlignedBoundingBox()
 		{
-			return new AxisAlignedBoundingBox(new Vector3(center - halfSize), new Vector3(center + halfSize));
+			return new AxisAlignedBoundingBox(new Vector3(aabbMin), new Vector3(aabbMax));
 		}
 
 		public double GetAxisCenter(int axis)
