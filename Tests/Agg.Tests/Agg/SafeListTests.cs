@@ -123,29 +123,67 @@ namespace MatterHackers.Agg.Tests
 		public async Task TwoWritersOnDifferentThreadsBothKeepTheirChange()
 		{
 			var safeList = new SafeList<string>();
-			using var firstIsCopying = new ManualResetEventSlim();
-			using var secondFinished = new ManualResetEventSlim();
-
-			var first = Task.Run(() => safeList.Modify(list =>
-			{
-				list.Add("first");
-				firstIsCopying.Set();
-				// Unserialized, the second writer finishes here and this swap then drops its item. Serialized,
-				// it waits for this one, so the wait times out and both land.
-				secondFinished.Wait(300);
-			}));
-
-			firstIsCopying.Wait();
-			var second = Task.Run(() =>
-			{
-				safeList.Add("second");
-				secondFinished.Set();
-			});
-
-			await Task.WhenAll(first, second);
+			RaceTwoWriters(safeList, "first", "second");
 
 			await Assert.That(safeList.Contains("first")).IsTrue();
 			await Assert.That(safeList.Contains("second")).IsTrue().Because("a writer must not overwrite a concurrent writer's change");
+		}
+
+		// Object3D.Children is an AscendableSafeList, which overrides Modify - the path the node graph lost its body on.
+		[Test]
+		public async Task TwoWritersOnAnAscendableListBothKeepTheirChangeAndItsParent()
+		{
+			var parent = new Node();
+			var safeList = new AscendableSafeList<Node>(parent);
+			var first = new Node();
+			var second = new Node();
+			RaceTwoWriters(safeList, first, second);
+
+			await Assert.That(safeList.Contains(first)).IsTrue();
+			await Assert.That(safeList.Contains(second)).IsTrue().Because("a writer must not overwrite a concurrent writer's change");
+			await Assert.That(first.Parent).IsSameReferenceAs(parent);
+			await Assert.That(second.Parent).IsSameReferenceAs(parent);
+		}
+
+		private class Node : IAscendable<Node>
+		{
+			public Node Parent { get; set; }
+		}
+
+		/// <summary>
+		/// Adds <paramref name="firstItem"/> from one thread and, while that writer is inside its modifier,
+		/// <paramref name="secondItem"/> from another. The first modifier holds until the second writer has either
+		/// finished (unserialized: the first swap then drops its item) or is blocked waiting for the first
+		/// (serialized: both land) - read from the second thread's state, so the test costs no fixed wait.
+		/// </summary>
+		private static void RaceTwoWriters<T>(SafeList<T> safeList, T firstItem, T secondItem)
+		{
+			using var firstInModifier = new ManualResetEventSlim();
+			using var secondFinished = new ManualResetEventSlim();
+			var secondWriting = false;
+			Thread secondThread = null;
+
+			var firstThread = new Thread(() => safeList.Modify(list =>
+			{
+				list.Add(firstItem);
+				firstInModifier.Set();
+				// Blocked only counts once it is writing: before that it may still be parked on firstInModifier.
+				SpinWait.SpinUntil(() => secondFinished.IsSet
+					|| (Volatile.Read(ref secondWriting) && (secondThread.ThreadState & ThreadState.WaitSleepJoin) != 0), 10000);
+			}));
+
+			secondThread = new Thread(() =>
+			{
+				firstInModifier.Wait();
+				Volatile.Write(ref secondWriting, true);
+				safeList.Add(secondItem);
+				secondFinished.Set();
+			});
+
+			secondThread.Start();
+			firstThread.Start();
+			firstThread.Join();
+			secondThread.Join();
 		}
 	}
 }

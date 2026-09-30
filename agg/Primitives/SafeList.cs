@@ -44,6 +44,8 @@ namespace MatterHackers.Agg
 		/// same old list and the later swap dropped the other's change (a graph's rebuild publishing its results
 		/// while a new node inserted the graph's body lost the body). Readers never take it: they read whichever
 		/// list is live. Held only for the copy, the modifier and the swap - never while ItemsModified runs.
+		/// A nested Modify of the same list from inside its own modifier does not deadlock (the lock is
+		/// re-entrant), but the outer publish overwrites whatever the nested one did.
 		/// </summary>
 		protected readonly object modifyLock = new object();
 
