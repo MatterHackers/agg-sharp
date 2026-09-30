@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -148,17 +148,30 @@ namespace MatterHackers.Agg.Image
 			return false;
 		}
 
+		/// <summary>
+		/// Encodes the image in the format named by the file's extension and writes it to <paramref name="filename"/>,
+		/// replacing any existing file. Returns false, leaving any existing file untouched, when encoding fails.
+		/// </summary>
 		public static bool SaveImageData(string filename, IImageByte sourceImage)
 		{
-			if (!File.Exists(filename))
+			// Encode before touching the disk so an unsupported extension or encoder failure cannot leave a
+			// truncated file where a good one was. (This used to refuse any existing path, which callers took
+			// for success and then read back the stale image.)
+			using (var encoded = new MemoryStream())
 			{
-				using (var fs = new FileStream(filename, FileMode.CreateNew))
+				if (!SaveImageData(encoded, Path.GetExtension(filename), sourceImage))
 				{
-					return SaveImageData(fs, Path.GetExtension(filename), sourceImage);
+					return false;
+				}
+
+				using (var fs = new FileStream(filename, FileMode.Create))
+				{
+					encoded.Position = 0;
+					encoded.CopyTo(fs);
 				}
 			}
 
-			return false;
+			return true;
 		}
 
 		private static Image<Rgba32> ImageBufferToImage32(IImageByte sourceImage)
