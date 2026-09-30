@@ -195,6 +195,44 @@ namespace MatterHackers.Agg.Tests.Agg
 			await Assert.That(At(Render($"<path d=\"{Squares}\"/>"), 50, 50).alpha).IsEqualTo((byte)255);
 		}
 
+		/// <summary>
+		/// The rasterizer treats Curve4 control points as line_to, so a cubic must be flattened before it is
+		/// rendered; unflattened, a circle of four cubics fills the polygon through its control points.
+		/// </summary>
+		[Test]
+		public async Task CubicsAreFlattenedToTheirCurve()
+		{
+			// Kappa form circle: center (50,50), radius 40, control offset 0.5523 * 40 = 22.09.
+			ImageBuffer image = Render("<path d=\"M50 10 C72.09 10 90 27.91 90 50 C90 72.09 72.09 90 50 90 "
+				+ "C27.91 90 10 72.09 10 50 C10 27.91 27.91 10 50 10 Z\"/>");
+
+			// (79.5, 20.5) is 41.7 from the center: outside the circle, inside the control point polygon.
+			await Assert.That((int)At(image, 79, 20).alpha).IsLessThan(20);
+			await Assert.That((int)At(image, 50, 50).alpha).IsEqualTo(255);
+		}
+
+		/// <summary>
+		/// Curve flattening has to be fine enough for the output size, not the document's: a radius 7 circle
+		/// in a 16 unit document drawn at 1024 pixels must not facet inward by pixels.
+		/// </summary>
+		[Test]
+		public async Task CurveFlatteningFollowsTheOutputScale()
+		{
+			// Kappa form circle: center (8,8), radius 7.
+			ImageBuffer image = SvgDocument.RenderToImage("<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\">"
+				+ "<path d=\"M8 1 C11.87 1 15 4.13 15 8 C15 11.87 11.87 15 8 15 C4.13 15 1 11.87 1 8 C1 4.13 4.13 1 8 1 Z\"/></svg>", 1024, 1024);
+
+			// 6.95 of radius 7 is inside the true arc but outside a coarsely flattened one; 22 degrees is where
+			// a coarse chord cuts furthest inside.
+			foreach (double degrees in new[] { 22.0, 67.0 })
+			{
+				double radians = degrees * Math.PI / 180.0;
+				int x = (int)((8 + 6.95 * Math.Cos(radians)) * 64);
+				int y = (int)((8 + 6.95 * Math.Sin(radians)) * 64);
+				await Assert.That((int)At(image, x, y).alpha).IsGreaterThan(200);
+			}
+		}
+
 		[Test]
 		public async Task StrokesWithWidthCapsAndDashes()
 		{

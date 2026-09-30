@@ -38,104 +38,18 @@ namespace MatterHackers.Agg.SvgTools
         public static List<ColoredVertexSource> Parse(string filePath, bool flipY)
         {
             using var stream = File.OpenRead(filePath);
-            return ParseFull(stream, flipY).elements;
+            return ParseFull(stream, flipY);
         }
 
         public static List<ColoredVertexSource> Parse(Stream stream, bool flipY)
         {
-            return ParseFull(stream, flipY).elements;
+            return ParseFull(stream, flipY);
         }
 
-        /// <summary>
-        /// Renders an SVG file directly to an ImageBuffer at the specified pixel dimensions.
-        /// SVG coordinates (top-left origin, Y-down) are transformed to agg-sharp's coordinate
-        /// space (bottom-left origin, Y-up). The viewBox is scaled to exactly fill the target size.
-        /// </summary>
-        public static ImageBuffer ParseAndRender(string filePath, int targetWidth, int targetHeight)
-        {
-            using var stream = File.OpenRead(filePath);
-            return ParseAndRender(stream, targetWidth, targetHeight);
-        }
-
-        /// <summary>
-        /// Renders SVG content read from a stream, for asset providers that have no file to point at -
-        /// a zip-backed <c>IStaticData</c> hands over a MemoryStream rather than extracting to disk.
-        /// </summary>
-        public static ImageBuffer ParseAndRender(Stream stream, int targetWidth, int targetHeight)
-        {
-            var (elements, viewBoxMinX, viewBoxMinY, viewBoxWidth, viewBoxHeight) = ParseFull(stream, flipY: false);
-            return RenderToImageBuffer(elements, viewBoxWidth, viewBoxHeight, targetWidth, targetHeight, viewBoxMinX, viewBoxMinY);
-        }
-
-        /// <summary>
-        /// Rasterizes a list of colored vector elements (from ParseFull) into an ImageBuffer.
-        /// Scales from the SVG viewBox coordinate space to the target pixel dimensions.
-        /// Uses the same rendering approach as SvgWidget: scale transform + FlipY after rendering.
-        /// </summary>
-        public static ImageBuffer RenderToImageBuffer(
-            List<ColoredVertexSource> elements,
-            double viewBoxWidth,
-            double viewBoxHeight,
-            int targetWidth,
-            int targetHeight,
-            double viewBoxMinX = 0,
-            double viewBoxMinY = 0)
-        {
-            var image = new ImageBuffer(targetWidth, targetHeight, 32, new BlenderBGRA());
-            var graphics = image.NewGraphics2D();
-            graphics.Clear(Color.Transparent);
-
-            double scaleX = targetWidth / viewBoxWidth;
-            double scaleY = targetHeight / viewBoxHeight;
-            // The viewBox origin is not always 0 0; shift it to the origin before scaling to the target.
-            graphics.SetTransform(Affine.NewTranslation(-viewBoxMinX, -viewBoxMinY) * Affine.NewScaling(scaleX, scaleY));
-
-            foreach (var element in elements)
-            {
-                if (element.FillEvenOdd)
-                    graphics.Rasterizer.filling_rule(Util.filling_rule_e.fill_even_odd);
-                // The rasterizer treats curve control points as line_to, so curves must be flattened
-                // first or a Bezier renders as the polygon through its control points. Unlike Graphics2D,
-                // which flattens after transforming and so works in pixel units, we flatten in viewBox units
-                // before the graphics transform scales them up. ResolutionScale tightens the chord tolerance
-                // by the output scale so the faceting stays sub-pixel in the rendered image.
-                graphics.Render(
-                    new FlattenCurves(element.VertexSource) { ResolutionScale = Math.Max(scaleX, scaleY) },
-                    element.Color);
-                if (element.FillEvenOdd)
-                    graphics.Rasterizer.filling_rule(Util.filling_rule_e.fill_non_zero);
-            }
-
-            // SVG has Y=0 at top (Y increases down); agg-sharp has Y=0 at bottom (Y increases up).
-            // FlipY corrects the coordinate inversion — same approach used by SvgWidget.
-            image.FlipY();
-
-            return image;
-        }
-
-        private static (List<ColoredVertexSource> elements, double viewBoxMinX, double viewBoxMinY, double viewBoxWidth, double viewBoxHeight) ParseFull(Stream stream, bool flipY)
+        private static List<ColoredVertexSource> ParseFull(Stream stream, bool flipY)
         {
             var svgDocument = new HtmlDocument();
             svgDocument.Load(stream);
-
-            // Parse viewBox to get the coordinate space dimensions
-            double viewBoxMinX = 0;
-            double viewBoxMinY = 0;
-            double viewBoxWidth = 16;
-            double viewBoxHeight = 16;
-            var svgNode = svgDocument.DocumentNode.SelectSingleNode("//svg");
-            var viewBoxAttr = svgNode?.Attributes["viewBox"];
-            if (viewBoxAttr != null && !string.IsNullOrEmpty(viewBoxAttr.Value))
-            {
-                var segments = viewBoxAttr.Value.Split(' ');
-                if (segments.Length >= 4)
-                {
-                    double.TryParse(segments[0], NumberStyles.Float, CultureInfo.InvariantCulture, out viewBoxMinX);
-                    double.TryParse(segments[1], NumberStyles.Float, CultureInfo.InvariantCulture, out viewBoxMinY);
-                    double.TryParse(segments[2], NumberStyles.Float, CultureInfo.InvariantCulture, out viewBoxWidth);
-                    double.TryParse(segments[3], NumberStyles.Float, CultureInfo.InvariantCulture, out viewBoxHeight);
-                }
-            }
 
             var items = new List<ColoredVertexSource>();
 
@@ -247,7 +161,7 @@ namespace MatterHackers.Agg.SvgTools
                 }
             }
 
-            return (items, viewBoxMinX, viewBoxMinY, viewBoxWidth, viewBoxHeight);
+            return items;
         }
 
         private static double ParseAttrDouble(HtmlNode node, string attrName, double defaultValue)
