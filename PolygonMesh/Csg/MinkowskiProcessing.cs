@@ -389,6 +389,27 @@ namespace MatterHackers.PolygonMesh.Csg
 		}
 
 		/// <summary>
+		/// The solid exactly as Dilate and Erode read it: imported the way their operands are (a backward
+		/// patch rewound, split seams joined) and every shell whose winding contradicts its nesting turned
+		/// the right way, so an inside-out part - or one inside-out body beside a correct one - comes back as
+		/// the solid it looks like, while a correctly wound cavity stays a cavity.
+		/// </summary>
+		/// <remarks>
+		/// For a caller that combines an operand with its own erosion or dilation (Hollow Out appends the
+		/// erosion inside out) and needs both halves to agree on which way every shell faces.
+		/// </remarks>
+		/// <param name="solid">The shape to orient; must not be empty.</param>
+		/// <param name="cancellationToken">Checked between shells of the repair.</param>
+		/// <returns>The oriented solid as a mesh.</returns>
+		public static Mesh OrientShellsAsSolid(Mesh solid, CancellationToken cancellationToken)
+		{
+			ArgumentNullException.ThrowIfNull(solid);
+			ThrowIfEmpty(solid, nameof(solid));
+			var oriented = MinkowskiShellOrientation.Repair(ImportOperand(solid), cancellationToken);
+			return ManifoldKernel.ToMesh(oriented, "shell orientation");
+		}
+
+		/// <summary>
 		/// Imports both operands, runs the kernel's Minkowski and reads the result back.
 		/// </summary>
 		/// <remarks>
@@ -396,9 +417,12 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// plus one more retry that rewinds a backward patch. So every mesh usable as a boolean operand
 		/// is usable here, and so is a closed surface with triangles wound against their neighbours,
 		/// which a boolean refuses as NotClosed. Anything else fails the same way a boolean does, with
-		/// the same message. No shell orientation repair: a whole shell wound inside out stays what it
-		/// is, since doing that silently here would make the two entry points disagree about what an
-		/// inside-out shell means.
+		/// the same message. Then every shell whose winding contradicts its nesting is rewound
+		/// (<see cref="MinkowskiShellOrientation.Repair"/>), automatically and without a warning: a part saved
+		/// inside out dilates and erodes as the solid it looks like, because a Dilate that shrinks a
+		/// part is never the intended result. Booleans do not do this - there it stays the opt-in
+		/// KeepInsideOutGeometry / RepairWindingOrientation choice, since a boolean has legitimate
+		/// uses for a negative shell.
 		/// </remarks>
 		private static (Mesh Mesh, ErosionPath Path) Run(Mesh solid, Mesh tool, bool inset, ProgressReporter reporter, CancellationToken cancellationToken)
 		{
@@ -411,8 +435,8 @@ namespace MatterHackers.PolygonMesh.Csg
 			ThrowIfEmpty(solid, nameof(solid));
 			ThrowIfEmpty(tool, nameof(tool));
 
-			var solidManifold = ImportOperand(solid);
-			var toolManifold = ImportOperand(tool);
+			var solidManifold = MinkowskiShellOrientation.Repair(ImportOperand(solid), cancellationToken);
+			var toolManifold = MinkowskiShellOrientation.Repair(ImportOperand(tool), cancellationToken);
 
 			// The check above is not the same check. A mesh can carry triangles and still import
 			// to nothing: a zero-thickness shell - PlatonicSolids.CreateCube(2, 2, 0), or any
@@ -438,7 +462,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// part (a 37,120-triangle mouse body with 320 triangles reversed) failed Dilate that way.
 		/// Such a surface has exactly one consistent winding up to its overall sign, and
 		/// <see cref="ConsistentWinding"/> keeps each surface's majority sign, so an inside-out shell
-		/// still means what it meant before - this is not the orientation repair declined above.
+		/// still means what it meant before - the shell-level repair is a separate step (see Run).
 		/// <para>
 		/// Here rather than in <see cref="ManifoldKernel.Import"/>: booleans and the bevel's output
 		/// gates classify meshes through that import, and a gate that quietly accepted a backward
@@ -600,13 +624,19 @@ namespace MatterHackers.PolygonMesh.Csg
 			// The union tree (dilation and erosion alike) counts different units (hull, leaf, tree
 			// node, and for an erosion the closing subtraction) and reports them from worker threads,
 			// so two reports can arrive out of order; it gets its own time mapping, and the adapter's
-			// high-water mark keeps the bar from stepping back.
+			// high-water mark keeps the bar from stepping back. Its hull count is not the triangle
+			// count - a dilation builds one hull per convex patch, and nested shells are rebuilt
+			// first - so it is recovered from the phase total the kernel set.
 			int treeParallelism = RustParallel.Enabled ? Environment.ProcessorCount : 1;
-			var treeProgress = adapter == null
+			RustProgressReporter treeProgress = null;
+			treeProgress = adapter == null
 				? null
 				: new RustProgressReporter((phase, fraction) => adapter.Report((
 					RustPhases.Name(phase),
-					fraction.HasValue ? MinkowskiProgressModel.TreeTimeFraction(solidTriangles, fraction.Value, treeParallelism, inset) : null)));
+					fraction.HasValue
+						? MinkowskiProgressModel.TreeTimeFraction(
+							MinkowskiProgressModel.TreeHullUnits((long)treeProgress.PhaseTotal, inset), fraction.Value, treeParallelism, inset)
+						: null)));
 
 			// One token per operation, as CancelToken's own remarks require: it registers on
 			// the caller's source and is never unregistered, so a token that outlived the call

@@ -28,6 +28,8 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System.Threading.Tasks;
+using ManifoldSharp;
+using ManifoldSharp.Linalg;
 using MatterHackers.PolygonMesh.Csg;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
@@ -143,6 +145,43 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			// The subtraction done, the closing pass not: the leaves and all the levels.
 			double subtracted = MinkowskiProgressModel.TreeTimeFraction(triangles, (total - 1) / (double)total, 10, erosion: true);
 			await Assert.That(subtracted).IsEqualTo(MinkowskiProgressModel.TreeLeafTimeShare + MinkowskiProgressModel.TreeLevelTimeShare).Within(1e-9);
+		}
+
+		[Test]
+		public async Task TheTreeHullCountIsRecoveredFromItsUnitTotal()
+		{
+			for (long hulls = 1; hulls <= 5000; hulls++)
+			{
+				foreach (bool erosion in new[] { false, true })
+				{
+					long total = MinkowskiProgressModel.TreeUnits(hulls, erosion);
+					await Assert.That(MinkowskiProgressModel.TreeHullUnits(total, erosion)).IsEqualTo(hulls);
+				}
+			}
+		}
+
+		/// <summary>
+		/// A dilation builds one hull per convex patch, so its tree has fewer hulls than the solid
+		/// has triangles; the host must read them from the kernel's phase total, and that total
+		/// must be one the model's layout produces.
+		/// </summary>
+		[Test]
+		public async Task APatchedDilationsPhaseTotalMatchesTheModelsLayout()
+		{
+			var solid = Manifold.Cube(new Vec3(20, 20, 20), true)
+				- Manifold.Cube(new Vec3(10, 10, 10), false)
+				- Manifold.Sphere(6, 24).Translate(new Vec3(-10, 0, 0));
+			ulong phaseTotal = 0;
+			ProgressReporter reporter = null;
+			reporter = new ProgressReporter((phase, fraction) => phaseTotal = reporter.PhaseTotal);
+
+			await Assert.That(solid.TryDilateByConvex(Manifold.Sphere(1, 8), null, reporter, out _)).IsTrue();
+
+			long hulls = MinkowskiProgressModel.TreeHullUnits((long)phaseTotal);
+			await Assert.That(hulls).IsGreaterThan(0L)
+				.Because("the kernel's total has to be one the model's unit layout produces");
+			await Assert.That(hulls).IsLessThan((long)solid.NumTri())
+				.Because("patches merge triangles, so a triangle count would misplace every stage");
 		}
 	}
 }
