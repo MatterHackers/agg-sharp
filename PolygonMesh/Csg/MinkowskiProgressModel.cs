@@ -140,15 +140,17 @@ namespace MatterHackers.PolygonMesh.Csg
 		public const double TreeLevelCostGrowth = 1.5;
 
 		/// <summary>
-		/// The number of progress units the kernel's dilation tree
-		/// (<c>Manifold.TryDilateByConvex</c>) reports for a solid of <paramref name="triangles"/>
-		/// triangles: a hull each, one per leaf (the solid is leaf 0), one per tree node - a binary
-		/// reduction of L leaves is L - 1 unions - and one for the closing pass.
+		/// The number of progress units the kernel's union tree reports for a solid of
+		/// <paramref name="triangles"/> triangles: a hull each, one per leaf, one per tree node - a
+		/// binary reduction of L leaves is L - 1 unions - and one for the closing pass. A dilation
+		/// (<c>Manifold.TryDilateByConvex</c>) has the solid as leaf 0; an erosion
+		/// (<c>Manifold.TryErodeByConvex</c>, <paramref name="erosion"/>) leaves it out of the tree
+		/// and spends one more unit subtracting the union from it.
 		/// </summary>
-		public static long TreeUnits(int triangles)
+		public static long TreeUnits(int triangles, bool erosion = false)
 		{
-			long leaves = TreeLeaves(triangles);
-			return triangles + leaves + (leaves - 1) + 1;
+			long leaves = TreeLeaves(triangles, erosion);
+			return triangles + leaves + (leaves - 1) + 1 + (erosion ? 1 : 0);
 		}
 
 		/// <summary>
@@ -173,12 +175,18 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// phase completes - is the remainder. The caller's high-water mark keeps the bar from
 		/// stepping back when two workers report out of order.
 		/// </para>
+		/// <para>
+		/// An erosion's closing subtraction - the solid minus the tree's union, one boolean on the
+		/// two largest operands - is counted as one more level of one union above the tree's top,
+		/// which is what it is: the dilation tree unions that same solid in as its extra leaf.
+		/// </para>
 		/// </remarks>
 		/// <param name="triangles">The solid's triangle count.</param>
 		/// <param name="kernelFraction">The kernel's reported fraction of its units.</param>
 		/// <param name="parallelism">How many unions run at once; the core count when the kernel runs
 		/// in parallel, 1 when it does not.</param>
-		public static double TreeTimeFraction(int triangles, double kernelFraction, int parallelism)
+		/// <param name="erosion">True for the erosion tree, false for the dilation tree.</param>
+		public static double TreeTimeFraction(int triangles, double kernelFraction, int parallelism, bool erosion = false)
 		{
 			if (triangles <= 0 || kernelFraction >= 1)
 			{
@@ -190,8 +198,8 @@ namespace MatterHackers.PolygonMesh.Csg
 				return 0;
 			}
 
-			long total = TreeUnits(triangles);
-			long leaves = TreeLeaves(triangles);
+			long total = TreeUnits(triangles, erosion);
+			long leaves = TreeLeaves(triangles, erosion);
 			long leafStageUnits = triangles + leaves;
 			double units = kernelFraction * total;
 			if (units <= leafStageUnits)
@@ -216,6 +224,14 @@ namespace MatterHackers.PolygonMesh.Csg
 				cost *= TreeLevelCostGrowth;
 			}
 
+			if (erosion)
+			{
+				// The closing subtraction: one union's worth at the next level up.
+				unionsPerLevel.Add(1);
+				weights.Add(cost);
+				totalWeight += cost;
+			}
+
 			double doneNodes = units - leafStageUnits;
 			double doneWeight = 0;
 			for (int level = 0; level < unionsPerLevel.Count && doneNodes > 0; level++)
@@ -229,9 +245,10 @@ namespace MatterHackers.PolygonMesh.Csg
 			return Math.Clamp(TreeLeafTimeShare + (TreeLevelTimeShare * levelsDone), 0, 1);
 		}
 
-		private static long TreeLeaves(int triangles)
+		private static long TreeLeaves(int triangles, bool erosion)
 		{
-			return ((triangles + TreeLeafSize - 1L) / TreeLeafSize) + 1;
+			// A dilation adds the solid as one more leaf; an erosion subtracts it at the end instead.
+			return ((triangles + TreeLeafSize - 1L) / TreeLeafSize) + (erosion ? 0 : 1);
 		}
 	}
 }

@@ -242,21 +242,21 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
-		/// A non-convex erosion still goes through the sweep, and its answer is what it always
-		/// was.
+		/// A non-convex erosion goes through the kernel's union tree, and its answer is the
+		/// sweep's.
 		/// </summary>
 		/// <remarks>
 		/// The proof is the notch. The closed form builds its answer as a convex hull, so the
 		/// only thing it could ever have returned for this L is the erosion of the cube the L
-		/// was cut from - volume 5832. Getting 5710.55 back is the routing gate working, not
-		/// just the arithmetic agreeing.
+		/// was cut from - volume 5832. 5710.55 is the sweep's answer for this L, pinned before the
+		/// tree existed; the tree reduces the same hulls, so it must land on the same volume.
 		/// <para>
-		/// The reported <see cref="ErosionPath"/> states the same thing directly; the volume
-		/// stays as the independent witness, for the reason its convex counterpart spells out.
+		/// The path reads Sweep either way (the same cost regime); <see
+		/// cref="MinkowskiProcessing.ErosionTreeRuns"/> is what says the tree answered.
 		/// </para>
 		/// </remarks>
 		[Test]
-		public async Task ANonConvexErosionStillTakesTheSweep()
+		public async Task ANonConvexErosionTakesTheTreeAndMatchesTheSweepsVolume()
 		{
 			var ball = MinkowskiProcessing.SphereMesh(1.0, 12);
 			var lShape = Cleaned(BooleanProcessing.Do(
@@ -266,15 +266,18 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				Matrix4X4.CreateTranslation(10, 10, 10),
 				CsgModes.Subtract));
 
+			long treeRunsBefore = MinkowskiProcessing.ErosionTreeRuns;
 			var eroded = Cleaned(MinkowskiProcessing.MinkowskiDifference(lShape, ball, out ErosionPath path));
 
 			await Assert.That(path).IsEqualTo(ErosionPath.Sweep)
-				.Because("the closed form declines a non-convex solid, and the sweep is what answers it");
+				.Because("the closed form declines a non-convex solid, and the tree reports the sweep's cost regime");
+			await Assert.That(MinkowskiProcessing.ErosionTreeRuns).IsGreaterThan(treeRunsBefore)
+				.Because("a non-convex solid and a convex ball are exactly what the erosion tree takes");
 
 			await Assert.That(SignedVolume(eroded)).IsLessThan(5800)
 				.Because("18^3 is 5832 - anything at or above it is the convex hull of this solid, which is what a wrongly-routed closed form would have answered");
 			await Assert.That(SignedVolume(eroded)).IsEqualTo(5710.55).Within(0.5)
-				.Because("the sweep's answer for this L, unchanged by the fast path existing");
+				.Because("the sweep's answer for this L, which the tree has to reproduce");
 		}
 
 		/// <summary>
@@ -603,74 +606,13 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
-		/// A cancel lands within a hull or two of being asked for, rather than at the end of
-		/// the operation, and surfaces as the <see cref="OperationCanceledException"/> every
-		/// caller above this layer is written against.
-		/// </summary>
-		/// <remarks>
-		/// The erosion is the slow half - one convex hull and one boolean per triangle of the
-		/// solid - so a 128 triangle ball reports about 131 times when it runs to completion.
-		/// The bound is that report count and not a stopwatch: work units are what
-		/// cancellation latency is actually made of, and a wall-clock ratio would have to
-		/// measure a baseline run whose first-call JIT cost inflates it, on a machine whose
-		/// load nobody controls. The token is tripped from the first progress report, which is
-		/// the earliest in-kernel moment a test can reach.
-		/// <para>
-		/// The ball is DENTED, and has to be. The sweep is what this test is about, and a
-		/// convex solid is now routed past it into the closed form, which finishes the whole
-		/// erosion between the two reports it makes - so the undented fixture measured nothing
-		/// but a race the fast path always wins. The closed form's own cancellation is a
-		/// different contract, pinned below and in the kernel's ConvexErosionTests.
-		/// </para>
-		/// </remarks>
-		[Test]
-		public async Task ACancelledErosionStopsWithinAHullOrTwoOfBeingAsked()
-		{
-			var solid = Dented(MinkowskiProcessing.SphereMesh(5, 16));
-			var tool = MinkowskiProcessing.SphereMesh(0.5, 8);
-
-			await Assert.That(solid.Faces.Count).IsGreaterThan(100)
-				.Because("the fixture has to have enough work in it that stopping early is visible");
-
-			using var source = new CancellationTokenSource();
-			int reports = 0;
-			var reporter = new ProgressReporter((ratio, message) =>
-			{
-				// Not the first: that one is the kernel opening the phase, before any hull has
-				// run, so cancelling on it would only re-test the entry gate.
-				if (Interlocked.Increment(ref reports) >= 2)
-				{
-					source.Cancel();
-				}
-			});
-
-			OperationCanceledException caught = null;
-			try
-			{
-				await MinkowskiProcessing.MinkowskiDifferenceAsync(solid, tool, reporter, source.Token);
-			}
-			catch (OperationCanceledException cancelled)
-			{
-				caught = cancelled;
-			}
-
-			await Assert.That(caught).IsNotNull()
-				.Because("the kernel reports a cancelled run as a status; this layer owes the caller an exception");
-
-			// Loose because the parallel map cannot recall iterations already in flight, so a
-			// few extra hulls per core may finish after the flag is set - but still far under
-			// the ~131 a completed run emits, which is what "prompt" means here.
-			await Assert.That(Volatile.Read(ref reports)).IsLessThan(40)
-				.Because($"cancel was ignored for {Volatile.Read(ref reports)} of the operation's ~131 reports");
-		}
-
-		/// <summary>
 		/// A convex erosion honours a token too, even though it has no hulls to stop between:
 		/// the closed form is milliseconds, so the only cancel it can observe is one that was
 		/// already set, and it has to answer that rather than race past it.
 		/// </summary>
 		/// <remarks>
-		/// The other half of the test above, and the half the fast path introduced. A closed
+		/// The closed form's half of the cancel coverage (the sweep's and the tree's are in
+		/// <see cref="MinkowskiErosionCancelTests"/>), and the half the fast path introduced. A closed
 		/// form that answered "not applicable" on a cancelled token would send the caller
 		/// straight into the sweep it was cancelled out of, which is the worst of both.
 		/// </remarks>
@@ -686,52 +628,6 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(async () =>
 					await MinkowskiProcessing.MinkowskiDifferenceAsync(solid, tool, null, source.Token))
 				.Throws<OperationCanceledException>();
-		}
-
-		/// <summary>
-		/// The bar reaches 1.0 through the whole async stack on an operation big enough for the
-		/// kernel's progress throttle to start skipping reports.
-		/// </summary>
-		/// <remarks>
-		/// The regression this pins was found here rather than in the kernel: the throttle
-		/// emits every <c>total / 100</c> units, so a 290 unit erosion used to stop reporting
-		/// at 288/290 and the caller's bar stopped just short of full. Everything smaller lands
-		/// on 1.0 by luck, because a total under 100 makes the step 1.
-		/// <para>
-		/// Dented for the same reason the cancellation test is: the throttled regime only
-		/// exists inside the sweep, and a convex solid no longer goes there. Undented this
-		/// still passed, on two reports - which is exactly the kind of test that stops proving
-		/// its own subject without failing.
-		/// </para>
-		/// </remarks>
-		[Test]
-		public async Task AnAsyncErosionLargeEnoughToBeThrottledStillFillsTheBar()
-		{
-			var solid = Dented(MinkowskiProcessing.SphereMesh(5, 24));
-			var tool = MinkowskiProcessing.SphereMesh(0.5, 8);
-
-			await Assert.That(solid.Faces.Count).IsEqualTo(288)
-				.Because("288 hulls plus a batch reduction plus the closing merge is 290 units, so the throttle's step is 2");
-
-			var ratios = new List<double>();
-			var gate = new object();
-			var reporter = new ProgressReporter((ratio, message) =>
-			{
-				lock (gate)
-				{
-					ratios.Add(ratio);
-				}
-			});
-
-			var eroded = await MinkowskiProcessing.MinkowskiDifferenceAsync(solid, tool, reporter, CancellationToken.None);
-
-			await Assert.That(eroded.Faces.Count).IsGreaterThan(0);
-			await Assert.That(ratios.Count).IsLessThan(290)
-				.Because("fewer reports than units is what makes this the throttled regime the bug lived in");
-			await Assert.That(ratios.Count).IsGreaterThan(50)
-				.Because("and more than a handful is what says the sweep ran at all - two reports would be the closed form, which has no throttle to test");
-			await Assert.That(ratios[ratios.Count - 1]).IsEqualTo(1.0).Within(1e-9)
-				.Because("a finished erosion has to leave the bar full, not at 288/290");
 		}
 
 		/// <summary>
@@ -883,7 +779,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		/// the sweep's cost is one hull and one boolean per triangle, so keeping the triangle
 		/// count identical is what makes the two timings comparable at all.
 		/// </remarks>
-		private static Mesh Dented(Mesh ball)
+		internal static Mesh Dented(Mesh ball)
 		{
 			ball.Vertices[0] = ball.Vertices[0] * 0.5f;
 

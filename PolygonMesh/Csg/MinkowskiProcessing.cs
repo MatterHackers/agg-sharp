@@ -67,8 +67,11 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// never reaches the sweep: this class routes it to the kernel's
 	/// <c>Manifold.TryDilateByConvex</c>, which builds the same hulls and unions them as a
 	/// balanced tree across every core - 5-8x faster in Release on 6000-12000-triangle parts,
-	/// with the same volume and genus (manifold-sharp divergence ledger entry 6). Erosions of
-	/// non-convex solids still sweep.</item>
+	/// with the same volume and genus (manifold-sharp divergence ledger entry 6). An erosion the
+	/// closed form below declines goes to <c>Manifold.TryErodeByConvex</c> next: the same tree
+	/// without the solid leaf, then one solid-minus-union, about 2x the sweep's speed. Both trees
+	/// take solids with several shells, nested or overlapping; only a non-convex tool (or an
+	/// empty, soup or errored operand) still sweeps either way.</item>
 	/// <item>nonconvex &#8853; nonconvex - a hull per <em>pair</em> of faces. Quadratic, and only
 	/// worth starting on toy meshes.</item>
 	/// </list>
@@ -156,6 +159,13 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// The per-triangle sweep: one convex hull and one boolean per triangle of the solid.
 		/// Seconds for a few hundred triangles, minutes for a few thousand.
 		/// </summary>
+		/// <remarks>
+		/// Also reported when the kernel's erosion tree (<c>Manifold.TryErodeByConvex</c>) reduced
+		/// those same hulls instead: it is the same cost regime - a hull and a boolean's worth of
+		/// work per triangle, about 2x faster, not three orders - so a caller weighting a bar by
+		/// this signal weights it correctly. <see cref="MinkowskiProcessing.ErosionTreeRuns"/>
+		/// tells the two apart for tests.
+		/// </remarks>
 		Sweep,
 	}
 
@@ -169,6 +179,15 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// since both give the same solid - in the spirit of <see cref="ErosionPath"/>.
 		/// </summary>
 		public static long DilationTreeRuns => Interlocked.Read(ref dilationTreeRuns);
+
+		private static long erosionTreeRuns;
+
+		/// <summary>
+		/// How many erosions in this process took the kernel's parallel union tree rather than the
+		/// sweep - the erosion counterpart of <see cref="DilationTreeRuns"/>. Both report
+		/// <see cref="ErosionPath.Sweep"/>, so this is the only way to tell them apart.
+		/// </summary>
+		public static long ErosionTreeRuns => Interlocked.Read(ref erosionTreeRuns);
 
 		/// <summary>
 		/// Dilation: every point of <paramref name="solid"/> swept by <paramref name="tool"/>,
@@ -578,15 +597,16 @@ namespace MatterHackers.PolygonMesh.Csg
 					RustPhases.Name(phase),
 					fraction.HasValue ? MinkowskiProgressModel.TimeFraction(solidTriangles, fraction.Value) : null)));
 
-			// The dilation tree counts different units (hull, leaf, tree node) and reports them from
-			// worker threads, so two reports can arrive out of order; it gets its own time mapping,
-			// and the adapter's high-water mark keeps the bar from stepping back.
+			// The union tree (dilation and erosion alike) counts different units (hull, leaf, tree
+			// node, and for an erosion the closing subtraction) and reports them from worker threads,
+			// so two reports can arrive out of order; it gets its own time mapping, and the adapter's
+			// high-water mark keeps the bar from stepping back.
 			int treeParallelism = RustParallel.Enabled ? Environment.ProcessorCount : 1;
 			var treeProgress = adapter == null
 				? null
 				: new RustProgressReporter((phase, fraction) => adapter.Report((
 					RustPhases.Name(phase),
-					fraction.HasValue ? MinkowskiProgressModel.TreeTimeFraction(solidTriangles, fraction.Value, treeParallelism) : null)));
+					fraction.HasValue ? MinkowskiProgressModel.TreeTimeFraction(solidTriangles, fraction.Value, treeParallelism, inset) : null)));
 
 			// One token per operation, as CancelToken's own remarks require: it registers on
 			// the caller's source and is never unregistered, so a token that outlived the call
@@ -620,6 +640,17 @@ namespace MatterHackers.PolygonMesh.Csg
 				// run comes back applied, as the closed form's does.
 				result = treeSum;
 				Interlocked.Increment(ref dilationTreeRuns);
+			}
+			else if (inset && solid.TryErodeByConvex(tool, token, treeProgress, out RustManifold treeDifference))
+			{
+				// The erosion the closed form declined, through the same tree: the same hulls
+				// reduced without the solid, then the solid minus their union once. Same volume
+				// and genus as the sweep, nested shells included; it declines, having reported
+				// nothing, for a non-convex tool or an empty, soup or errored operand, and the
+				// sweep below runs as before. Reported as Sweep - the same cost regime (see
+				// ErosionPath.Sweep).
+				result = treeDifference;
+				Interlocked.Increment(ref erosionTreeRuns);
 			}
 			else
 			{

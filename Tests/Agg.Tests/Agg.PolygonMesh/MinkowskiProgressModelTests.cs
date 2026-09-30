@@ -111,5 +111,38 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			double allNodes = MinkowskiProgressModel.TreeTimeFraction(triangles, (total - 1) / (double)total, 10);
 			await Assert.That(allNodes).IsEqualTo(MinkowskiProgressModel.TreeLeafTimeShare + MinkowskiProgressModel.TreeLevelTimeShare).Within(1e-9);
 		}
+
+		[Test]
+		public async Task TheErosionTreeCountsItsClosingSubtractionAsATopLevel()
+		{
+			const int triangles = 1600;
+			long total = MinkowskiProgressModel.TreeUnits(triangles, erosion: true);
+
+			// 1600 hulls, 100 leaves (the solid is not one), 99 tree nodes, the subtraction and the closing pass.
+			await Assert.That(total).IsEqualTo(1600 + 100 + 99 + 1 + 1);
+
+			double previous = -1;
+			for (long unit = 0; unit <= total; unit++)
+			{
+				double fraction = MinkowskiProgressModel.TreeTimeFraction(triangles, unit / (double)total, 10, erosion: true);
+				await Assert.That(fraction).IsGreaterThanOrEqualTo(previous);
+				previous = fraction;
+			}
+
+			await Assert.That(MinkowskiProgressModel.TreeTimeFraction(triangles, 1, 10, erosion: true)).IsEqualTo(1.0);
+
+			// Every leaf done is the leaves' whole share.
+			double leavesDone = MinkowskiProgressModel.TreeTimeFraction(triangles, 1700 / (double)total, 10, erosion: true);
+			await Assert.That(leavesDone).IsEqualTo(MinkowskiProgressModel.TreeLeafTimeShare).Within(1e-9);
+
+			// Every tree node done but not the subtraction: the subtraction still holds a real part
+			// of the levels' share - it is the biggest boolean of the run.
+			double nodesDone = MinkowskiProgressModel.TreeTimeFraction(triangles, (1700 + 99) / (double)total, 10, erosion: true);
+			await Assert.That(nodesDone).IsLessThan(MinkowskiProgressModel.TreeLeafTimeShare + (0.9 * MinkowskiProgressModel.TreeLevelTimeShare));
+
+			// The subtraction done, the closing pass not: the leaves and all the levels.
+			double subtracted = MinkowskiProgressModel.TreeTimeFraction(triangles, (total - 1) / (double)total, 10, erosion: true);
+			await Assert.That(subtracted).IsEqualTo(MinkowskiProgressModel.TreeLeafTimeShare + MinkowskiProgressModel.TreeLevelTimeShare).Within(1e-9);
+		}
 	}
 }
