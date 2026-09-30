@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
@@ -112,6 +113,39 @@ namespace MatterHackers.Agg.Tests
 
 			await Assert.That(seen.Count).IsEqualTo(2);
 			await Assert.That(safeList.Count).IsEqualTo(0);
+		}
+
+		// Modify is read-copy-swap, so two writers on different threads each copied the same old list and
+		// the second swap threw the first one's change away. A node graph lost its body that way: a new node
+		// inserted the body into the graph's children while the graph's own background rebuild published its
+		// results over a copy taken a moment before (NodeGraphInputSlotTests, one full sharded run).
+		[Test]
+		public async Task TwoWritersOnDifferentThreadsBothKeepTheirChange()
+		{
+			var safeList = new SafeList<string>();
+			using var firstIsCopying = new ManualResetEventSlim();
+			using var secondFinished = new ManualResetEventSlim();
+
+			var first = Task.Run(() => safeList.Modify(list =>
+			{
+				list.Add("first");
+				firstIsCopying.Set();
+				// Unserialized, the second writer finishes here and this swap then drops its item. Serialized,
+				// it waits for this one, so the wait times out and both land.
+				secondFinished.Wait(300);
+			}));
+
+			firstIsCopying.Wait();
+			var second = Task.Run(() =>
+			{
+				safeList.Add("second");
+				secondFinished.Set();
+			});
+
+			await Task.WhenAll(first, second);
+
+			await Assert.That(safeList.Contains("first")).IsTrue();
+			await Assert.That(safeList.Contains("second")).IsTrue().Because("a writer must not overwrite a concurrent writer's change");
 		}
 	}
 }

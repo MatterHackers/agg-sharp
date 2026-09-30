@@ -70,18 +70,24 @@ namespace MatterHackers.Agg
 		/// <param name="modifier">The Action to invoke</param>
 		override public void Modify(Action<List<T>> modifier)
 		{
-			// Copy the child items to a new list
-			var safeClone = new List<T>(items);
+			List<T> published;
+			// Serialized with every other writer (see SafeList.modifyLock) so no concurrent change is dropped.
+			lock (modifyLock)
+			{
+				// Copy the child items to a new list
+				var safeClone = new List<T>(items);
 
-			// Pass the new list to the Action for manipulation
-			modifier(safeClone);
+				// Pass the new list to the Action for manipulation
+				modifier(safeClone);
 
-			// Swap a private copy of the modified list into place - never the modifier's own instance
-			items = new List<T>(safeClone);
+				// Swap a private copy of the modified list into place - never the modifier's own instance
+				published = new List<T>(safeClone);
+				items = published;
+			}
 
 			if (parentItem != null)
 			{
-				foreach (var item in items)
+				foreach (var item in published)
 				{
 					item.Parent = parentItem;
 				}

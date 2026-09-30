@@ -39,6 +39,14 @@ namespace MatterHackers.Agg
 
 		protected List<T> items = new List<T>();
 
+		/// <summary>
+		/// Serializes writers. Modify is read-copy-swap, so two writers on different threads each copied the
+		/// same old list and the later swap dropped the other's change (a graph's rebuild publishing its results
+		/// while a new node inserted the graph's body lost the body). Readers never take it: they read whichever
+		/// list is live. Held only for the copy, the modifier and the swap - never while ItemsModified runs.
+		/// </summary>
+		protected readonly object modifyLock = new object();
+
 		public SafeList()
 		{
 		}
@@ -90,14 +98,17 @@ namespace MatterHackers.Agg
 		/// <param name="modifier">The Action to invoke</param>
 		virtual public void Modify(Action<List<T>> modifier)
 		{
-			// Copy the child items to a new list
-			var safeClone = new List<T>(items);
+			lock (modifyLock)
+			{
+				// Copy the child items to a new list
+				var safeClone = new List<T>(items);
 
-			// Pass the new list to the Action for manipulation
-			modifier(safeClone);
+				// Pass the new list to the Action for manipulation
+				modifier(safeClone);
 
-			// Swap a private copy of the modified list into place - never the modifier's own instance
-			items = new List<T>(safeClone);
+				// Swap a private copy of the modified list into place - never the modifier's own instance
+				items = new List<T>(safeClone);
+			}
 
 			this.OnItemsModified(null);
 		}
