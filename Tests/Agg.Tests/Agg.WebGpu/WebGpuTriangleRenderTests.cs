@@ -97,8 +97,6 @@ fn fs_main() -> @location(0) vec4<f32>
 
 			string pngPath = Path.Combine(Path.GetTempPath(), "MatterCADTests", "WebGpuOffscreenTriangle.png");
 			Directory.CreateDirectory(Path.GetDirectoryName(pngPath));
-			// ImageIO.SaveImageData refuses to overwrite, so the artifact would otherwise go stale.
-			File.Delete(pngPath);
 			ImageIO.SaveImageData(pngPath, image);
 			Console.WriteLine($"wgpu triangle written to {pngPath}");
 

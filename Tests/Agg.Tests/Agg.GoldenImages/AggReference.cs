@@ -275,10 +275,6 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		{
 			string path = ArtifactPath(name, suffix);
 			Directory.CreateDirectory(Path.GetDirectoryName(path));
-			if (File.Exists(path))
-			{
-				File.Delete(path);
-			}
 
 			// SaveImageData reports failure by returning false; a failure message naming a file that was
 			// never written would send whoever reads it looking for an image that does not exist.

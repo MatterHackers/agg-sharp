@@ -141,7 +141,6 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			var rendered = await capture.CaptureAsync();
 			Directory.CreateDirectory(directory);
 			string path = Path.Combine(directory, $"{preset.Name}-{theme}.png");
-			File.Delete(path);
 			ImageIO.SaveImageData(path, rendered);
 		}
 

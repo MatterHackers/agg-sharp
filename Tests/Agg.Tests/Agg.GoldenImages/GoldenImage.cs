@@ -344,19 +344,9 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		/// <summary>
 		/// Writes <paramref name="image"/> as a PNG, replacing whatever is there.
 		/// </summary>
-		/// <remarks>
-		/// <see cref="ImageIO.SaveImageData(string, IImageByte)"/> silently returns false rather than
-		/// overwriting an existing file, so without the delete a regenerate run would leave every golden at
-		/// its old contents and report success.
-		/// </remarks>
 		private static void WritePng(ImageBuffer image, string path)
 		{
 			Directory.CreateDirectory(Path.GetDirectoryName(path));
-			if (File.Exists(path))
-			{
-				File.Delete(path);
-			}
-
 			if (!ImageIO.SaveImageData(path, image))
 			{
 				throw new IOException($"Could not write '{path}'.");

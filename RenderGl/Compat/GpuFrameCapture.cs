@@ -24,7 +24,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System;
-using System.IO;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
 using MatterHackers.RenderCore;
@@ -99,13 +98,6 @@ namespace MatterHackers.RenderGl.Compat
 			}
 
 			image.MarkImageChanged();
-
-			// ImageIO.SaveImageData will not overwrite, and a stale screenshot that looks fresh is worse
-			// than no screenshot.
-			if (File.Exists(path))
-			{
-				File.Delete(path);
-			}
 
 			if (!ImageIO.SaveImageData(path, image))
 			{

@@ -315,9 +315,7 @@ namespace MatterHackers.Agg.UI.Tests
 			string dir = Environment.GetEnvironmentVariable("AGG_RESTYLE_PNG_DIR");
 			if (!string.IsNullOrEmpty(dir))
 			{
-				// SaveImageData leaves an existing file alone, so a rerun would keep showing the old render.
 				string path = Path.Combine(dir, name + ".png");
-				File.Delete(path);
 				ImageIO.SaveImageData(path, image);
 			}
 		}

@@ -214,7 +214,6 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 				{
 					Directory.CreateDirectory(dump);
 					string pngPath = Path.Combine(dump, name.Replace('/', '_').Replace(".svg", ".png"));
-					File.Delete(pngPath);
 					ImageIO.SaveImageData(pngPath, render);
 				}
 
