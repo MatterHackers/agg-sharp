@@ -34,16 +34,20 @@ struct Transform
 
 struct Lights
 {
-	// b1: 7 float4s = 112 bytes. Positions are already in eye space (the classic path sets the lights
+	// b1: 8 float4s = 128 bytes. Positions are already in eye space (the classic path sets the lights
 	// with an identity modelview so glLightfv's transform is a no-op).
 	light0Position : vec4<f32>,
+	// The sky half of the hemisphere ambient: what a face pointing straight up the screen receives.
 	light0Ambient : vec4<f32>,
 	light0Diffuse : vec4<f32>,
 	light1Position : vec4<f32>,
+	// The ground half of the hemisphere ambient: what a face pointing straight down receives.
 	light1Ambient : vec4<f32>,
 	light1Diffuse : vec4<f32>,
 	// x = light 0 enabled, y = light 1 enabled.
 	flags : vec4<f32>,
+	// x = specular strength, y = specular power, z = rim strength. All zero for the classic look.
+	surface : vec4<f32>,
 };
 
 struct SceneEffect
@@ -152,24 +156,44 @@ struct FragmentInput
 
 const DepthPeelBias : f32 = 1e-5;
 
+// A light rig expressed entirely as data (LightingData / LightingPresets): a sky/ground hemisphere
+// ambient, two directional diffuse lights, an untinted Blinn-Phong highlight off light 0 and an
+// untinted rim that brightens faces turned edge-on to the viewer. With sky == ground, no specular and
+// no rim this is exactly the classic flat-ambient Lambert look. Everything is in eye space: "up" is
+// the screen's up, and the view direction is taken as +z for every fragment - exact for the
+// orthographic view and close enough under perspective for terms this soft.
 fn applyLighting(baseColor : vec3<f32>, viewNormal : vec3<f32>) -> vec3<f32>
 {
 	let normal = normalize(viewNormal);
-	var litColor = baseColor * 0.2;
+	let hemisphere = mix(lights.light1Ambient.rgb, lights.light0Ambient.rgb, normal.y * 0.5 + 0.5);
+	var litColor = baseColor * hemisphere;
+	var sheen = 0.0;
 
 	if (lights.flags.x > 0.5)
 	{
-		let diffuse = max(0.0, dot(normal, normalize(lights.light0Position.xyz)));
-		litColor = litColor + baseColor * (lights.light0Ambient.rgb + lights.light0Diffuse.rgb * diffuse);
+		let keyDirection = normalize(lights.light0Position.xyz);
+		let diffuse = max(0.0, dot(normal, keyDirection));
+		litColor = litColor + baseColor * lights.light0Diffuse.rgb * diffuse;
+
+		if (lights.surface.x > 0.0 && diffuse > 0.0)
+		{
+			let halfVector = normalize(keyDirection + vec3<f32>(0.0, 0.0, 1.0));
+			sheen = sheen + lights.surface.x * pow(max(0.0, dot(normal, halfVector)), lights.surface.y);
+		}
 	}
 
 	if (lights.flags.y > 0.5)
 	{
 		let diffuse = max(0.0, dot(normal, normalize(lights.light1Position.xyz)));
-		litColor = litColor + baseColor * (lights.light1Ambient.rgb + lights.light1Diffuse.rgb * diffuse);
+		litColor = litColor + baseColor * lights.light1Diffuse.rgb * diffuse;
 	}
 
-	return clamp(litColor, vec3<f32>(0.0), vec3<f32>(1.0));
+	if (lights.surface.z > 0.0)
+	{
+		sheen = sheen + lights.surface.z * pow(1.0 - abs(normal.z), 3.0);
+	}
+
+	return clamp(litColor + vec3<f32>(sheen), vec3<f32>(0.0), vec3<f32>(1.0));
 }
 
 fn getEffectiveColor(vertexColor : vec4<f32>) -> vec4<f32>

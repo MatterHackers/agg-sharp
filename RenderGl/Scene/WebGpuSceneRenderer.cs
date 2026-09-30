@@ -80,7 +80,7 @@ namespace MatterHackers.RenderGl.Scene
 
 		private const int TransformUniformSize = 128;
 
-		private const int LightUniformSize = 112;
+		private const int LightUniformSize = 128;
 
 		/// <summary>
 		/// 12 float4s: the five the classic SceneEffectBuffer starts with plus the seven of the analytic
@@ -2761,20 +2761,32 @@ namespace MatterHackers.RenderGl.Scene
 			var span = this.lightScratch.AsSpan();
 
 			GlUniformBlock.WriteVector4(span, 0, lighting.LightDirection0);
-			GlUniformBlock.WriteVector4(span, 16, lighting.AmbientLight);
+
+			// The two ambient slots carry the hemisphere: sky in light 0's, ground in light 1's. The flat
+			// AmbientLight term lands on both halves, which is what it meant before the hemisphere.
+			WriteAmbient(span, 16, lighting.SkyAmbient, lighting.AmbientLight);
 			GlUniformBlock.WriteVector4(span, 32, lighting.DiffuseLight0);
 
 			GlUniformBlock.WriteVector4(span, 48, lighting.LightDirection1);
-
-			// Light 1 has no ambient term: the classic path never sets one, so its LightData keeps the
-			// GL default of black.
-			GlUniformBlock.WriteVector4(span, 64, 0, 0, 0, 1);
+			WriteAmbient(span, 64, lighting.GroundAmbient, lighting.AmbientLight);
 			GlUniformBlock.WriteVector4(span, 80, lighting.DiffuseLight1);
 
 			// Both lights are on for every scene draw, as UpdateLightBuffer(true, true) says.
 			GlUniformBlock.WriteVector4(span, 96, 1, 1, 0, 0);
+			GlUniformBlock.WriteVector4(span, 112, lighting.SpecularStrength, lighting.SpecularPower, lighting.RimStrength, 0);
 
 			this.device.WriteBuffer(this.lightUniform, 0, this.lightScratch);
+		}
+
+		private static void WriteAmbient(Span<byte> span, int offset, float[] hemisphereHalf, float[] flatAmbient)
+		{
+			GlUniformBlock.WriteVector4(
+				span,
+				offset,
+				hemisphereHalf[0] + flatAmbient[0],
+				hemisphereHalf[1] + flatAmbient[1],
+				hemisphereHalf[2] + flatAmbient[2],
+				1);
 		}
 
 		private void WriteOutlineUniform()
