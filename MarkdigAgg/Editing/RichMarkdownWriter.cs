@@ -41,8 +41,24 @@ namespace Markdig.Agg.Editing
 	/// </summary>
 	public static class RichMarkdownWriter
 	{
-		public static string Write(RichDocument document)
+		public static string Write(RichDocument document) => Write(document, -1, out _);
+
+		/// <summary>
+		/// Where block <paramref name="blockIndex"/> starts in <see cref="Write(RichDocument)"/>'s output: the written
+		/// lengths of everything before it (frontmatter, earlier blocks, separators, an alignment wrapper's opening),
+		/// so a Raw block double-clicked in the rich view can be found in the Markdown tab. A block inside a
+		/// regenerated group is found by its source within that group's text, or at the group's start when the
+		/// group rewrote it.
+		/// </summary>
+		public static int SourceOffsetOf(RichDocument document, int blockIndex)
 		{
+			Write(document, blockIndex, out int offset);
+			return offset;
+		}
+
+		private static string Write(RichDocument document, int trackedBlock, out int trackedOffset)
+		{
+			trackedOffset = 0;
 			var blocks = document.Blocks;
 			var markdown = new StringBuilder(document.Frontmatter);
 			string blankLine = RichEditOperations.BlankLine(document);
@@ -63,7 +79,14 @@ namespace Markdig.Agg.Editing
 				if (unitEnd >= 0)
 				{
 					markdown.Append(RichGroupWriter.LeadingSeparator(block.SeparatorBefore, newline, i == 0));
-					markdown.Append(RichGroupWriter.WriteUnit(blocks, i, unitEnd, newline, ref previousList, ref listContentColumn));
+					string unit = RichGroupWriter.WriteUnit(blocks, i, unitEnd, newline, ref previousList, ref listContentColumn);
+					if (trackedBlock >= i && trackedBlock <= unitEnd)
+					{
+						int at = unit.IndexOf(blocks[trackedBlock].OriginalSource, StringComparison.Ordinal);
+						trackedOffset = markdown.Length + Math.Max(at, 0);
+					}
+
+					markdown.Append(unit);
 					blankLineNext = true;
 					i = unitEnd + 1;
 					continue;
@@ -76,6 +99,11 @@ namespace Markdig.Agg.Editing
 				{
 					// An empty paragraph writes nothing, gap included, so the lists or quotes around it stay apart
 					// exactly as if it were not there.
+					if (i == trackedBlock)
+					{
+						trackedOffset = markdown.Length;
+					}
+
 					i++;
 					continue;
 				}
@@ -98,6 +126,11 @@ namespace Markdig.Agg.Editing
 				if (align != null && (i == 0 || blocks[i - 1].AlignGroup != align))
 				{
 					markdown.Append(align.OpenSource);
+				}
+
+				if (i == trackedBlock)
+				{
+					trackedOffset = markdown.Length;
 				}
 
 				markdown.Append(text);

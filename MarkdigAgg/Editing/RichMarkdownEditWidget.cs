@@ -46,6 +46,7 @@ namespace Markdig.Agg.Editing
 		private RichDocument document = new RichDocument();
 		private ThemeConfig theme;
 		private RichSelection selection;
+		private readonly RichEditorMouse mouse;
 
 		public RichMarkdownEditWidget(ThemeConfig theme)
 			: base(autoScroll: true)
@@ -66,6 +67,71 @@ namespace Markdig.Agg.Editing
 			view = new RichDocumentView(this);
 			AddChild(view);
 			EnsureABlock();
+			mouse = new RichEditorMouse(this);
+		}
+
+		/// <summary>
+		/// Raised with a link's url when it is Cmd/Ctrl+clicked; a plain click on a link only places the caret.
+		/// </summary>
+		public event Action<string> LinkClicked;
+
+		/// <summary>
+		/// Raised when a Raw block is double-clicked, with where its source starts in <see cref="Markdown"/>
+		/// (<see cref="RichMarkdownWriter.SourceOffsetOf"/>), so the host can show the markdown there.
+		/// </summary>
+		public event Action<int> RawBlockActivated;
+
+		/// <summary>
+		/// Raised when the user moves the caret or selection with the mouse, so typing after it starts a new undo
+		/// step (<see cref="RichEditHistory.BreakCoalescing"/>).
+		/// </summary>
+		public event EventHandler SelectionChangedByUser;
+
+		/// <summary>
+		/// How mouse handling reads Shift and Cmd/Ctrl; tests replace it rather than press the shared keyboard.
+		/// </summary>
+		internal Func<Keys, bool> MouseKeyState
+		{
+			get => mouse.IsKeyDown;
+			set => mouse.IsKeyDown = value;
+		}
+
+		internal void RaiseLinkClicked(string url) => LinkClicked?.Invoke(url);
+
+		internal void RaiseRawBlockActivated(int sourceOffset) => RawBlockActivated?.Invoke(sourceOffset);
+
+		internal void SetSelectionByUser(RichSelection newSelection, bool caretAtLineEnd)
+		{
+			SetSelection(newSelection, caretAtLineEnd);
+			SelectionChangedByUser?.Invoke(this, EventArgs.Empty);
+		}
+
+		internal void ShowCursor(Cursors cursor)
+		{
+			if (Cursor != cursor)
+			{
+				Cursor = cursor;
+				SetCursor(cursor);
+			}
+		}
+
+		// The document view and Raw hosts are not selectable, so every press over the text lands here, not in them.
+		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			base.OnMouseDown(mouseEvent);
+			mouse.Down(mouseEvent);
+		}
+
+		public override void OnMouseMove(MouseEventArgs mouseEvent)
+		{
+			base.OnMouseMove(mouseEvent);
+			mouse.Move(mouseEvent);
+		}
+
+		public override void OnMouseUp(MouseEventArgs mouseEvent)
+		{
+			mouse.Up(mouseEvent);
+			base.OnMouseUp(mouseEvent);
 		}
 
 		/// <summary>
