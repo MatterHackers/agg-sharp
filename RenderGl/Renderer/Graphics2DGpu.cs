@@ -758,27 +758,6 @@ namespace MatterHackers.RenderGl
         {
             this.FlushDeferredDraws();
             var transform = GetTransform();
-            if (!transform.is_identity())
-            {
-                transform.Transform(ref x, ref y);
-                scaleX *= transform.sx;
-                scaleY *= transform.sy;
-            }
-
-            var sourceBounds = source.GetBounds();
-            sourceBounds.Offset((int)x, (int)y);
-            var destBounds = new RectangleInt((int)cachedClipRect.Left, (int)cachedClipRect.Bottom, (int)cachedClipRect.Right, (int)cachedClipRect.Top);
-
-            if (!RectangleInt.DoIntersect(sourceBounds, destBounds))
-            {
-                if (scaleX != 1 || scaleY != 1)
-                {
-                    // TODO: <BUG> make this work when there is rotation
-                    // throw new NotImplementedException();
-                }
-
-                // return;
-            }
 
             var sourceAsImageBuffer = (ImageBuffer)source;
             var glPlugin = ImageTexturePlugin.GetImageTexturePlugin(gl, sourceAsImageBuffer, false);
@@ -795,6 +774,13 @@ namespace MatterHackers.RenderGl
             // software; CompositeLcdBuffer blends One / OneMinusSrcAlpha because its buffer is premultiplied.
             gl.BlendFunc(BlendingFactorSrc.SrcAlpha, BlendingFactorDest.OneMinusSrcAlpha);
 
+            // The whole graphics transform, then the image's own placement (GL composes the last call nearest the
+            // vertices): scale, turn, place, transform - the contract on Graphics2D.Render.
+            if (!transform.is_identity())
+            {
+                gl.MultMatrix(AffineToMatrix(transform).GetAsFloatArray());
+            }
+
             gl.Translate(x, y, 0);
             gl.Rotate(MathHelper.RadiansToDegrees(angleRadians), 0, 0, 1);
             gl.Scale(scaleX, scaleY, 1);
@@ -803,6 +789,19 @@ namespace MatterHackers.RenderGl
             glPlugin.DrawToGL();
 
             PopOrthoProjection();
+        }
+
+        /// <summary>
+        /// The 2D affine as a modelview matrix: these stacks multiply row vectors, so x' = x*sx + y*shx + tx
+        /// puts sx and shx down column 0 and the translation in row 3.
+        /// </summary>
+        private static Matrix4X4 AffineToMatrix(Affine affine)
+        {
+            return new Matrix4X4(
+                affine.sx, affine.shy, 0, 0,
+                affine.shx, affine.sy, 0, 0,
+                0, 0, 1, 0,
+                affine.tx, affine.ty, 0, 1);
         }
 
         public override void Render(IImageFloat imageSource, double x, double y, double angleDegrees, double scaleX, double scaleY)

@@ -67,7 +67,7 @@ namespace MatterHackers.Agg.Tests
 			// Limits should only ever decrease, never increase.
 			["agg/Font/LiberationSansBoldFont.cs"] = 2751,
 			["agg/Font/LiberationSansFont.cs"] = 2774,
-			["agg/Graphics2D.cs"] = 997,
+			["agg/Graphics2D.cs"] = 995,
 			["agg/Image/Blenders/rgb.cs"] = 1714,
 			["agg/Image/Blenders/rgba.cs"] = 1921,
 			["agg/Image/ImageBuffer.cs"] = 1290,
@@ -100,7 +100,7 @@ namespace MatterHackers.Agg.Tests
 			["PolygonMesh/Mesh.cs"] = 2435,
 			["PolygonMesh/RayTracer/Primitive/Shapes/Cylinder.cs"] = 891,
 			["RenderGl/GL/GL.cs"] = 847,
-			["RenderGl/Renderer/Graphics2DGpu.cs"] = 1171,
+			["RenderGl/Renderer/Graphics2DGpu.cs"] = 1166,
 			["RenderGl/Scene/WebGpuSceneRenderer.cs"] = 3020,
 			["Tesselate/ActiveRegion.cs"] = 1515,
 			["Tesselate/mesh.cs"] = 908,
