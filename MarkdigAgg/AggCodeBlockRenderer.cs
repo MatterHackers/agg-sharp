@@ -48,7 +48,8 @@ namespace Markdig.Renderers.Agg
 			base.AddChild(textWidget);
 		}
 
-		private static TypeFace GetMonoTypeFace()
+		// Internal so the rich editor's layout (Editing/RichLayoutStyle) draws code in the same face as the viewer.
+		internal static TypeFace GetMonoTypeFace()
 		{
 			if (monoTypeFace == null)
 			{
