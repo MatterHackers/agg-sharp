@@ -337,7 +337,7 @@ namespace Markdig.Agg.Tests
 			var selection = RichEditOperations.Backspace(document, P(2, 0));
 
 			await Assert.That(document.Blocks.Count).IsEqualTo(3);
-			await Assert.That(selection).IsEqualTo(new RichSelection(P(1, 0), P(1, 1)));
+			await Assert.That(selection).IsEqualTo(new RichSelection(P(1, 0), P(1, 1), WholeBlock: true));
 			await Assert.That(document.Blocks.Any(b => b.Dirty)).IsFalse();
 		}
 
@@ -365,7 +365,7 @@ namespace Markdig.Agg.Tests
 
 			// The next block is Raw: it is selected, not merged.
 			selection = RichEditOperations.Delete(document, P(0, 6));
-			await Assert.That(selection).IsEqualTo(new RichSelection(P(1, 0), P(1, 1)));
+			await Assert.That(selection).IsEqualTo(new RichSelection(P(1, 0), P(1, 1), WholeBlock: true));
 			await Assert.That(document.Blocks.Count).IsEqualTo(2);
 		}
 

@@ -33,8 +33,14 @@ namespace Markdig.Agg.Editing
 	/// A selection in a <see cref="RichDocument"/>: where it started (Anchor) and where the caret is. An empty
 	/// selection (Anchor == Caret) is a plain caret. Edit ops return one so an op can either place a caret or,
 	/// like Backspace onto a Raw block, select something whole for the next keystroke to act on.
+	/// <para>
+	/// <see cref="WholeBlock"/> marks a selection of one block as an object (set by
+	/// <see cref="RichEditOperations.WholeBlock"/>): deleting it removes the block. Without it, a range is text,
+	/// even one that happens to span all of a code block's or table cell's text, so selecting that text and
+	/// typing replaces the text and keeps the block.
+	/// </para>
 	/// </summary>
-	public readonly record struct RichSelection(DocPosition Anchor, DocPosition Caret)
+	public readonly record struct RichSelection(DocPosition Anchor, DocPosition Caret, bool WholeBlock = false)
 	{
 		public static RichSelection At(DocPosition caret) => new RichSelection(caret, caret);
 

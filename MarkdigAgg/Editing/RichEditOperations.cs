@@ -47,8 +47,8 @@ namespace Markdig.Agg.Editing
 	/// starts at Depth 0, no item more than one level below the item before it).
 	/// </para>
 	/// <para>
-	/// Code blocks and tables are not edited here: ops inside them throw <see cref="NotSupportedException"/>, and
-	/// across blocks they behave like Raw blocks (removed whole when any of them is in a deleted range, selected
+	/// Edits inside one code block or table go to <see cref="RichTableCodeOperations"/>; across blocks code
+	/// blocks and tables behave like Raw blocks (removed whole when any of them is in a deleted range, selected
 	/// whole rather than merged into).
 	/// </para>
 	/// </summary>
@@ -68,6 +68,11 @@ namespace Markdig.Agg.Editing
 			if (string.IsNullOrEmpty(text))
 			{
 				return RichSelection.At(position);
+			}
+
+			if (IsCodeOrTable(document.Blocks[position.BlockIndex]))
+			{
+				return RichTableCodeOperations.InsertText(document, position, text, style);
 			}
 
 			var caret = TextCaret(document, position);
@@ -98,8 +103,26 @@ namespace Markdig.Agg.Editing
 		/// Removes everything between two positions (in either order). Within one text block it removes the text.
 		/// Across blocks the blocks in between go whole; if both ends are in text blocks the end block's remainder
 		/// joins the start block, which keeps its kind, alignment and groups. A Raw (or code/table) block at either
-		/// end is removed whole if any of it is in the range, and then nothing merges across it.
+		/// end is removed whole if any of it is in the range, and then nothing merges across it. Within one code
+		/// block or table only the covered text goes (<see cref="RichTableCodeOperations.DeleteRange"/>), even
+		/// when that is all of it; removing such a block on its own takes <see cref="DeleteSelection"/> with a
+		/// <see cref="RichSelection.WholeBlock"/> selection.
 		/// </summary>
+		/// <summary>
+		/// Deletes a selection: a <see cref="RichSelection.WholeBlock"/> selection removes its block, any other
+		/// is a <see cref="DeleteRange"/>. This is what Delete, Backspace and typing over a selection call.
+		/// </summary>
+		public static RichSelection DeleteSelection(RichDocument document, RichSelection selection)
+		{
+			if (selection.WholeBlock)
+			{
+				int index = selection.Anchor.BlockIndex;
+				return RemoveBlocks(document, index, index);
+			}
+
+			return DeleteRange(document, selection.Anchor, selection.Caret);
+		}
+
 		public static RichSelection DeleteRange(RichDocument document, DocPosition a, DocPosition b)
 		{
 			var start = DocPosition.Min(a, b);
@@ -119,7 +142,11 @@ namespace Markdig.Agg.Editing
 					return RichSelection.At(start);
 				}
 
-				RequireNotCodeOrTable(block);
+				if (IsCodeOrTable(block))
+				{
+					return RichTableCodeOperations.DeleteRange(document, start, end);
+				}
+
 				return RemoveBlocks(document, start.BlockIndex, start.BlockIndex);
 			}
 
@@ -178,7 +205,11 @@ namespace Markdig.Agg.Editing
 				return RichSelection.At(InsertParagraphBesideRaw(document, position));
 			}
 
-			RequireNotCodeOrTable(block);
+			if (IsCodeOrTable(block))
+			{
+				return RichTableCodeOperations.SplitBlock(document, position);
+			}
+
 			int length = block.TextLength();
 			if (length == 0 && block.Kind == RichBlockKind.ListItem)
 			{
@@ -226,7 +257,11 @@ namespace Markdig.Agg.Editing
 			var blocks = document.Blocks;
 			int index = position.BlockIndex;
 			var block = blocks[index];
-			RequireNotCodeOrTable(block);
+			if (IsCodeOrTable(block))
+			{
+				return RichTableCodeOperations.Backspace(document, position);
+			}
+
 			if (block.Kind == RichBlockKind.Raw)
 			{
 				if (position.Offset > 0)
@@ -296,7 +331,11 @@ namespace Markdig.Agg.Editing
 			var blocks = document.Blocks;
 			int index = position.BlockIndex;
 			var block = blocks[index];
-			RequireNotCodeOrTable(block);
+			if (IsCodeOrTable(block))
+			{
+				return RichTableCodeOperations.Delete(document, position);
+			}
+
 			if (block.Kind == RichBlockKind.Raw && position.Offset == 0)
 			{
 				return WholeBlock(document, index);
@@ -333,14 +372,15 @@ namespace Markdig.Agg.Editing
 		}
 
 		/// <summary>
-		/// A selection from a block's first caret stop to its last (for a table, the last cell's end).
+		/// A selection of a block as an object, from its first caret stop to its last (for a table, the last
+		/// cell's end), flagged <see cref="RichSelection.WholeBlock"/> so deleting it removes the block.
 		/// </summary>
 		public static RichSelection WholeBlock(RichDocument document, int index)
 		{
-			return new RichSelection(new DocPosition(index, 0), EndOf(document, index));
+			return new RichSelection(new DocPosition(index, 0), EndOf(document, index), WholeBlock: true);
 		}
 
-		private static DocPosition EndOf(RichDocument document, int index)
+		internal static DocPosition EndOf(RichDocument document, int index)
 		{
 			var block = document.Blocks[index];
 			if (block.Kind == RichBlockKind.Table && block.TableRows.Count > 0)
@@ -353,12 +393,9 @@ namespace Markdig.Agg.Editing
 			return new DocPosition(index, block.TextLength());
 		}
 
-		private static void RequireNotCodeOrTable(RichBlock block)
+		private static bool IsCodeOrTable(RichBlock block)
 		{
-			if (block.Kind == RichBlockKind.CodeBlock || block.Kind == RichBlockKind.Table)
-			{
-				throw new NotSupportedException($"Editing inside a {block.Kind} is not a text edit; it has its own ops.");
-			}
+			return block.Kind == RichBlockKind.CodeBlock || block.Kind == RichBlockKind.Table;
 		}
 
 		/// <summary>
@@ -372,7 +409,6 @@ namespace Markdig.Agg.Editing
 				return InsertParagraphBesideRaw(document, position);
 			}
 
-			RequireNotCodeOrTable(block);
 			return position;
 		}
 
@@ -404,7 +440,7 @@ namespace Markdig.Agg.Editing
 		/// A link or inline code stops at its end, as in Google Docs: typing just after one keeps its bold, italic
 		/// and strike but not the link or code, so a first-time user does not grow a link by typing after it.
 		/// </summary>
-		private static RichRun StyleAt(List<RichInline> inlines, int offset)
+		internal static RichRun StyleAt(List<RichInline> inlines, int offset)
 		{
 			if (offset > 0)
 			{
@@ -673,7 +709,7 @@ namespace Markdig.Agg.Editing
 		/// break found in the frontmatter, the blocks or the trailing text). Inside a group the writer regenerates
 		/// separators anyway; outside one this is what a new paragraph needs.
 		/// </summary>
-		private static string BlankLine(RichDocument document)
+		internal static string BlankLine(RichDocument document)
 		{
 			var samples = new List<string> { document.Frontmatter };
 			foreach (var block in document.Blocks)
@@ -721,13 +757,13 @@ namespace Markdig.Agg.Editing
 		/// The caret stop before <paramref name="offset"/>: one atom, or one text element (a surrogate pair,
 		/// combining sequence or emoji cluster is deleted whole, matching the layout's caret stops).
 		/// </summary>
-		private static int PreviousStop(List<RichInline> inlines, int offset)
+		internal static int PreviousStop(List<RichInline> inlines, int offset)
 		{
 			var starts = StringInfo.ParseCombiningCharacters(PlainText(inlines).Substring(0, offset));
 			return starts[starts.Length - 1];
 		}
 
-		private static int NextStop(List<RichInline> inlines, int offset)
+		internal static int NextStop(List<RichInline> inlines, int offset)
 		{
 			return offset + StringInfo.GetNextTextElementLength(PlainText(inlines), offset);
 		}
