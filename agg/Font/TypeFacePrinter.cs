@@ -278,25 +278,36 @@ namespace MatterHackers.Agg.Font
 			this.lineSpacing = copyPropertiesFrom.LineSpacing;
 		}
 
+		/// <summary>
+		/// Where the one-em line box starts against the baseline (negative is below): centred between the top
+		/// of the ascent and the bottom of the descent, as agg-gui centres a run (text.rs centered_baseline_y).
+		/// Nunito's ascent height plus descent depth is 1.36 em, so a box starting at the descent sat 0.2 em low
+		/// and centred labels drew high. A face whose span is an em, or that gives none, starts at the descent.
+		/// </summary>
+		public double LineBoxBottomInPixels => TypeFaceStyle.AscentInPixels - TypeFaceStyle.DescentInPixels <= 0
+			? TypeFaceStyle.DescentInPixels
+			: (TypeFaceStyle.AscentInPixels + TypeFaceStyle.DescentInPixels - TypeFaceStyle.EmSizeInPixels) / 2;
+
 		public RectangleDouble LocalBounds
 		{
 			get
 			{
 				Vector2 size = GetSize();
+				double bottom = LineBoxBottomInPixels;
 				RectangleDouble bounds;
 
 				switch (Justification)
 				{
 					case Justification.Left:
-						bounds = new RectangleDouble(0, TypeFaceStyle.DescentInPixels, size.X, size.Y + TypeFaceStyle.DescentInPixels);
+						bounds = new RectangleDouble(0, bottom, size.X, size.Y + bottom);
 						break;
 
 					case Justification.Center:
-						bounds = new RectangleDouble(-size.X / 2, TypeFaceStyle.DescentInPixels, size.X / 2, size.Y + TypeFaceStyle.DescentInPixels);
+						bounds = new RectangleDouble(-size.X / 2, bottom, size.X / 2, size.Y + bottom);
 						break;
 
 					case Justification.Right:
-						bounds = new RectangleDouble(-size.X, TypeFaceStyle.DescentInPixels, 0, size.Y + TypeFaceStyle.DescentInPixels);
+						bounds = new RectangleDouble(-size.X, bottom, 0, size.Y + bottom);
 						break;
 
 					default:

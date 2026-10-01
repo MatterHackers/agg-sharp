@@ -139,8 +139,10 @@ namespace MatterHackers.Agg.UI
 
 			base.OnDraw(graphics2D);
 
-			// Underline one design unit below the text box, full text width.
-			var y = Math.Round(label.Position.Y - scale) + .5;
+			// Underline one design unit below the descent, full text width, as agg-gui's hyperlink: the text box's
+			// bottom can sit above the descent (TypeFacePrinter.LineBoxBottomInPixels), so it is not used.
+			var descentY = label.Position.Y - label.Printer.LineBoxBottomInPixels + label.Printer.TypeFaceStyle.DescentInPixels;
+			var y = Math.Round(descentY - scale) + .5;
 			graphics2D.Line(new Vector2(label.Position.X, y), new Vector2(label.Position.X + label.Width, y), color, scale);
 
 			if (Focused)
