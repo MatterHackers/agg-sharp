@@ -24,24 +24,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System;
-using MatterHackers.RenderCore;
-using MatterHackers.WebGpu;
-using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.RenderCore;
+using MatterHackers.WebGpu;
 
 namespace MatterHackers.WebGpuRender
 {
 	/// <summary>
 	/// The unsigned narrow-band distance grid of a triangle soup, computed on the GPU - a
 	/// <c>MeshSdfGrid.DistanceGridBuilder</c> (pass <see cref="ComputeDistances"/> as the builder;
-	/// the sign stays the CPU crossing vote in MeshSdfGrid).
+	/// the sign stays the CPU crossing vote in MeshSdfGrid). The production distance fill: agg renders
+	/// through WebGPU on every native platform and in the browser, so compute is always available.
 	/// </summary>
 	/// <remarks>
-	/// PROTOTYPE (kept only if it beats the CPU flood by more than 3x end to end). The CPU buckets
+	/// The CPU buckets
 	/// triangles into a uniform grid of cubes <see cref="BucketVoxels"/> samples on a side, each
 	/// triangle listed in every bucket its bounds grown by the band touch, so a sample needs only its
 	/// own bucket (8 grown measured faster than 4 grown, and than 8 searched with neighbours, whose
@@ -133,17 +132,32 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>)
 }
 ";
 
+		// The session's shared instance, made on first use (see GetSharedAsync). CreateAsync is the
+		// plain constructor on the desktop and the Promise-driven path in the browser.
+		private static readonly RetryingAsyncLazy<GpuMeshSdf> SharedInstance = new RetryingAsyncLazy<GpuMeshSdf>(
+			async () => new GpuMeshSdf(await WebGpuRenderDevice.CreateAsync(null, "GpuMeshSdf", raiseComputeLimits: true)),
+			gpu => gpu.IsDeviceLost);
+
 		private readonly IRenderDevice device;
+
+		// One build at a time drives the device: wgpu's queue is not safe to submit to from two
+		// threads, and two concurrent builds would only share the GPU anyway.
+		private readonly SemaphoreSlim deviceGate = new SemaphoreSlim(1, 1);
 		private IShaderModule module;
 		private IComputePipeline pipeline;
 
-		/// <param name="device">A device the caller owns; desktop only (the readback must complete
-		/// synchronously).</param>
+		/// <param name="device">A device the caller owns.</param>
 		public GpuMeshSdf(IRenderDevice device)
 		{
 			this.device = device ?? throw new ArgumentNullException(nameof(device));
 			device.RegisterShaderSources(new Sources());
 		}
+
+		/// <summary>Gets or sets whether a test has marked this instance's device as lost.</summary>
+		internal bool SimulateDeviceLost { get; set; }
+
+		/// <summary>Gets whether the device is gone, so the shared instance must be replaced.</summary>
+		internal bool IsDeviceLost => SimulateDeviceLost || (device as WebGpuRenderDevice)?.IsDeviceLost == true;
 
 		/// <summary>Gets or sets the bucket edge in samples.</summary>
 		public int BucketVoxels { get; set; } = 8;
@@ -151,8 +165,31 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>)
 		/// <summary>Gets the stage times of the last <see cref="ComputeDistances"/>, in ms.</summary>
 		public (double Bucket, double Upload, double Dispatch, double Readback, long Entries) LastTimings { get; private set; }
 
+		/// <summary>
+		/// The session's shared offscreen device and pipeline for distance work, created on the first
+		/// call and reused after. agg renders through WebGPU on every native platform and in the
+		/// browser, so this device always exists and has compute; there is no "no GPU" path by design.
+		/// Safe from any thread: builds on it run their device work one at a time.
+		/// </summary>
+		/// <remarks>
+		/// A failed creation is not kept: a GPU always exists, so the failure is a transient bug the
+		/// caller reports, and the next call tries again. Nor is a lost device (a driver reset, sleep
+		/// and resume, the browser's GPU process restarting): the next call makes a fresh one.
+		/// </remarks>
+		public static Task<GpuMeshSdf> GetSharedAsync() => SharedInstance.GetAsync();
+
 		/// <summary>Matches <c>MatterHackers.PolygonMesh.Sdf.DistanceGridBuilder</c>.</summary>
-		public float[] ComputeDistances(float[] triangles, int ni, int nj, int nk, float cellSize, float band, float cap)
+		public Task<float[]> ComputeDistances(float[] triangles, int ni, int nj, int nk, float cellSize, float band, float cap)
+			=> ComputeDistances(triangles, ni, nj, nk, cellSize, band, cap, null);
+
+		/// <summary>
+		/// <see cref="ComputeDistances(float[], int, int, int, float, float, float)"/>, calling
+		/// <paramref name="stageDone"/> with 1 when the triangles are bucketed, 2 when the dispatch has
+		/// finished and 3 when the distances are read back, so a caller can pace a progress bar across
+		/// a pass it cannot otherwise watch. Safe to call from several threads; the device work runs
+		/// one call at a time. The read-backs are awaited: in the browser they finish on a later turn of the JS event loop.
+		/// </summary>
+		public async Task<float[]> ComputeDistances(float[] triangles, int ni, int nj, int nk, float cellSize, float band, float cap, Action<int> stageDone)
 		{
 			var clock = Stopwatch.StartNew();
 			int s = Math.Max(1, BucketVoxels);
@@ -227,8 +264,21 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>)
 			});
 
 			double bucketMs = clock.Elapsed.TotalMilliseconds;
-			clock.Restart();
+			stageDone?.Invoke(1);
+			await deviceGate.WaitAsync();
+			try
+			{
+				return await Dispatch(triangles, ni, nj, nk, cellSize, band, cap, s, bi, bj, bk, starts, ids, total, bucketMs, stageDone);
+			}
+			finally
+			{
+				deviceGate.Release();
+			}
+		}
 
+		private async Task<float[]> Dispatch(float[] triangles, int ni, int nj, int nk, float cellSize, float band, float cap, int s, int bi, int bj, int bk, uint[] starts, uint[] ids, long total, double bucketMs, Action<int> stageDone)
+		{
+			var clock = Stopwatch.StartNew();
 			EnsurePipeline();
 			var parameters = new byte[48];
 			var words = MemoryMarshal.Cast<byte, uint>(parameters.AsSpan());
@@ -272,15 +322,17 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>)
 			}
 
 			// A 4-byte read waits for the dispatch, so the full read below times only the copy.
-			ReadNow(output, 0, new byte[4]);
+			await device.ReadBufferAsync(output, 0, new byte[4]);
 			double dispatchMs = clock.Elapsed.TotalMilliseconds;
+			stageDone?.Invoke(2);
 			clock.Restart();
 
 			var bytes = new byte[outputBytes];
-			ReadNow(output, 0, bytes);
+			await device.ReadBufferAsync(output, 0, bytes);
 			var result = new float[ni * nj * nk];
 			Buffer.BlockCopy(bytes, 0, result, 0, bytes.Length);
 			LastTimings = (bucketMs, uploadMs, dispatchMs, clock.Elapsed.TotalMilliseconds, total);
+			stageDone?.Invoke(3);
 			return result;
 		}
 
@@ -292,17 +344,6 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>)
 		}
 
 		private static int Clamp(int value, int count) => value < 0 ? 0 : (value >= count ? count - 1 : value);
-
-		private void ReadNow(IGpuBuffer buffer, ulong offset, byte[] destination)
-		{
-			// Desktop devices finish the read before returning; a pending one (the browser) can not be
-			// waited on here without blocking, so it is refused.
-			ValueTask read = device.ReadBufferAsync(buffer, offset, destination);
-			if (!read.IsCompletedSuccessfully)
-			{
-				throw new PlatformNotSupportedException("GpuMeshSdf needs a device whose readback completes synchronously.");
-			}
-		}
 
 		private void EnsurePipeline()
 		{
@@ -329,6 +370,53 @@ fn main(@builtin(global_invocation_id) id : vec3<u32>)
 		private sealed class Sources : IShaderSourceProvider
 		{
 			public string TryGetSource(string sourceKey) => sourceKey == ShaderKey ? DistanceWgsl : null;
+		}
+	
+		/// <summary>
+		/// Creates a value once and shares it, like <see cref="Lazy{T}"/>, except that a failed or
+		/// cancelled creation, or a value <c>isStale</c> says has gone bad, is dropped so the next
+		/// <see cref="GetAsync"/> starts a new one. Callers that arrive while a creation is running share it.
+		/// </summary>
+		internal sealed class RetryingAsyncLazy<T>
+			where T : class
+		{
+			private readonly Func<Task<T>> create;
+			private readonly Func<T, bool> isStale;
+			private readonly object gate = new object();
+			private Task<T> current;
+
+			// The created value, kept beside its task so it can be checked without reading the task's result.
+			private T created;
+
+			public RetryingAsyncLazy(Func<Task<T>> create, Func<T, bool> isStale = null)
+			{
+				this.create = create;
+				this.isStale = isStale;
+			}
+
+			public Task<T> GetAsync()
+			{
+				lock (gate)
+				{
+					var value = Volatile.Read(ref created);
+					if (current == null || current.IsFaulted || current.IsCanceled
+						|| (value != null && isStale?.Invoke(value) == true))
+					{
+						created = null;
+						current = Start();
+					}
+
+					return current;
+				}
+			}
+
+			// Async so a factory that throws synchronously still yields a faulted task, not a throw under the lock.
+			private async Task<T> Start()
+			{
+				var value = await create();
+				Volatile.Write(ref created, value);
+				return value;
+			}
 		}
 	}
 }

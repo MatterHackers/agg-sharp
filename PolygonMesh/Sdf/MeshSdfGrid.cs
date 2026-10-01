@@ -39,7 +39,9 @@ namespace MatterHackers.PolygonMesh.Sdf
 	/// <summary>
 	/// Computes the unsigned narrow-band distance grid for <see cref="MeshSdfGrid"/> somewhere other
 	/// than g3's CPU flood - a GPU driver (agg's WebGpuRender GpuMeshSdf) plugs in here. Primitive
-	/// arrays only, so PolygonMesh takes no dependency on the renderer that implements it.
+	/// arrays only, so PolygonMesh takes no dependency on the renderer that implements it. agg always
+	/// has a WebGPU device with compute, so the GPU is the production fill; the CPU flood is the test
+	/// reference and the fallback for one build after a reported GPU failure.
 	/// </summary>
 	/// <param name="triangles">Nine floats per triangle, its corners relative to the grid origin.</param>
 	/// <param name="ni">Samples along x; x is the fastest-varying index of the result.</param>
@@ -48,8 +50,9 @@ namespace MatterHackers.PolygonMesh.Sdf
 	/// <param name="cellSize">Sample spacing; sample (i, j, k) sits at (i, j, k) * cellSize.</param>
 	/// <param name="band">Samples nearer than this to a triangle get the exact distance ...</param>
 	/// <param name="cap">... the rest get this value.</param>
-	/// <returns>ni * nj * nk unsigned distances, index i + ni * (j + nj * k).</returns>
-	public delegate float[] DistanceGridBuilder(float[] triangles, int ni, int nj, int nk, float cellSize, float band, float cap);
+	/// <returns>ni * nj * nk unsigned distances, index i + ni * (j + nj * k). A task, because the
+	/// browser's GPU read-back completes only on a later turn of the JS event loop.</returns>
+	public delegate Task<float[]> DistanceGridBuilder(float[] triangles, int ni, int nj, int nk, float cellSize, float band, float cap);
 
 
 	/// <summary>
@@ -75,7 +78,11 @@ namespace MatterHackers.PolygonMesh.Sdf
 		public const int MaxResolution = 256;
 
 		private readonly Mesh source;
+		// Build (no builder) takes the lock; BuildAsync with a builder takes the semaphore, which it can
+		// hold across the builder's await. A grid only ever uses one of them. (The browser has no
+		// blocking SemaphoreSlim.Wait, so the sync path keeps the lock.)
 		private readonly object buildLock = new object();
+		private readonly SemaphoreSlim buildGate = new SemaphoreSlim(1, 1);
 		private volatile DenseGrid3f grid;
 		private Vector3d gridOrigin;
 		private double cellSize;
@@ -160,6 +167,8 @@ namespace MatterHackers.PolygonMesh.Sdf
 		/// <see cref="OperationCanceledException"/> and leaves the field unbuilt, so a later call
 		/// starts over.
 		/// </summary>
+		/// <remarks>A grid given a <see cref="DistanceGridBuilder"/> must be built by
+		/// <see cref="BuildAsync"/> first; this then only returns.</remarks>
 		public void Build(CancellationToken cancellationToken = default)
 		{
 			if (grid != null)
@@ -167,16 +176,61 @@ namespace MatterHackers.PolygonMesh.Sdf
 				return;
 			}
 
+			if (distanceBuilder != null)
+			{
+				throw new InvalidOperationException("A grid with a DistanceGridBuilder is built by BuildAsync, which awaits the builder.");
+			}
+
 			lock (buildLock)
 			{
 				if (grid == null)
 				{
-					BuildField(cancellationToken);
+					var (dmesh, _) = Prepare(cancellationToken);
+					Finish(dmesh, BuildCpuDistances(dmesh, cancellationToken), cancellationToken);
 				}
 			}
 		}
 
-		private void BuildField(CancellationToken cancellationToken)
+		/// <summary>
+		/// <see cref="Build"/>, awaiting the <see cref="DistanceGridBuilder"/> when there is one (the CPU
+		/// flood otherwise runs inline). The only way to build a grid that has a builder.
+		/// </summary>
+		public async Task BuildAsync(CancellationToken cancellationToken = default)
+		{
+			if (grid != null)
+			{
+				return;
+			}
+
+			if (distanceBuilder == null)
+			{
+				Build(cancellationToken);
+				return;
+			}
+
+			await buildGate.WaitAsync(cancellationToken);
+			try
+			{
+				if (grid == null)
+				{
+					var (dmesh, bounds) = Prepare(cancellationToken);
+					Finish(dmesh, await BuildWithInjectedDistances(dmesh, bounds, cancellationToken), cancellationToken);
+				}
+			}
+			finally
+			{
+				buildGate.Release();
+			}
+		}
+
+		private void Finish(DMesh3 dmesh, DenseGrid3f field, CancellationToken cancellationToken)
+		{
+			ApplyCrossingSigns(dmesh, field, gridOrigin, cellSize, cancellationToken);
+			grid = field;
+			Interlocked.Increment(ref gridBuilds);
+		}
+
+		private (DMesh3 Mesh, AxisAlignedBox3d Bounds) Prepare(CancellationToken cancellationToken)
 		{
 			// Orient first, as the kernel does, so the preview is of the same solid the exact
 			// Dilate / Erode will build - its repair also joins split seams the crossing count
@@ -208,36 +262,30 @@ namespace MatterHackers.PolygonMesh.Sdf
 			// between exact samples - is also the padding each side, the reach of the largest
 			// Dilate. This cell size makes the padded longest axis Resolution voxels.
 			cellSize = (longest + (2 * MaxRadius)) / (Resolution - 4);
-			DenseGrid3f field;
-			if (distanceBuilder != null)
+			return (dmesh, bounds);
+		}
+
+		// The CPU flood is the reference the GPU fill is tested against and the one-build fallback after
+		// a reported GPU failure - not a capability fallback: agg always has a WebGPU device with compute.
+		private DenseGrid3f BuildCpuDistances(DMesh3 dmesh, CancellationToken cancellationToken)
+		{
+			var spatial = new DMeshAABBTree3(dmesh, autoBuild: true);
+			var distances = new MeshSignedDistanceGrid(dmesh, cellSize, spatial)
 			{
-				field = BuildWithInjectedDistances(dmesh, bounds, cancellationToken);
-			}
-			else
-			{
-				var spatial = new DMeshAABBTree3(dmesh, autoBuild: true);
-				var distances = new MeshSignedDistanceGrid(dmesh, cellSize, spatial)
-				{
-					ComputeMode = MeshSignedDistanceGrid.ComputeModes.NarrowBand_SpatialFloodFill,
-					NarrowBandMaxDistance = MaxRadius + (2 * cellSize),
-					PadWidth = MaxRadius + (2 * cellSize),
-					ComputeSigns = false,
-					CancelF = () => cancellationToken.IsCancellationRequested,
-					FloodProgress = FloodProgress,
-				};
-				distances.Compute();
-				FloodWork = distances.FloodVoxelsProcessed;
-				cancellationToken.ThrowIfCancellationRequested();
+				ComputeMode = MeshSignedDistanceGrid.ComputeModes.NarrowBand_SpatialFloodFill,
+				NarrowBandMaxDistance = MaxRadius + (2 * cellSize),
+				PadWidth = MaxRadius + (2 * cellSize),
+				ComputeSigns = false,
+				CancelF = () => cancellationToken.IsCancellationRequested,
+				FloodProgress = FloodProgress,
+			};
+			distances.Compute();
+			FloodWork = distances.FloodVoxelsProcessed;
+			cancellationToken.ThrowIfCancellationRequested();
 
-				field = distances.Grid;
-				var origin = distances.GridOrigin;
-				gridOrigin = new Vector3d(origin.x, origin.y, origin.z);
-			}
-
-			ApplyCrossingSigns(dmesh, field, gridOrigin, cellSize, cancellationToken);
-
-			grid = field;
-			Interlocked.Increment(ref gridBuilds);
+			var origin = distances.GridOrigin;
+			gridOrigin = new Vector3d(origin.x, origin.y, origin.z);
+			return distances.Grid;
 		}
 
 		/// <summary>
@@ -245,7 +293,7 @@ namespace MatterHackers.PolygonMesh.Sdf
 		/// PadWidth set (float origin, float cell size, the same truncating counts), so the injected
 		/// distances land on exactly the samples the CPU flood would have written.
 		/// </summary>
-		private DenseGrid3f BuildWithInjectedDistances(DMesh3 dmesh, AxisAlignedBox3d bounds, CancellationToken cancellationToken)
+		private async Task<DenseGrid3f> BuildWithInjectedDistances(DMesh3 dmesh, AxisAlignedBox3d bounds, CancellationToken cancellationToken)
 		{
 			float dx = (float)cellSize;
 			float pad = (float)(MaxRadius + (2 * cellSize));
@@ -274,7 +322,7 @@ namespace MatterHackers.PolygonMesh.Sdf
 
 			// g3's upper bound for samples the band never reached.
 			float cap = (ni + nj + nk) * dx;
-			float[] distances = distanceBuilder(triangles, ni, nj, nk, dx, (float)(MaxRadius + (2 * cellSize)), cap);
+			float[] distances = await distanceBuilder(triangles, ni, nj, nk, dx, (float)(MaxRadius + (2 * cellSize)), cap);
 			var field = new DenseGrid3f(ni, nj, nk, 0);
 			Array.Copy(distances, field.Buffer, field.size);
 			return field;

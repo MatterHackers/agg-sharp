@@ -174,7 +174,7 @@ namespace MatterHackers.WebGpuRender
 		/// machine silently falling back to another API shows up as a failure rather than as a pixel diff.
 		/// </param>
 		/// <param name="label">Optional debug label carried into wgpu's validation messages.</param>
-		/// <exception cref="InvalidOperationException">The instance, adapter or device could not be created.</exception>
+		/// <exception cref="InvalidOperationException">The instance, adapter or device could not be created - a bug, not a capability: agg renders only through this device (CreateAsync in the browser), so every agg process has WebGPU with compute and needs no "no GPU" path.</exception>
 		/// <param name="windowSurface">
 		/// The native drawable this device will present to, or null for an offscreen device. Supplied here
 		/// rather than through <see cref="CreateSurfaceTarget(WindowSurfaceRequest)"/> so the surface exists <i>before</i> the adapter is

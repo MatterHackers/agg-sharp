@@ -50,6 +50,41 @@ namespace MatterHackers.Agg.Tests
 	public class GpuMeshSdfTests
 	{
 		[Test]
+		public async Task FailedSharedCreationIsRetriedNotKept()
+		{
+			int attempts = 0;
+			var lazy = new GpuMeshSdf.RetryingAsyncLazy<string>(() =>
+			{
+				attempts++;
+				return attempts == 1 ? throw new InvalidOperationException("no device this time") : Task.FromResult("device");
+			});
+
+			await Assert.That(async () => await lazy.GetAsync()).Throws<InvalidOperationException>();
+			await Assert.That(await lazy.GetAsync()).IsEqualTo("device");
+			await Assert.That(await lazy.GetAsync()).IsEqualTo("device");
+			await Assert.That(attempts).IsEqualTo(2);
+		}
+
+		[Test]
+		public async Task ALostSharedDeviceIsReplacedOnTheNextCall()
+		{
+			using (await GpuTestGate.AcquireAsync(nameof(GpuMeshSdfTests)))
+			{
+				var first = await GpuMeshSdf.GetSharedAsync();
+				await Assert.That(await GpuMeshSdf.GetSharedAsync()).IsSameReferenceAs(first);
+				first.SimulateDeviceLost = true;
+				var fresh = await GpuMeshSdf.GetSharedAsync();
+				await Assert.That(fresh).IsNotSameReferenceAs(first);
+
+				// The fresh device builds on the GPU.
+				var grid = new MeshSdfGrid(PlatonicSolids.CreateCube(20, 20, 20), 2, 32, fresh.ComputeDistances);
+				await grid.BuildAsync();
+				await Assert.That(fresh.LastTimings.Entries).IsGreaterThan(0);
+				await Assert.That(grid.GridBuilds).IsEqualTo(1);
+			}
+		}
+
+		[Test]
 		public async Task GpuGridMatchesCpuGrid()
 		{
 			using (GpuTestGate.Acquire(nameof(GpuMeshSdfTests)))
@@ -58,7 +93,7 @@ namespace MatterHackers.Agg.Tests
 			{
 				foreach (var (name, part) in new[] { ("cube", PlatonicSolids.CreateCube(20, 20, 20)), ("torus", Torus(40, 20)), ("L", LPrism()) })
 				{
-					var (maxDiff, signMismatch, cell) = Compare(part, 2, 64, gpu);
+					var (maxDiff, signMismatch, cell) = await Compare(part, 2, 64, gpu);
 					Console.WriteLine($"{name}: max |gpu - cpu| {maxDiff:E2} (cell {cell:0.###}, {maxDiff / cell:E2} cells), sign mismatches {signMismatch}");
 					await Assert.That(signMismatch).IsEqualTo(0);
 					await Assert.That(maxDiff).IsLessThanOrEqualTo((1e-4 * cell) + 1e-5);
@@ -68,7 +103,7 @@ namespace MatterHackers.Agg.Tests
 				string phil = Environment.GetEnvironmentVariable("PHIL_STL");
 				if (!string.IsNullOrEmpty(phil))
 				{
-					var (maxDiff, signMismatch, cell) = Compare(ReadBinaryStl(phil), 2, 128, gpu);
+					var (maxDiff, signMismatch, cell) = await Compare(ReadBinaryStl(phil), 2, 128, gpu);
 					Console.WriteLine($"Phil: max |gpu - cpu| {maxDiff:E2} (cell {cell:0.###}), sign mismatches {signMismatch}");
 					await Assert.That(signMismatch).IsEqualTo(0);
 					await Assert.That(maxDiff).IsLessThanOrEqualTo((1e-4 * cell) + 1e-5);
@@ -80,7 +115,7 @@ namespace MatterHackers.Agg.Tests
 
 		[Test]
 		[Explicit]
-		public Task GpuAgainstCpuTimings()
+		public async Task GpuAgainstCpuTimings()
 		{
 			string phil = Environment.GetEnvironmentVariable("PHIL_STL");
 			using (GpuTestGate.Acquire(nameof(GpuMeshSdfTests)))
@@ -89,7 +124,7 @@ namespace MatterHackers.Agg.Tests
 			{
 				// Warm both paths (JIT, pipeline) before timing.
 				new MeshSdfGrid(Torus(40, 20), 2, 64).Build();
-				new MeshSdfGrid(Torus(40, 20), 2, 64, gpu.ComputeDistances).Build();
+				await new MeshSdfGrid(Torus(40, 20), 2, 64, gpu.ComputeDistances).BuildAsync();
 				foreach (var (name, part) in new[] { ("torus 1600", Torus(40, 20)), ("Phil", string.IsNullOrEmpty(phil) ? null : ReadBinaryStl(phil)) })
 				{
 					if (part == null)
@@ -111,7 +146,7 @@ namespace MatterHackers.Agg.Tests
 							cpuRuns[run] = clock.Elapsed.TotalMilliseconds;
 							onGpu = new MeshSdfGrid(part, 2, resolution, gpu.ComputeDistances);
 							clock.Restart();
-							onGpu.Build();
+							await onGpu.BuildAsync();
 							gpuRuns[run] = clock.Elapsed.TotalMilliseconds;
 						}
 
@@ -124,16 +159,14 @@ namespace MatterHackers.Agg.Tests
 					}
 				}
 			}
-
-			return Task.CompletedTask;
 		}
 
-		private static (double MaxDiff, int SignMismatch, double Cell) Compare(Mesh part, double radius, int resolution, GpuMeshSdf gpu)
+		private static async Task<(double MaxDiff, int SignMismatch, double Cell)> Compare(Mesh part, double radius, int resolution, GpuMeshSdf gpu)
 		{
 			var cpu = new MeshSdfGrid(part, radius, resolution);
 			cpu.Build();
 			var onGpu = new MeshSdfGrid(part, radius, resolution, gpu.ComputeDistances);
-			onGpu.Build();
+			await onGpu.BuildAsync();
 			if (cpu.Field.size != onGpu.Field.size || cpu.FieldOrigin != onGpu.FieldOrigin)
 			{
 				throw new InvalidOperationException("The GPU grid's layout differs from the CPU grid's.");

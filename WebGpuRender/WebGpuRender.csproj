@@ -29,4 +29,8 @@
     <EmbeddedResource Include="Shaders\*.wgsl" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Agg.Tests" />
+  </ItemGroup>
+
 </Project>
