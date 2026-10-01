@@ -155,7 +155,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "graph_test";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Shapes";
 
 		public override string Description => "A random graph of 200 nodes and 100 arrows, drawn as lines, curves, dashed curves or filled curves, with gradient nodes. Draft Mode draws it aliased; Benchmark times it.";
 

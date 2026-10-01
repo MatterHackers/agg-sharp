@@ -95,7 +95,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "circles";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Shapes";
 
 		public override string Description => "A scatter plot of 10000 circles. Narrow the scale to fade the rest; left-click for new points, right-click to animate.";
 

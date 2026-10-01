@@ -93,13 +93,27 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>Whether <paramref name="group"/>'s header shows: some of its titles match the search.</summary>
 		public bool IsGroupVisible(string group)
 		{
-			return EntriesOf(group).Any(spec => Matches(spec.Title, this.Query));
+			return this.IsGroupVisible(EntriesOf(group).Select(spec => spec.Title));
+		}
+
+		/// <summary>Whether the header of a group listing <paramref name="titles"/> shows: some of them match the
+		/// search. The AGG demo sidebar, whose rows are not <see cref="DemoSpec"/>s, filters through this.</summary>
+		public bool IsGroupVisible(IEnumerable<string> titles)
+		{
+			return titles.Any(title => Matches(title, this.Query));
 		}
 
 		/// <summary>Whether <paramref name="spec"/>'s row shows: its group is expanded and its title matches.</summary>
 		public bool IsEntryVisible(DemoSpec spec)
 		{
-			return !this.IsCollapsed(spec.Group) && Matches(spec.Title, this.Query);
+			return this.IsEntryVisible(spec.Group, spec.Title);
+		}
+
+		/// <summary>Whether the row <paramref name="title"/> in <paramref name="group"/> shows: the group is expanded
+		/// and the title matches.</summary>
+		public bool IsEntryVisible(string group, string title)
+		{
+			return !this.IsCollapsed(group) && Matches(title, this.Query);
 		}
 	}
 }

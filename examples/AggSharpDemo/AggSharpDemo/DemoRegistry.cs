@@ -23,13 +23,16 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using MatterHackers.AggSharpDemo.Demos;
 
 namespace MatterHackers.AggSharpDemo
 {
 	/// <summary>
-	/// Every AGG demo the site lists, in sidebar order.
+	/// Every AGG demo the site lists. The sidebar and the Demos menu show them by <see cref="Groups"/>, each
+	/// group alphabetical (<see cref="GroupEntries"/>); the creation order below is only the order they were ported.
 	/// </summary>
 	/// <remarks>
 	/// A hand-written list on purpose, not PluginFinder or any other reflection: the browser build is
@@ -38,6 +41,26 @@ namespace MatterHackers.AggSharpDemo
 	/// </remarks>
 	public static class DemoRegistry
 	{
+		/// <summary>Every <see cref="AggDemo.Category"/>, in the order the groups are listed: what a demo draws
+		/// (shapes, paths), then how it is rendered and coloured, then images and text.</summary>
+		public static IReadOnlyList<string> Groups { get; } = new[]
+		{
+			"Shapes", "Paths & Strokes", "Rendering", "Color & Gradients", "Masks & Clipping", "Transforms", "Images", "Text",
+		};
+
+		/// <summary>The demo shown when none was asked for or remembered: the lion, AGG's signature picture.</summary>
+		public const string DefaultDemoName = "lion";
+
+		/// <summary>The demos of <paramref name="demos"/> in <paramref name="group"/>, alphabetical by name
+		/// (ordinal on the lower-cased name, as the GUI demo's sidebar sorts its titles).</summary>
+		public static IReadOnlyList<AggDemo> GroupEntries(IEnumerable<AggDemo> demos, string group)
+		{
+			return demos
+				.Where(demo => demo.Category == group)
+				.OrderBy(demo => demo.Name.ToLowerInvariant(), StringComparer.Ordinal)
+				.ToList();
+		}
+
 		/// <summary>Creates a fresh instance of every AGG demo. Each call returns new demos with default state.</summary>
 		public static IReadOnlyList<AggDemo> CreateAggDemos()
 		{

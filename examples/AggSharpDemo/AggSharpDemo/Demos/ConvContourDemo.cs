@@ -71,7 +71,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "conv_contour";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Paths & Strokes";
 
 		public override string Description => "A glyph grown or shrunk by a contour. Change the width and how the polygons are closed.";
 

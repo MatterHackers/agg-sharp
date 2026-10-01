@@ -76,7 +76,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "lion_lens";
 
-		public override string Category => "Transformations";
+		public override string Category => "Transforms";
 
 		public override string Description => "The lion under a magnifying lens that bends the plane around it. Left-drag to move the lens; the sliders set its magnification and radius.";
 

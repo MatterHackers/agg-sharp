@@ -98,7 +98,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 		/// </summary>
 		public CurveTextFont TextFont { get; set; } = new TrueTypeCurveTextFont(italic: false, curveApproximationScale: 2.0);
 
-		public override string Category => "Curves";
+		public override string Category => "Transforms";
 
 		public override string Description => "Text follows a curve through six points. Drag a point, a line or the whole curve.";
 

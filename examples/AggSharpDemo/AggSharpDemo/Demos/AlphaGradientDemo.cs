@@ -75,7 +75,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "alpha_gradient";
 
-		public override string Category => "Gradients";
+		public override string Category => "Color & Gradients";
 
 		public override string Description => "A color gradient whose transparency comes from a second gradient on a parallelogram. Drag a corner or the whole parallelogram, and shape the transparency with the spline.";
 

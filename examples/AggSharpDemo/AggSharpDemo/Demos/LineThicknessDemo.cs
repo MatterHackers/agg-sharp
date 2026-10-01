@@ -78,7 +78,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "line_thickness";
 
-		public override string Category => "Lines";
+		public override string Category => "Paths & Strokes";
 
 		public override string Description => "Anti-aliased lines from hairline to thick, smoothed by a slight Gaussian blur. Change the thickness and blur, or switch the colours.";
 

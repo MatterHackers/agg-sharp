@@ -60,6 +60,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>The System window whose settings and tab this follows, once it has been built.</summary>
 		private Windows.Tools.SystemTypographyWindow systemWindow;
 
+		/// <summary>The 3D Animation window's SSAA factor last restored, for when that window is first built.</summary>
+		private int threeDSsaaFactor = Windows.Graphics.ThreeDAnimationWindow.DefaultSsaaFactor;
+
+		/// <summary>The 3D Animation window whose SSAA factor this follows, once it has been built.</summary>
+		private Windows.Graphics.ThreeDAnimationWindow threeDWindow;
+
 		/// <param name="scheduleDelayed">Runs an action on the UI thread after a delay in seconds; null for
 		/// <see cref="UiThread.RunOnIdle(Action, double)"/>. Tests pass their own to run the save when they choose.</param>
 		public DemoStatePersistence(GuiDemoShell shell, IDemoStateStore store, Action<Action, double> scheduleDelayed = null)
@@ -90,6 +96,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				ZOrder = windows.ZOrder.Select(spec => spec.Title).ToList(),
 				Inspector = this.AttachInspector()?.SavedState ?? this.inspectorState,
 				SystemSettings = SystemSettingsState.Capture(this.AttachSystem()?.Tabs.SelectedIndex ?? this.systemTab),
+				ThreeDSsaaFactor = this.AttachThreeD()?.SsaaFactor ?? this.threeDSsaaFactor,
 			};
 
 			// The desktop window the page is shown in (none in a test, or before it is shown).
@@ -170,6 +177,15 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			this.systemTab = state.SystemSettings?.Tab ?? 0;
 			this.ApplySystemTab();
 
+			int ssaa = state.ThreeDSsaaFactor ?? 0;
+			this.threeDSsaaFactor = ssaa >= 1 && ssaa <= Windows.Graphics.ThreeDAnimationWindow.SsaaLabels.Length
+				? ssaa
+				: Windows.Graphics.ThreeDAnimationWindow.DefaultSsaaFactor;
+			if (this.threeDWindow != null)
+			{
+				this.threeDWindow.SsaaFactor = this.threeDSsaaFactor;
+			}
+
 			Dictionary<string, DemoSpec> byTitle = AllSpecs.ToDictionary(spec => spec.Title);
 			DemoWindowHost windows = this.shell.Windows;
 			foreach (DemoWindowState windowState in state.Windows)
@@ -208,18 +224,24 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 			this.AttachInspector();
 			this.AttachSystem();
+			this.AttachThreeD();
 		}
 
 		/// <summary>
 		/// Puts <paramref name="shell"/>'s windows and theme back as a first run has them, as agg-gui's
 		/// on_reset_all does: the default windows (<see cref="GuiDemoSpecs.DefaultOpen"/>) open, tiled and stacked
-		/// as a first run has them, every other window closed, the System theme with the Blue accent, and snapping on. The backend panel is left alone.
+		/// as a first run has them, every other window closed, the System theme with the Blue accent, snapping on,
+		/// and the 3D Animation window's SSAA Off. The backend panel is left alone.
 		/// </summary>
 		public static void ApplyDefaults(GuiDemoShell shell)
 		{
 			shell.DemoTheme.SetPreference(ThemePreference.System);
 			shell.DemoTheme.SetAccent(AccentColor.Blue);
 			shell.TopBar.SetSnapEnabled(true);
+			if (shell.ThreeDAnimation is Windows.Graphics.ThreeDAnimationWindow threeD)
+			{
+				threeD.SsaaFactor = Windows.Graphics.ThreeDAnimationWindow.DefaultSsaaFactor;
+			}
 
 			shell.Windows.ResetToDefaultLayout();
 		}
@@ -229,6 +251,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		public void ResetAll()
 		{
 			ApplyDefaults(this.shell);
+			this.threeDSsaaFactor = Windows.Graphics.ThreeDAnimationWindow.DefaultSsaaFactor;
 			this.SavePending = false;
 			this.Store.Clear();
 		}
@@ -282,7 +305,13 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		public void SaveNow()
 		{
 			this.SavePending = false;
-			this.Store.Save(this.Capture().Serialize());
+			DemoState state = this.Capture();
+
+			// The app's tab and AGG demo share the file but are not the page's to capture; keep what the app saved.
+			DemoState saved = DemoState.Parse(this.Store.Load());
+			state.AppTab = saved.AppTab;
+			state.AggDemo = saved.AggDemo;
+			this.Store.Save(state.Serialize());
 		}
 
 		/// <summary>The delayed save; <see cref="SaveNow"/> may already have written it (the page closed).</summary>
@@ -300,6 +329,32 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		{
 			this.AttachInspector();
 			this.AttachSystem();
+			this.AttachThreeD();
+		}
+
+		/// <summary>
+		/// The 3D Animation window, if it has been built. The first time it is found it gets the restored SSAA factor
+		/// (agg-gui's saved msaa_samples), and its selector's changes start scheduling saves.
+		/// </summary>
+		private Windows.Graphics.ThreeDAnimationWindow AttachThreeD()
+		{
+			Windows.Graphics.ThreeDAnimationWindow window = this.shell.ThreeDAnimation;
+			if (window != null && window != this.threeDWindow)
+			{
+				this.threeDWindow = window;
+				window.SsaaFactor = this.threeDSsaaFactor;
+				window.SsaaFactorChanged += this.ThreeD_SsaaFactorChanged;
+			}
+
+			return window;
+		}
+
+		private void ThreeD_SsaaFactorChanged(object sender, EventArgs e)
+		{
+			if (this.started)
+			{
+				this.RequestSave();
+			}
 		}
 
 		/// <summary>

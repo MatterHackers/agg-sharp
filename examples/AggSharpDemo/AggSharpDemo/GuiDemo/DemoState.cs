@@ -66,8 +66,21 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>The inspector's tree expansion, selection and split (state.rs inspector); null keeps its defaults.</summary>
 		public InspectorSavedState Inspector { get; set; }
 
+		/// <summary>The 3D Animation window's linear SSAA factor (state.rs msaa_samples); null or out of range opens
+		/// it at <see cref="Windows.Graphics.ThreeDAnimationWindow.DefaultSsaaFactor"/> (Off).</summary>
+		public int? ThreeDSsaaFactor { get; set; }
+
 		/// <summary>The System window's typography settings and tab; null keeps the current ones.</summary>
 		public SystemSettingsState SystemSettings { get; set; }
+
+		/// <summary>The app's selected tab (<see cref="AggSharpDemoApp.AggDemosTab"/> or
+		/// <see cref="AggSharpDemoApp.AggSharpDemosTab"/>); null or unknown opens on the default tab. Written by the app,
+		/// not the GUI demo page, which only carries it over when it saves.</summary>
+		public string AppTab { get; set; }
+
+		/// <summary>The AGG demo last shown on the AGG Demos tab; null or unknown opens on the default demo. Like
+		/// <see cref="AppTab"/>, the app's.</summary>
+		public string AggDemo { get; set; }
 
 		/// <summary>The OS window's size in design units (agg pixels / DeviceScale) when last saved (state.rs
 		/// window_w / window_h); 0 when the page was not in a desktop window. The mac head opens its window at

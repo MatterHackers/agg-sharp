@@ -87,7 +87,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "rasterizers";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Rendering";
 
 		public override string Description => "One triangle aliased and anti-aliased side by side. Change the gamma and alpha, or drag a triangle.";
 

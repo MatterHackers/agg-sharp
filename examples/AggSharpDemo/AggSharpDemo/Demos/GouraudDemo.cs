@@ -82,7 +82,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "gouraud";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Color & Gradients";
 
 		public override string Description => "Six Gouraud-shaded triangles. Tune dilation and gamma to hide the seams; drag a corner or the whole shape.";
 

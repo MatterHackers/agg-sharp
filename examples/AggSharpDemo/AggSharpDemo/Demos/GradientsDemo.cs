@@ -149,7 +149,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "gradients";
 
-		public override string Category => "Gradients";
+		public override string Category => "Color & Gradients";
 
 		public override string Description => "Six gradient shapes colored by editable red, green, blue and alpha splines, with a gamma profile that evens out Mach bands. Drag to move the gradient, right-drag to turn and scale it, Ctrl-drag to stretch it.";
 

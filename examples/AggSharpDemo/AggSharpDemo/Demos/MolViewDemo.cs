@@ -133,7 +133,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "mol_view";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Shapes";
 
 		public override string Description => "A molecule viewer for SDF files. Page Up and Page Down change the molecule; drag to rotate and zoom, right-drag to move, space to spin.";
 

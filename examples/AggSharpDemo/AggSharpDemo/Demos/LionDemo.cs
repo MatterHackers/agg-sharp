@@ -69,7 +69,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "lion";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Shapes";
 
 		public override string Description => "The classic AGG lion. Left-drag to rotate and scale it, right-drag to skew it; the slider sets its alpha.";
 

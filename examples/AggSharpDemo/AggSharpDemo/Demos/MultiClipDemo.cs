@@ -83,7 +83,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "multi_clip";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Masks & Clipping";
 
 		public override string Description => "The lion, random lines, markers and gradient dots clipped to a grid of boxes. Drag the slider to change the grid; left-drag to rotate and scale the lion, right-drag to skew it.";
 

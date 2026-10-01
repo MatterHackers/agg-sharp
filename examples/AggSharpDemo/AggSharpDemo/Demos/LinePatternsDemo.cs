@@ -99,7 +99,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "line_patterns";
 
-		public override string Category => "Lines";
+		public override string Category => "Paths & Strokes";
 
 		public override string Description => "Lines drawn with image patterns: nine Bezier curves, each with its own picture laid along it. Drag the points to bend the curves; Scale X stretches the pictures, Start X slides them.";
 

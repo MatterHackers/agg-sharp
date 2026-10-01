@@ -112,7 +112,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "gamma_tuner";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Rendering";
 
 		public override string Description => "Alternating translucent spans blended through a gamma-correcting pixel format beside solid strips. Change the gamma until they match.";
 

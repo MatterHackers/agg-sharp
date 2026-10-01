@@ -68,7 +68,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				VAnchor = VAnchor.Center,
 			};
 			this.AddChild(this.MenuBar);
-			this.SizeTitles();
+			SizeTitles(this.MenuBar, this.Menus);
 
 			// The narrow page's sidebar drawer toggle (FA bars), at the bar's right end; the shell shows it
 			// below its breakpoint.
@@ -194,12 +194,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>top_bar.rs's MenuBar is 13px, and each title a fixed slot of max(chars * 8 + 22, 52) scaled by
 		/// 13 / 14 (menu/widget/mod.rs), its text 9px in from the slot's left; the library's titles fit their text
 		/// in the theme's button padding, so they are resized here. agg-gui counts the icon prefix ("\u{F009} ") as
-		/// two characters.</summary>
-		private void SizeTitles()
+		/// two characters. The AGG demos page's bar (<see cref="AggDemoTopBar"/>) is sized the same way.</summary>
+		internal static void SizeTitles(MenuBarWidget menuBar, IReadOnlyList<MenuItemModel> menus)
 		{
 			const double FontPixels = 13;
 			const double TextInset = 9;
-			foreach ((ThemedTextButton title, MenuItemModel menu) in this.MenuBar.Children.OfType<ThemedTextButton>().Zip(this.Menus))
+			foreach ((ThemedTextButton title, MenuItemModel menu) in menuBar.Children.OfType<ThemedTextButton>().Zip(menus))
 			{
 				bool hasIcon = !string.IsNullOrEmpty(menu.IconGlyph);
 				int characters = menu.Text.Length + (hasIcon ? 2 : 0);
@@ -333,7 +333,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		/// <summary>Gives <paramref name="item"/> the icon font glyph <paramref name="glyph"/>; null or empty leaves
 		/// it without an icon (the Window Resize Test entries have none).</summary>
-		private static MenuItemModel WithIcon(MenuItemModel item, string glyph)
+		internal static MenuItemModel WithIcon(MenuItemModel item, string glyph)
 		{
 			if (string.IsNullOrEmpty(glyph))
 			{
@@ -358,7 +358,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			return image;
 		}
 
-		private static MenuItemModel Item(string text, string id, Action action)
+		internal static MenuItemModel Item(string text, string id, Action action)
 		{
 			return new MenuItemModel { Text = text, AutomationName = id, Action = action };
 		}

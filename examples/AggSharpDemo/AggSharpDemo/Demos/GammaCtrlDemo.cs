@@ -53,7 +53,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "gamma_ctrl";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Rendering";
 
 		public override string Description => "Anti-aliasing gamma set by a spline. Drag the curve's control points (or use the arrow keys) and watch thin lines and text change weight.";
 

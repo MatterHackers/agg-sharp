@@ -57,7 +57,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "aa_test";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Rendering";
 
 		public override string Description => "An anti-aliasing test sheet: radial lines, dots and gradient-coloured lines at whole and fractional sizes, widths and positions, and thin gradient triangles.";
 

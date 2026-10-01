@@ -74,7 +74,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "gouraud_mesh";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Color & Gradients";
 
 		public override string Description => "A mesh of Gouraud-shaded triangles drawn in one pass by a compound rasterizer, so shared edges meet without seams. The points drift and the colours cycle; drag a point to move it.";
 

@@ -73,7 +73,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "gradient_focal";
 
-		public override string Category => "Gradients";
+		public override string Category => "Color & Gradients";
 
 		public override string Description => "A radial gradient with a focal point, built through a gamma table so its colors blend evenly. Click or drag to move the focus; the slider changes the gamma.";
 
