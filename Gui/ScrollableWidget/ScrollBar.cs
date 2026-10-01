@@ -67,11 +67,10 @@ namespace MatterHackers.Agg.UI
 		private Color? thumbHoverColor;
 
 		// Only a floating bar that shows when required fades; every other bar is fully opaque.
-		private double opacity = 1;
+		private readonly ScrollBarTween visibility = new ScrollBarTween(1, FadeMs);
 
-		private long lastFadeStepMs = -1;
-
-		private long lastScrollMs = long.MinValue / 2;
+		// A floating bar's growth from its thin width to its full thickness while hovered or dragged, 0..1.
+		private readonly ScrollBarTween hover = new ScrollBarTween(0, GrowMs);
 
 		internal ScrollBar(ScrollableWidget parent, Orientation orientation = Orientation.Vertical)
 			: this(parent, DefaultBackgroundColor, DefaultThumbColor, orientation)
@@ -106,16 +105,6 @@ namespace MatterHackers.Agg.UI
 			parentScrollWidget.ScrollArea.BoundsChanged += Bounds_Changed;
 			parentScrollWidget.ScrollPositionChanged += Bounds_Changed;
 			parentScrollWidget.ScrollArea.MarginChanged += Bounds_Changed;
-			parentScrollWidget.ScrollPositionChanged += (s, e) =>
-			{
-				// Layout putting the offset back as the content or view changes moves ScrollPosition but not what
-				// the user sees; showing an auto-hiding bar for it would flash the bar and ask for frames on every
-				// layout, so only a real scroll brings the bar up.
-				if (!parentScrollWidget.RestoringOffset)
-				{
-					lastScrollMs = UiThread.CurrentTimerMs;
-				}
-			};
 
 			UpdateScrollBar();
 		}
@@ -189,9 +178,9 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// Gets or sets whether the bar floats over the content instead of taking room beside it. A floating bar
-		/// reserves no space, is drawn at <see cref="FloatingWidth"/> until hovered, and - when shown
-		/// <see cref="ShowState.WhenRequired"/> - stays hidden until the pointer is over it or the view scrolls,
-		/// fading in and back out. Off by default.
+		/// reserves no space, is drawn at <see cref="FloatingWidth"/> until hovered, is found by the pointer a
+		/// <see cref="GrabMargin"/> short of it, and - when shown <see cref="ShowState.WhenRequired"/> - stays hidden
+		/// until the pointer is over it or dragging it, fading in and back out as agg-gui's does. Off by default.
 		/// </summary>
 		public bool Floating
 		{
@@ -257,14 +246,24 @@ namespace MatterHackers.Agg.UI
 			set => SetAppearance(ref thumbHoverColor, value);
 		}
 
+		/// <summary>The time the fade reads, in milliseconds; tests hold it to step the fade deterministically.</summary>
+		internal Func<long> Clock { get; set; } = () => UiThread.CurrentTimerMs;
+
 		/// <summary>The bar's full thickness in device pixels.</summary>
 		public double Thickness => barWidth ?? ScrollBarWidth;
 
 		/// <summary>Space the bar takes across the view: the thickness and both margins.</summary>
 		internal double StripThickness => outerMargin + Thickness + innerMargin;
 
+		/// <summary>
+		/// How far past its strip, towards the content, a floating bar still counts as hovered - agg-gui's
+		/// DEFAULT_GRAB_MARGIN of 6. A floating bar is thin or invisible until hovered, so the pointer needs more than
+		/// the bar itself to find it. It widens only the hit area: the bar draws, and the corner is measured, as before.
+		/// </summary>
+		internal double GrabMargin => floating ? 6 * DeviceScale : 0;
+
 		/// <summary>How opaque the bar is drawn, 0..1; below 1 only while a floating bar is hidden or fading.</summary>
-		internal double Opacity => opacity;
+		internal double Opacity => visibility.Value;
 
 		/// <summary>Whether this bar takes room beside the content, so the view's scroll area steps in by it.</summary>
 		internal bool ReservesSpace => Visible && !floating;
@@ -278,12 +277,12 @@ namespace MatterHackers.Agg.UI
 			get
 			{
 				ScrollBar horizontal = parentScrollWidget.HorizontalScrollBar;
-				return Math.Max(0, parentScrollWidget.Height - (horizontal != null && horizontal.Visible ? horizontal.Height : 0));
+				return Math.Max(0, parentScrollWidget.Height - (horizontal != null && horizontal.Visible ? horizontal.StripThickness : 0));
 			}
 		}
 
 		/// <summary>The length a horizontal bar runs along: the view's width less the vertical bar's corner.</summary>
-		private double HorizontalTrackLength => Math.Max(0, parentScrollWidget.Width - (parentScrollWidget.VerticalScrollBar.Visible ? parentScrollWidget.VerticalScrollBar.Width : 0));
+		private double HorizontalTrackLength => Math.Max(0, parentScrollWidget.Width - (parentScrollWidget.VerticalScrollBar.Visible ? parentScrollWidget.VerticalScrollBar.StripThickness : 0));
 
 		/// <summary>A horizontal bar's thumb length: the track scaled by how much of the content's width is in view.</summary>
 		internal double ThumbWidth => ThumbLength(HorizontalTrackLength, parentScrollWidget.RatioOfViewToContents0To1().X);
@@ -296,17 +295,18 @@ namespace MatterHackers.Agg.UI
 
 		private bool AutoHides => floating && showState == ShowState.WhenRequired;
 
-		/// <summary>How long a floating bar stays up after the view scrolls, in milliseconds.</summary>
-		private const double ScrollShowMs = 800;
+		/// <summary>How long a full fade in or out takes, in milliseconds (agg-gui's visibility tween).</summary>
+		internal const double FadeMs = 180;
 
-		/// <summary>How long a full fade in or out takes, in milliseconds.</summary>
-		internal const double FadeMs = 150;
+		/// <summary>How long a floating bar takes to grow to full thickness on hover, or shrink back, in milliseconds
+		/// (agg-gui's hover tween).</summary>
+		internal const double GrowMs = 120;
 
 		/// <summary>The thumb's length along a track: the share of the content in view, held to <see cref="HandleMinLength"/>.</summary>
 		private double ThumbLength(double track, double viewRatio) => Math.Max(viewRatio * track, Math.Min(handleMinLength, track));
 
-		/// <summary>The opacity an auto-hiding bar is heading for at <paramref name="nowMs"/>: shown while hovered,
-		/// dragged or just scrolled, hidden otherwise.</summary>
+		/// <summary>The opacity an auto-hiding bar is heading for at <paramref name="nowMs"/>: shown while hovered or
+		/// dragged, hidden otherwise. A scroll alone does not bring it up, as in agg-gui.</summary>
 		internal double FadeTarget(long nowMs)
 		{
 			if (!AutoHides)
@@ -314,33 +314,45 @@ namespace MatterHackers.Agg.UI
 				return 1;
 			}
 
-			return mouseInBounds || thumb.Dragging || nowMs - lastScrollMs < ScrollShowMs ? 1 : 0;
+			return mouseInBounds || thumb.Dragging ? 1 : 0;
 		}
 
-		/// <summary>Moves the opacity towards <see cref="FadeTarget"/> by the time since the last step and reports
-		/// whether the bar needs drawing again.</summary>
+		/// <summary>Points the fade and the hover growth at what the bar should be showing at
+		/// <paramref name="nowMs"/>. An ease starts from this moment, so it is called as soon as hover or drag
+		/// changes, not only when the bar next draws.</summary>
+		private void SetTargets(long nowMs)
+		{
+			visibility.SetTarget(FadeTarget(nowMs), nowMs);
+			hover.SetTarget(mouseInBounds || thumb.Dragging ? 1 : 0, nowMs);
+		}
+
+		/// <summary>Starts the eases for a change of hover or drag now, and asks for the draw that runs them.</summary>
+		internal void Retarget()
+		{
+			SetTargets(Clock());
+			Invalidate();
+		}
+
+		/// <summary>Moves the opacity and the hover growth to where their eases are at <paramref name="nowMs"/> and
+		/// reports whether the bar needs drawing again.</summary>
 		internal bool StepFade(long nowMs)
 		{
-			double target = FadeTarget(nowMs);
-			double elapsed = lastFadeStepMs < 0 ? 0 : nowMs - lastFadeStepMs;
-			lastFadeStepMs = nowMs;
-			double step = elapsed / FadeMs;
-			double next = target > opacity ? Math.Min(target, opacity + step) : Math.Max(target, opacity - step);
-			if (next != opacity)
+			SetTargets(nowMs);
+			bool changed = visibility.Step(nowMs);
+			changed |= hover.Step(nowMs);
+			if (changed)
 			{
-				opacity = next;
 				UpdateScrollBar();
 			}
 
-			// Keep drawing while fading, and while a recent scroll holds the bar up so it can fade out afterwards.
-			return opacity != target || (AutoHides && target > 0 && !mouseInBounds && !thumb.Dragging);
+			return visibility.Animating || hover.Animating;
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)
 		{
-			if (AutoHides || opacity != 1)
+			if (AutoHides || floating || visibility.Value != 1)
 			{
-				if (StepFade(UiThread.CurrentTimerMs))
+				if (StepFade(Clock()))
 				{
 					Invalidate();
 				}
@@ -357,8 +369,8 @@ namespace MatterHackers.Agg.UI
 			}
 
 			field = value;
-			opacity = AutoHides ? 0 : 1;
-			lastFadeStepMs = -1;
+			visibility.Reset(AutoHides ? 0 : 1);
+			hover.Reset(mouseInBounds ? 1 : 0);
 			parentScrollWidget.SetScrollAreaMargin();
 			UpdateScrollBar();
 			Invalidate();
@@ -366,25 +378,21 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
+			// Only the position along the track decides, as agg-gui's page_at: anywhere across the bar level with the
+			// thumb (grab margin included) is the thumb's, and the thumb takes that press as a drag.
+			RectangleDouble thumbBounds = thumb.BoundsRelativeToParent;
 			if (orientation == Orientation.Horizontal)
 			{
-				if (!thumb.BoundsRelativeToParent.Contains(mouseEvent.X, mouseEvent.Y))
+				if (mouseEvent.X < thumbBounds.Left || mouseEvent.X > thumbBounds.Right)
 				{
 					// page towards the click, the way the vertical bar does
-					MoveThumb(new Vector2(mouseEvent.X < thumb.OriginRelativeParent.X ? -thumb.Width : thumb.Width, 0));
+					MoveThumb(new Vector2(mouseEvent.X < thumbBounds.Left ? -thumb.Width : thumb.Width, 0));
 				}
 			}
-			else if (!thumb.BoundsRelativeToParent.Contains(mouseEvent.X, mouseEvent.Y))
+			else if (mouseEvent.Y < thumbBounds.Bottom || mouseEvent.Y > thumbBounds.Top)
 			{
 				// we did not click on the thumb so we want to move the scroll bar towards the click
-				if (mouseEvent.Y < thumb.OriginRelativeParent.Y)
-				{
-					MoveThumb(new Vector2(0, -thumb.Height));
-				}
-				else
-				{
-					MoveThumb(new Vector2(0, thumb.Height));
-				}
+				MoveThumb(new Vector2(0, mouseEvent.Y < thumbBounds.Bottom ? -thumb.Height : thumb.Height));
 			}
 
 			base.OnMouseDown(mouseEvent);
@@ -396,6 +404,7 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseEnterBounds(mouseEvent);
 
 			this.UpdateScrollBar();
+			Retarget();
 		}
 
 		public override void OnMouseLeaveBounds(MouseEventArgs mouseEvent)
@@ -404,6 +413,7 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseLeaveBounds(mouseEvent);
 
 			this.UpdateScrollBar();
+			Retarget();
 		}
 
 		internal void MoveThumb(Vector2 deltaToMove)
@@ -461,7 +471,8 @@ namespace MatterHackers.Agg.UI
 					// the strip runs from just above the horizontal bar (if any) to the top
 					double track = VerticalTrackLength;
 					double bottom = parentScrollWidget.Height - track;
-					LocalBounds = new RectangleDouble(0, bottom, StripThickness, parentScrollWidget.Height);
+					// the grab margin reaches left into the content (negative x), so the bar's own coordinates stay put
+					LocalBounds = new RectangleDouble(-GrabMargin, bottom, StripThickness, parentScrollWidget.Height);
 
 					// the bar sits between the inner margin (content side, left) and the outer margin (right edge)
 					(double thumbLeft, double thumbRight) = ThumbBand(innerMargin, hugHigh: true);
@@ -487,7 +498,8 @@ namespace MatterHackers.Agg.UI
 		private void UpdateHorizontalBar()
 		{
 			double track = HorizontalTrackLength;
-			LocalBounds = new RectangleDouble(0, 0, track, StripThickness);
+			// the grab margin reaches up into the content, above the bar
+			LocalBounds = new RectangleDouble(0, 0, track, StripThickness + GrabMargin);
 
 			// the bar sits between the outer margin (bottom edge) and the inner margin (content side, top)
 			(double thumbBottom, double thumbTop) = ThumbBand(outerMargin, hugHigh: false);
@@ -501,22 +513,25 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Where the thumb sits across the bar that starts at <paramref name="barStart"/>: the full thickness on hover,
-		/// a floating bar's thin width (against the view's outer edge - the high side when <paramref name="hugHigh"/>)
-		/// when dormant, and otherwise inset by <see cref="GrowThumbBy"/> on both sides.
+		/// Where the thumb sits across the bar that starts at <paramref name="barStart"/>: a floating bar with a thin
+		/// width eases between it (against the view's outer edge - the high side when <paramref name="hugHigh"/>) and
+		/// the full thickness as hover comes and goes; any other bar is full on hover and otherwise inset by
+		/// <see cref="GrowThumbBy"/> on both sides.
 		/// </summary>
 		private (double Start, double End) ThumbBand(double barStart, bool hugHigh)
 		{
 			double full = Thickness;
+			if (floating && floatingWidth > 0)
+			{
+				// eased from thin to full, like agg-gui's bar_width_at(hover)
+				double thin = Math.Min(floatingWidth, full);
+				double width = thin + (full - thin) * hover.Value;
+				return hugHigh ? (barStart + full - width, barStart + full) : (barStart, barStart + width);
+			}
+
 			if (mouseInBounds)
 			{
 				return (barStart, barStart + full);
-			}
-
-			if (floating && floatingWidth > 0)
-			{
-				double thin = Math.Min(floatingWidth, full);
-				return hugHigh ? (barStart + full - thin, barStart + full) : (barStart, barStart + thin);
 			}
 
 			// a narrow bar keeps at least half its thickness, where the full inset would leave nothing to see
@@ -533,7 +548,7 @@ namespace MatterHackers.Agg.UI
 			thumb.BackgroundColor = Faded(mouseInBounds ? thumbHoverColor ?? DefaultThumbHoverColor : thumbColor ?? DefaultThumbColor);
 		}
 
-		private Color Faded(Color color) => opacity >= 1 ? color : color.WithAlpha((int)Math.Round(color.alpha * opacity));
+		private Color Faded(Color color) => Opacity >= 1 ? color : color.WithAlpha((int)Math.Round(color.alpha * Opacity));
 
 		// Color is a multi-field struct, so unsynchronized cross-thread writes (e.g. from
 		// ThemeConfig.RebuildTheme) could be observed torn or stale by ScrollBar constructors.
@@ -617,10 +632,30 @@ namespace MatterHackers.Agg.UI
 		/// <summary>Whether the thumb is being dragged.</summary>
 		internal bool Dragging => MouseDownOnThumb;
 
+		/// <summary>
+		/// Level with the thumb anywhere across its bar's hit area counts as on the thumb - agg-gui's pos_on_thumb,
+		/// which includes the grab margin - so a press beside a thin floating thumb grabs it rather than paging.
+		/// </summary>
+		/// <remarks>The thumb only ever moves along the track, so across it the thumb and the bar share coordinates.</remarks>
+		public override bool PositionWithinLocalBounds(double x, double y)
+		{
+			if (!(Parent is ScrollBar bar))
+			{
+				return base.PositionWithinLocalBounds(x, y);
+			}
+
+			RectangleDouble thumbBounds = LocalBounds;
+			RectangleDouble barBounds = bar.LocalBounds;
+			return orientation == Orientation.Vertical
+				? y >= thumbBounds.Bottom && y <= thumbBounds.Top && x >= barBounds.Left && x <= barBounds.Right
+				: x >= thumbBounds.Left && x <= thumbBounds.Right && y >= barBounds.Bottom && y <= barBounds.Top;
+		}
+
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
 		{
 			MouseDownOnThumb = true;
 			mouseDownPosition = new Vector2(mouseEvent.X, mouseEvent.Y);
+			(Parent as ScrollBar)?.Retarget();
 
 			base.OnMouseDown(mouseEvent);
 		}
@@ -652,6 +687,9 @@ namespace MatterHackers.Agg.UI
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			MouseDownOnThumb = false;
+
+			// a drag held the bar up and full width; released off the bar, it now fades and thins
+			(Parent as ScrollBar)?.Retarget();
 			base.OnMouseUp(mouseEvent);
 		}
 	}

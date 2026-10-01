@@ -194,7 +194,7 @@ namespace MatterHackers.Agg.UI
 					{
 						// value is device pixels, so take the device padding and margin; the design-unit ones left the
 						// list too wide by padding plus margin x (DeviceScale - 1)
-						topToBottomItemList.Width = Math.Max(0, value.Width - ScrollArea.DevicePadding.Width - topToBottomItemList.DeviceMargin.Width - VerticalScrollBar.Width);
+						topToBottomItemList.Width = Math.Max(0, value.Width - ScrollArea.DevicePadding.Width - topToBottomItemList.DeviceMargin.Width - (VerticalScrollBar.Floating ? 0 : VerticalScrollBar.Width));
 					}
 
 					base.LocalBounds = value;

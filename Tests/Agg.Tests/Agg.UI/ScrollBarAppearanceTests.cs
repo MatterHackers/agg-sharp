@@ -24,6 +24,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System.Threading.Tasks;
+using MatterHackers.Agg.Image;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
@@ -107,6 +108,8 @@ namespace MatterHackers.Agg.UI.Tests
 		{
 			ScrollableWidget scroll = Make();
 			ScrollBar bar = scroll.VerticalScrollBar;
+			long now = 1_000_000;
+			bar.Clock = () => now;
 			bar.BarWidth = 10;
 			bar.FloatingWidth = 2;
 			bar.Floating = true;
@@ -118,7 +121,9 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(bar.Thumb.LocalBounds.Right).IsEqualTo(10);
 			await Assert.That(bar.Track.BackgroundColor.alpha).IsEqualTo((byte)0);
 
+			// hovered: it grows to the full thickness over GrowMs
 			bar.OnMouseEnterBounds(Mouse(5, 50));
+			bar.StepFade(now + (long)ScrollBar.GrowMs);
 			await Assert.That(bar.Thumb.LocalBounds.Left).IsEqualTo(0);
 			await Assert.That(bar.Thumb.LocalBounds.Right).IsEqualTo(10);
 
@@ -127,21 +132,21 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
-		public async Task AFloatingBarAutoHidesAndFadesInOnHoverAndScroll()
+		public async Task AFloatingBarAutoHidesAndFadesInOnHoverButNotOnScroll()
 		{
 			ScrollableWidget scroll = Make();
 			ScrollBar bar = scroll.VerticalScrollBar;
+			long now = UiThread.CurrentTimerMs + 100_000;
+			bar.Clock = () => now;
 			bar.Floating = true;
 			await Assert.That(bar.Opacity).IsEqualTo(0);
-			long now = UiThread.CurrentTimerMs + 100_000;
 			await Assert.That(bar.FadeTarget(now)).IsEqualTo(0);
 
-			// hover fades it in over FadeMs
+			// hover fades it in over FadeMs, eased out (cubic) as agg-gui's tween is
 			bar.OnMouseEnterBounds(Mouse(5, 50));
 			await Assert.That(bar.FadeTarget(now)).IsEqualTo(1);
-			bar.StepFade(now);
 			bar.StepFade(now + (long)(ScrollBar.FadeMs / 2));
-			await Assert.That(bar.Opacity).IsEqualTo(0.5).Within(1e-9);
+			await Assert.That(bar.Opacity).IsEqualTo(0.875).Within(1e-9);
 			await Assert.That(bar.StepFade(now + (long)ScrollBar.FadeMs)).IsFalse();
 			await Assert.That(bar.Opacity).IsEqualTo(1);
 
@@ -149,14 +154,146 @@ namespace MatterHackers.Agg.UI.Tests
 			bar.OnMouseLeaveBounds(Mouse(500, 50));
 			await Assert.That(bar.FadeTarget(now)).IsEqualTo(0);
 
-			// a scroll brings it up for a moment
+			// a scroll alone does not bring it up: only hover or a drag does, as in agg-gui
 			scroll.SetScrollOffsetFromTop(50);
-			await Assert.That(bar.FadeTarget(UiThread.CurrentTimerMs)).IsEqualTo(1);
-			await Assert.That(bar.FadeTarget(UiThread.CurrentTimerMs + 5000)).IsEqualTo(0);
+			await Assert.That(bar.FadeTarget(now)).IsEqualTo(0);
+			await Assert.That(bar.StepFade(now + (long)ScrollBar.FadeMs)).IsFalse();
+			await Assert.That(bar.Opacity).IsEqualTo(0);
 
 			// shown Always, a floating bar does not hide
 			bar.Show = ScrollBar.ShowState.Always;
 			await Assert.That(bar.FadeTarget(now)).IsEqualTo(1);
+		}
+
+		[Test]
+		public async Task AFloatingBarFadesInAndOutOverTimeEvenAfterALongIdle()
+		{
+			// The fade used to measure its step from the previous draw, and an idle bar is not drawn, so the first
+			// draw after a hover saw seconds elapsed and jumped straight to full (and back to nothing on leave).
+			// agg-gui eases from the moment the hover changes; driven through real routing, draws and a held clock.
+			ScrollableWidget scroll = Make();
+			ScrollBar bar = scroll.VerticalScrollBar;
+			long now = 1_000_000;
+			bar.Clock = () => now;
+			bar.Floating = true;
+			bar.FloatingWidth = 2;
+			GuiWidget root = scroll.Parent;
+			Graphics2D graphics = new ImageBuffer(200, 100).NewGraphics2D();
+
+			// not hovered: drawn, and still hidden and thin
+			root.OnDraw(graphics);
+			await Assert.That(bar.Opacity).IsEqualTo(0);
+
+			// a long idle, then the pointer comes onto the bar: it starts fading in rather than popping up
+			now += 5000;
+			root.OnMouseMove(Mouse(195, 50));
+			root.OnDraw(graphics);
+			await Assert.That(bar.Opacity).IsEqualTo(0);
+			now += (long)(ScrollBar.FadeMs / 2);
+			root.OnDraw(graphics);
+			await Assert.That(bar.Opacity).IsGreaterThan(0.5).And.IsLessThan(1);
+			now += (long)ScrollBar.FadeMs;
+			root.OnDraw(graphics);
+			await Assert.That(bar.Opacity).IsEqualTo(1);
+			await Assert.That(bar.Thumb.Width).IsEqualTo(bar.Thickness).Within(1e-9);
+
+			// a long hover, then the pointer leaves: it fades out over FadeMs and thins back down
+			now += 5000;
+			root.OnMouseMove(Mouse(50, 50));
+			root.OnDraw(graphics);
+			await Assert.That(bar.Opacity).IsEqualTo(1);
+			now += (long)(ScrollBar.FadeMs / 2);
+			root.OnDraw(graphics);
+			await Assert.That(bar.Opacity).IsGreaterThan(0).And.IsLessThan(0.5);
+			now += (long)ScrollBar.FadeMs;
+			root.OnDraw(graphics);
+			await Assert.That(bar.Opacity).IsEqualTo(0);
+			await Assert.That(bar.Thumb.Width).IsEqualTo(2).Within(1e-9);
+		}
+
+		[Test]
+		public async Task AFloatingBarIsHoveredFromItsGrabMarginButNotBeyond()
+		{
+			// agg-gui's hover zone is the bar plus a 6 px grab margin on the content side, so a 10 px bar shows
+			// from 16 px in. The margin widens only what the pointer finds, not where the bar is drawn.
+			ScrollableWidget scroll = Make();
+			ScrollBar bar = scroll.VerticalScrollBar;
+			bar.BarWidth = 10;
+			bar.FloatingWidth = 2;
+			bar.Floating = true;
+			GuiWidget root = scroll.Parent;
+
+			root.OnMouseMove(Mouse(200 - 20, 50));
+			await Assert.That(bar.FadeTarget(0)).IsEqualTo(0);
+
+			root.OnMouseMove(Mouse(200 - 14, 50));
+			await Assert.That(bar.FadeTarget(0)).IsEqualTo(1);
+			await Assert.That(bar.Thumb.LocalBounds.Right).IsEqualTo(10);
+			await Assert.That(bar.Track.LocalBounds.Left).IsEqualTo(0);
+
+			root.OnMouseMove(Mouse(200 - 20, 50));
+			await Assert.That(bar.FadeTarget(0)).IsEqualTo(0);
+		}
+
+		private static MouseEventArgs Press(double x, double y) => new MouseEventArgs(MouseButtons.Left, 1, x, y, 0);
+
+		private static bool Dragging(ScrollBar bar) => ((ThumDragWidget)bar.Thumb).Dragging;
+
+		[Test]
+		public async Task APressInTheGrabMarginBesideTheThumbDragsItAndAboveItPages()
+		{
+			// agg-gui's pos_on_thumb counts the grab margin: level with the thumb, a press there grabs it. Only a
+			// press further along the track pages, towards the press.
+			ScrollableWidget scroll = Make();
+			ScrollBar bar = scroll.VerticalScrollBar;
+			bar.BarWidth = 10;
+			bar.FloatingWidth = 2;
+			bar.Floating = true;
+			GuiWidget root = scroll.Parent;
+
+			// the thumb is 20 high at the top of the 100 high track; x 186 is in the margin, 14 in from the edge
+			root.OnMouseMove(Mouse(186, 90));
+			root.OnMouseDown(Press(186, 90));
+			await Assert.That(Dragging(bar)).IsTrue();
+			await Assert.That(scroll.ScrollOffsetFromTop()).IsEqualTo(0);
+			root.OnMouseMove(Mouse(186, 70));
+			await Assert.That(scroll.ScrollOffsetFromTop()).IsGreaterThan(0);
+			root.OnMouseUp(Press(186, 70));
+			await Assert.That(Dragging(bar)).IsFalse();
+
+			// below the thumb, in the margin, pages down rather than up
+			scroll.SetScrollOffsetFromTop(0);
+			root.OnMouseMove(Mouse(186, 30));
+			root.OnMouseDown(Press(186, 30));
+			await Assert.That(Dragging(bar)).IsFalse();
+			await Assert.That(scroll.ScrollOffsetFromTop()).IsGreaterThan(0);
+			root.OnMouseUp(Press(186, 30));
+		}
+
+		[Test]
+		public async Task APressInTheHorizontalGrabMarginBesideTheThumbDragsItAndPastItPages()
+		{
+			ScrollableWidget scroll = Make(contentWidth: 600, contentHeight: 50);
+			scroll.HorizontalScroll = true;
+			ScrollBar bar = scroll.HorizontalScrollBar;
+			bar.BarWidth = 10;
+			bar.FloatingWidth = 2;
+			bar.Floating = true;
+			GuiWidget root = scroll.Parent;
+
+			// the thumb spans the first third of the 200 wide track; y 14 is in the margin above the bar
+			root.OnMouseMove(Mouse(30, 14));
+			root.OnMouseDown(Press(30, 14));
+			await Assert.That(Dragging(bar)).IsTrue();
+			await Assert.That(scroll.ScrollOffsetFromLeft()).IsEqualTo(0);
+			root.OnMouseUp(Press(30, 14));
+
+			// past the thumb, in the margin, pages right
+			root.OnMouseMove(Mouse(150, 14));
+			root.OnMouseDown(Press(150, 14));
+			await Assert.That(Dragging(bar)).IsFalse();
+			await Assert.That(scroll.ScrollOffsetFromLeft()).IsGreaterThan(0);
+			root.OnMouseUp(Press(150, 14));
 		}
 
 		[Test]

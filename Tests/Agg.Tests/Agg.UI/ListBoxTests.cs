@@ -241,6 +241,24 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// A floating bar draws over the list rather than beside it, so the list keeps the full width: taking the
+		/// bar's width off left a gutter of nothing (and its grab margin made that gutter wider still).
+		/// </summary>
+		[Test]
+		public async Task AFloatingBarTakesNoWidthFromTheItemList()
+		{
+			var listBox = new MarginedListBox();
+			listBox.VerticalScrollBar.Show = ScrollBar.ShowState.Always;
+			listBox.VerticalScrollBar.Floating = true;
+			listBox.AddChild(new ListBoxTextItem("hand.stl", "c:\\development\\hand.stl"));
+			listBox.LocalBounds = new RectangleDouble(0, 0, 200, 300);
+
+			GuiWidget itemList = listBox.ItemList;
+			double expected = listBox.Width - listBox.ScrollArea.DevicePadding.Width - itemList.DeviceMargin.Width;
+			await Assert.That(itemList.Width).IsEqualTo(expected).Within(0.001);
+		}
+
+		/// <summary>
 		/// Exposes the item list so a test can give it a margin and measure it.
 		/// </summary>
 		private class MarginedListBox : ListBox

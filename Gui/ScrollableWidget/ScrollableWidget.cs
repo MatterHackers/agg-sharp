@@ -225,10 +225,6 @@ namespace MatterHackers.Agg.UI
 
 		private bool restoringOffset;
 
-		/// <summary>Whether the offset is being put back by layout (<see cref="RestoreTopLeftOffset"/>) rather than
-		/// scrolled, for <see cref="ScrollPositionChanged"/> handlers that must tell the two apart.</summary>
-		internal bool RestoringOffset => restoringOffset;
-
 		/// <summary>Puts the offset back after the content or view changed under it - bookkeeping, not a scroll
 		/// request, so it does not count as one for <see cref="LocalBounds"/>.</summary>
 		internal void RestoreTopLeftOffset(Vector2 topLeftOffset)
@@ -445,7 +441,7 @@ namespace MatterHackers.Agg.UI
 			// visibility change. The scroll bar is becoming visible and not doing a layout. There is evidence this is the
 			// problem, but not proof.
 			if (VerticalScrollBar.Visible
-				&& VerticalScrollBar.BoundsRelativeToParent.Left < this.Width / 2)
+				&& VerticalScrollBar.BoundsRelativeToParent.Left + VerticalScrollBar.GrabMargin < this.Width / 2)
             {
 				// Make a layout event happen to fix the scroll bar
 				var width = this.Width;
