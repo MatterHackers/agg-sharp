@@ -79,6 +79,48 @@ namespace MatterHackers.Agg.UI.Tests
 			TextWidget.DoubleBufferDefault = textWidgetDoubleBufferDefault;
 		}
 
+		/// <summary>A widget that counts the times its content is painted (into its backbuffer, when it has one).</summary>
+		private class PaintCountingWidget : GuiWidget
+		{
+			public PaintCountingWidget(double width, double height)
+				: base(width, height)
+			{
+			}
+
+			public int PaintCount { get; private set; }
+
+			public override void OnDraw(Graphics2D graphics2D)
+			{
+				this.PaintCount++;
+				graphics2D.FillRectangle(this.LocalBounds, Color.Red);
+				base.OnDraw(graphics2D);
+			}
+		}
+
+		[Test]
+		public async Task ChangingBackbufferOpacityRecompositesWithoutRepaintingTheContent()
+		{
+			var parent = new GuiWidget(40, 40);
+			var child = new PaintCountingWidget(20, 20) { DoubleBuffer = true, BackbufferOpacity = .5 };
+			parent.AddChild(child);
+			var image = new ImageBuffer(40, 40);
+
+			parent.OnDraw(image.NewGraphics2D());
+			await Assert.That(child.PaintCount).IsEqualTo(1);
+			int halfAlpha = image.GetPixel(10, 10).alpha;
+
+			// A fade frame: only the composite changes, so the parent is asked to draw and the child's cache is kept.
+			int parentInvalidations = 0;
+			parent.Invalidated += (s, e) => parentInvalidations++;
+			child.BackbufferOpacity = .25;
+			await Assert.That(parentInvalidations).IsGreaterThan(0);
+
+			image = new ImageBuffer(40, 40);
+			parent.OnDraw(image.NewGraphics2D());
+			await Assert.That(child.PaintCount).IsEqualTo(1);
+			await Assert.That((int)image.GetPixel(10, 10).alpha).IsLessThan(halfAlpha);
+		}
+
 		[Test]
 		public async Task BackBuffersAreScreenAligned()
 		{

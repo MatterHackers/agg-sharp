@@ -40,6 +40,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 	/// <remarks>
 	/// A window is only built the first time it is opened. Closing takes it out of the canvas but keeps it, so
 	/// reopening brings it back where the user left it (agg-gui keeps its windows and toggles visibility).
+	/// Opening fades a window in and closing fades it out, as window.rs's visibility_anim does: a closed window
+	/// stays on the canvas, fading, until its fade ends (<see cref="StepFades"/>).
 	/// The canvas's child order is the z-order: the last child draws on top and is hit first. Raising is a
 	/// <see cref="GuiWidget.BringToFront"/> reorder, which WindowWidget also does itself when it takes focus,
 	/// so <see cref="ZOrder"/> is read from the canvas rather than kept in a second list that could disagree.
@@ -53,6 +55,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>app_builder.rs's default_canvas_h: the canvas height every default rectangle is laid out
 		/// for, whatever the real canvas's height. The layout then hangs from the real canvas's top.</summary>
 		public const double DefaultCanvasHeight = 720;
+
+		/// <summary>window.rs's VISIBILITY_FADE_SECS (0.18 s): how long a window takes to fade in or out, in milliseconds.</summary>
+		public const double FadeMs = 180;
 
 		/// <summary>The width tiled for until the canvas has been laid out: wide enough for specs.rs's four columns.</summary>
 		public const double DefaultCanvasWidth = TileOrigin + TileColumns * (GuiDemoSpecs.DefaultWindowWidth + TileGap);
@@ -84,6 +89,15 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		private readonly Dictionary<DemoSpec, WindowWidget> windows = new Dictionary<DemoSpec, WindowWidget>();
 
+		/// <summary>The windows that are open. A closed window can still be on the canvas while it fades out.</summary>
+		private readonly HashSet<DemoSpec> open = new HashSet<DemoSpec>();
+
+		/// <summary>Each built window's opacity, heading for 1 while it is open and 0 once it is closed.</summary>
+		private readonly Dictionary<DemoSpec, Tween> fades = new Dictionary<DemoSpec, Tween>();
+
+		/// <summary>The time the fades are stepped by, in milliseconds.</summary>
+		private readonly Func<long> clockMs;
+
 		/// <summary>Windows placed before the canvas had a height; they are tiled again once it has one.</summary>
 		private readonly HashSet<DemoSpec> placedBeforeLayout = new HashSet<DemoSpec>();
 
@@ -106,17 +120,20 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <param name="canvas">The widget the windows float over. Closing it closes every window built.</param>
 		/// <param name="demoTheme">The theme the windows are drawn with and follow; null for agg-gui's default
 		/// (System, which resolves to dark).</param>
-		public DemoWindowHost(GuiWidget canvas, DemoTheme demoTheme = null)
+		/// <param name="clockMs">The time the window fades run on, in milliseconds; null for
+		/// <see cref="UiThread.CurrentTimerMs"/>. Tests pass their own to step a fade rather than wait for it.</param>
+		public DemoWindowHost(GuiWidget canvas, DemoTheme demoTheme = null, Func<long> clockMs = null)
 		{
 			this.canvas = canvas;
 			this.demoTheme = demoTheme ?? new DemoTheme();
+			this.clockMs = clockMs ?? (() => UiThread.CurrentTimerMs);
 
 			// before any window, so its guide overlay is the canvas's first child and the windows keep the rest
 			this.Snap = new SnapCoordinator(canvas);
 
 			foreach (DemoSpec spec in GuiDemoSpecs.DefaultOpen)
 			{
-				this.SetOpen(spec, true);
+				this.SetOpen(spec, true, fade: false);
 			}
 
 			this.keepDefaultStacking = true;
@@ -125,6 +142,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			this.canvas.BoundsChanged += this.Canvas_BoundsChanged;
 			this.demoTheme.ThemeChanged += this.DemoTheme_ThemeChanged;
 			this.canvas.Closed += this.Canvas_Closed;
+
+			// Stepped before the canvas draws its children, so a window that has faded out is gone before they are
+			// walked. A fading window invalidates itself, which is what brings the next frame; nothing runs idle.
+			this.canvas.BeforeDraw += this.Canvas_BeforeDraw;
 		}
 
 		/// <summary>Snaps the windows to each other as they are dragged or resized (View > Window Snapping).</summary>
@@ -136,20 +157,25 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>A window was opened, closed, raised, moved or resized: anything saved state records.</summary>
 		public event EventHandler LayoutChanged;
 
-		/// <summary>The open windows' specs from the back to the front.</summary>
+		/// <summary>The open windows' specs from the back to the front (not the closed ones still fading out).</summary>
 		public IReadOnlyList<DemoSpec> ZOrder => this.canvas.Children
 			.Select(child => this.windows.FirstOrDefault(pair => pair.Value == child).Key)
-			.Where(spec => spec != null)
+			.Where(spec => spec != null && this.IsOpen(spec))
 			.ToList();
+
+		/// <summary>True while any window is still fading in or out.</summary>
+		public bool IsFading => this.fades.Values.Any(fade => fade.IsAnimating);
 
 		public bool IsOpen(DemoSpec spec)
 		{
-			return this.windows.TryGetValue(spec, out WindowWidget window) && window.Parent == this.canvas;
+			return this.open.Contains(spec);
 		}
 
 		/// <summary>Opens (on top of the others) or closes <paramref name="spec"/>'s window, building it the
 		/// first time it opens. Fires <see cref="OpenChanged"/> only when the state actually changes.</summary>
-		public void SetOpen(DemoSpec spec, bool open)
+		/// <param name="fade">False shows or hides it at once: the layout the app starts with (the defaults, or a
+		/// saved one) is there when it appears, as window.rs builds a visible window's fade at 1.</param>
+		public void SetOpen(DemoSpec spec, bool open, bool fade = true)
 		{
 			if (open == this.IsOpen(spec))
 			{
@@ -166,23 +192,107 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 					this.windows.Add(spec, window);
 				}
 
-				// A window that was closed is re-added on purpose, to keep where the user left it.
-				window.ClearRemovedFlag();
-				window.DoubleBuffer = true;
-				this.canvas.AddChild(window);
+				this.open.Add(spec);
+				if (window.Parent == this.canvas)
+				{
+					// Reopened while it was still fading out: the fade turns around where it is.
+					window.BringToFront();
+				}
+				else
+				{
+					// A window that was closed is re-added on purpose, to keep where the user left it. Its cached
+					// pixels are what fade: BackbufferOpacity only applies to a double-buffered widget.
+					window.ClearRemovedFlag();
+					window.DoubleBuffer = true;
+					this.canvas.AddChild(window);
+				}
+
+				// It takes the mouse again (a closing window gives it up, see below).
+				((DemoWindow)window).Closing = false;
+				this.Snap.Attach(window);
+				this.FadeTo(spec, 1, fade);
 			}
 			else
 			{
-				WindowWidget window = this.windows[spec];
-				this.canvas.RemoveChild(window);
+				this.open.Remove(spec);
 
-				// A removed widget keeps its GPU texture (only Close releases it) and a closed demo window is
-				// kept to be reopened, so its cache is dropped here; reopening repaints it once.
-				window.DoubleBuffer = false;
+				// As window.rs's hit_test and on_event, which answer only while the window is asked to be visible:
+				// a closing window lets the mouse through to what is under it, and gives up the keyboard.
+				((DemoWindow)this.windows[spec]).Closing = true;
+
+				// Nor is it snapped to while it fades out, as window.rs's snap_glue snaps only to windows still
+				// asked to be visible; reopening attaches it again.
+				this.Snap.Detach(this.windows[spec]);
+				this.FadeTo(spec, 0, fade);
 			}
 
 			this.OpenChanged?.Invoke(this, spec);
 			this.LayoutChanged?.Invoke(this, EventArgs.Empty);
+		}
+
+		/// <summary>
+		/// Moves every fading window's opacity on to the clock's time, and takes a window whose fade-out has ended
+		/// off the canvas. The canvas calls this each time it draws; while a window fades its part of the canvas
+		/// is invalidated so there is a next frame, and once every fade has ended nothing is.
+		/// </summary>
+		/// <remarks>
+		/// Only the canvas is invalidated, never the window: a fade frame composites the window's cached pixels at
+		/// a new opacity and does not repaint its content.
+		/// </remarks>
+		public void StepFades()
+		{
+			long now = this.clockMs();
+			foreach (KeyValuePair<DemoSpec, Tween> pair in this.fades.Where(pair => pair.Value.IsAnimating).ToList())
+			{
+				WindowWidget window = this.windows[pair.Key];
+				window.BackbufferOpacity = pair.Value.Step(now);
+				if (pair.Value.IsAnimating)
+				{
+					// Two frames in the same millisecond leave the opacity as it was, which would not invalidate.
+					this.canvas.Invalidate(window.BoundsRelativeToParent);
+				}
+				else if (pair.Value.Target == 0)
+				{
+					this.TakeOffCanvas(window);
+				}
+			}
+		}
+
+		/// <summary>Starts <paramref name="spec"/>'s window fading to <paramref name="opacity"/> from where it is
+		/// (0 for a window opening for the first time), or with <paramref name="fade"/> false puts it there now.</summary>
+		private void FadeTo(DemoSpec spec, double opacity, bool fade)
+		{
+			WindowWidget window = this.windows[spec];
+			if (!fade)
+			{
+				this.fades[spec] = new Tween(opacity, FadeMs);
+				window.BackbufferOpacity = opacity;
+				if (opacity == 0)
+				{
+					this.TakeOffCanvas(window);
+				}
+
+				return;
+			}
+
+			if (!this.fades.TryGetValue(spec, out Tween tween))
+			{
+				tween = new Tween(0, FadeMs);
+				this.fades.Add(spec, tween);
+			}
+
+			tween.SetTarget(opacity, this.clockMs());
+			window.BackbufferOpacity = tween.Value;
+			this.canvas.Invalidate(window.BoundsRelativeToParent);
+		}
+
+		private void TakeOffCanvas(WindowWidget window)
+		{
+			this.canvas.RemoveChild(window);
+
+			// A removed widget keeps its GPU texture (only Close releases it) and a closed demo window is kept to
+			// be reopened, so its cache is dropped here; reopening repaints it once.
+			window.DoubleBuffer = false;
 		}
 
 		/// <summary>Brings <paramref name="spec"/>'s window in front of the others; does nothing if it is closed.</summary>
@@ -433,7 +543,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		private WindowWidget CreateWindow(DemoSpec spec)
 		{
-			var window = new WindowWidget(this.demoTheme.Theme, new RectangleDouble(0, 0, spec.DefaultWidth * GuiWidget.DeviceScale, spec.DefaultHeight * GuiWidget.DeviceScale))
+			var window = new DemoWindow(this.demoTheme.Theme, new RectangleDouble(0, 0, spec.DefaultWidth * GuiWidget.DeviceScale, spec.DefaultHeight * GuiWidget.DeviceScale))
 			{
 				Name = spec.Title + " Window",
 				CornerRadius = 8,
@@ -716,11 +826,14 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		{
 			this.demoTheme.ThemeChanged -= this.DemoTheme_ThemeChanged;
 			this.canvas.BoundsChanged -= this.Canvas_BoundsChanged;
+			this.canvas.BeforeDraw -= this.Canvas_BeforeDraw;
 			foreach (WindowWidget window in this.windows.Values.Where(w => !w.HasBeenClosed))
 			{
 				window.Close();
 			}
 		}
+
+		private void Canvas_BeforeDraw(object sender, DrawEventArgs e) => this.StepFades();
 
 		/// <summary>
 		/// The canvas changed size: every window the user has not moved or resized is placed again for the new

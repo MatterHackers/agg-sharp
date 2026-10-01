@@ -40,10 +40,10 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 	[NotInParallel(new[] { nameof(AutomationRunner.ShowWindowAndExecuteTests), nameof(MatterHackers.Agg.UI.ThemeConfig.Current) })]
 	public class InspectorWindowTests
 	{
-		private static GuiDemoShell LaidOutShell(IDemoStateStore store = null)
+		private static GuiDemoShell LaidOutShell(IDemoStateStore store = null, System.Func<long> clockMs = null)
 		{
 			var page = new GuiWidget(1000, 700);
-			var shell = new GuiDemoShell(new DemoTheme(), store);
+			var shell = new GuiDemoShell(new DemoTheme(), store, clockMs);
 			page.AddChild(shell);
 			page.PerformLayout();
 			return shell;
@@ -80,7 +80,8 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		public async Task TheTreeStartsAtTheGuiDemosOwnRoot()
 		{
 			var outer = new SystemWindow(1200, 700) { Name = "Runner Around The Demo" };
-			GuiDemoShell shell = LaidOutShell();
+			long nowMs = 0;
+			GuiDemoShell shell = LaidOutShell(clockMs: () => nowMs);
 			outer.AddChild(shell.Parent);
 			shell.Windows.SetOpen(GuiDemoSpecs.Inspector, true);
 			var panel = (InspectorPanel)shell.Windows.GetWindow(GuiDemoSpecs.Inspector).FindDescendant(GuiDemoSpecs.Inspector.ContentName);
@@ -88,8 +89,10 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			panel.RefreshNow();
 			await Assert.That(panel.Model.Root).IsSameReferenceAs(shell);
 
-			// Closed, it lets go of the tree.
+			// Closed, and faded out, it lets go of the tree.
 			shell.Windows.SetOpen(GuiDemoSpecs.Inspector, false);
+			nowMs += 1000;
+			shell.Windows.StepFades();
 			panel.RefreshNow();
 			await Assert.That(panel.Model.Root).IsNull();
 			outer.Close();

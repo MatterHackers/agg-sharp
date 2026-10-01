@@ -67,10 +67,10 @@ namespace MatterHackers.Agg.UI
 		private Color? thumbHoverColor;
 
 		// Only a floating bar that shows when required fades; every other bar is fully opaque.
-		private readonly ScrollBarTween visibility = new ScrollBarTween(1, FadeMs);
+		private readonly Tween visibility = new Tween(1, FadeMs);
 
 		// A floating bar's growth from its thin width to its full thickness while hovered or dragged, 0..1.
-		private readonly ScrollBarTween hover = new ScrollBarTween(0, GrowMs);
+		private readonly Tween hover = new Tween(0, GrowMs);
 
 		internal ScrollBar(ScrollableWidget parent, Orientation orientation = Orientation.Vertical)
 			: this(parent, DefaultBackgroundColor, DefaultThumbColor, orientation)
@@ -338,14 +338,16 @@ namespace MatterHackers.Agg.UI
 		internal bool StepFade(long nowMs)
 		{
 			SetTargets(nowMs);
-			bool changed = visibility.Step(nowMs);
-			changed |= hover.Step(nowMs);
-			if (changed)
+			double opacityBefore = visibility.Value;
+			double growthBefore = hover.Value;
+			visibility.Step(nowMs);
+			hover.Step(nowMs);
+			if (visibility.Value != opacityBefore || hover.Value != growthBefore)
 			{
 				UpdateScrollBar();
 			}
 
-			return visibility.Animating || hover.Animating;
+			return visibility.IsAnimating || hover.IsAnimating;
 		}
 
 		public override void OnDraw(Graphics2D graphics2D)

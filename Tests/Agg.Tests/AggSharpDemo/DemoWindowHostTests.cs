@@ -98,7 +98,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 			host.SetOpen(sliders, false);
 			await Assert.That(host.IsOpen(sliders)).IsFalse();
-			await Assert.That(slidersWindow.Parent).IsNull();
+			// It stays on the canvas until it has faded out; DemoWindowFadeTests steps that.
 			await Assert.That(host.ZOrder.Contains(sliders)).IsFalse();
 			await Assert.That(changes.Last()).IsEqualTo(sliders);
 
@@ -181,7 +181,9 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		[Test]
 		public async Task ClosingAWindowReleasesItsRetainedLayer()
 		{
-			var (canvas, host) = CreateHost();
+			long nowMs = 0;
+			var canvas = new GuiWidget(1000, 700);
+			var host = new DemoWindowHost(canvas, clockMs: () => nowMs);
 			canvas.PerformLayout();
 			DemoSpec lion = Spec("Lion");
 			WindowWidget window = host.GetWindow(lion);
@@ -195,7 +197,11 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(layer.Width).IsGreaterThanOrEqualTo((int)window.Width);
 			await Assert.That(surface.Layers.Any(l => l.Disposed)).IsFalse();
 
+			// Kept while it fades out; released once the fade has ended and it is off the canvas.
 			host.SetOpen(lion, false);
+			await Assert.That(layer.Disposed).IsFalse();
+			nowMs += 1000;
+			host.StepFades();
 			await Assert.That(layer.Disposed).IsTrue();
 			await Assert.That(surface.Layers.Count(l => l.Disposed)).IsEqualTo(1);
 			await Assert.That(window.DoubleBuffer).IsFalse();

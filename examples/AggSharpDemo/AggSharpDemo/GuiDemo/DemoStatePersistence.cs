@@ -190,7 +190,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 						(windowState.Y + windowState.Height) * scale));
 				}
 
-				windows.SetOpen(spec, windowState.Open);
+				// Saved state is the layout the app starts with, so it is there at once rather than fading in.
+				windows.SetOpen(spec, windowState.Open, fade: false);
 
 				// Only an open window comes back maximized; agg-gui restores a window when it is reopened.
 				windows.SetMaximized(spec, windowState.Open && windowState.Maximized);

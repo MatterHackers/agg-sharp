@@ -260,6 +260,13 @@ namespace MatterHackers.Agg.UI
 		/// onto the parent. That is what makes an overlay window read as a single translucent pane rather than
 		/// as a stack of individually see-through children, and it is why this is not the same thing as giving
 		/// every child a transparent colour.
+		/// <para>
+		/// Changing it only recomposites: it invalidates the parent over this widget's bounds, so the cached
+		/// pixels are blended again at the new opacity. It does not repaint this widget's content (an animated
+		/// fade costs a blend per frame, not a raster) and it does not raise this widget's own
+		/// <see cref="Invalidated"/>. The one exception is a change that switches the backbuffer's mode (into or
+		/// out of faded, which LCD text cannot be), which re-rasters on the next paint.
+		/// </para>
 		/// </remarks>
 		public double BackbufferOpacity
 		{
@@ -271,7 +278,16 @@ namespace MatterHackers.Agg.UI
 				if (backbufferOpacity != clamped)
 				{
 					backbufferOpacity = clamped;
-					Invalidate();
+
+					// The cached pixels are unchanged; only how they are composited onto the parent is, so the
+					// parent is redrawn and this widget is not re-rastered (a fade would otherwise repaint all of
+					// its content every frame). Crossing into or out of faded can change the backbuffer's mode,
+					// and WidgetBackbuffer re-rasters on a mode change by itself.
+					var parent = Parent;
+					if (parent != null && parent.Visible && this.ActuallyVisibleOnParent())
+					{
+						parent.Invalidate(BoundsInParent(LocalBounds));
+					}
 				}
 			}
 		}

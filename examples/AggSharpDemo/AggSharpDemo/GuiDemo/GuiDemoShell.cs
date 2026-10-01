@@ -57,7 +57,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// platform cannot tell.</param>
 		/// <param name="stateStore">Where the page's layout, theme and settings are kept between runs; the saved
 		/// state is applied here and every later change is saved back. Null remembers nothing.</param>
-		public GuiDemoShell(DemoTheme demoTheme = null, IDemoStateStore stateStore = null)
+		/// <param name="clockMs">The time the windows fade in and out on, in milliseconds; null for
+		/// <see cref="UiThread.CurrentTimerMs"/>. Tests pass their own to step a fade rather than wait for it.</param>
+		public GuiDemoShell(DemoTheme demoTheme = null, IDemoStateStore stateStore = null, Func<long> clockMs = null)
 			: base(FlowDirection.TopToBottom)
 		{
 			this.Name = "GuiDemo Shell";
@@ -85,7 +87,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 				VAnchor = VAnchor.Stretch,
 			};
 			body.AddChild(this.Canvas);
-			this.Windows = new DemoWindowHost(this.Canvas, this.DemoTheme);
+			this.Windows = new DemoWindowHost(this.Canvas, this.DemoTheme, clockMs);
 
 			// Demos > group > title toggles the window, as agg-gui's menu flips the same open cell the
 			// sidebar row does.
