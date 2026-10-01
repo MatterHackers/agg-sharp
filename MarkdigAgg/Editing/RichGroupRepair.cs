@@ -66,7 +66,7 @@ namespace Markdig.Agg.Editing
 		}
 
 		/// <summary>
-		/// An item that moved to another depth takes that level's style - kind, marker and numbering - from its new
+		/// An item that moved to another depth takes that level's style - kind, marker, numbering and spacing - from its new
 		/// previous sibling, so it continues the list it joined instead of splitting it; the first item of a new
 		/// sublist keeps its kind and numbers from 1. Its subtree keeps its own levels' styles.
 		/// </summary>
@@ -87,6 +87,7 @@ namespace Markdig.Agg.Editing
 			list.Ordered = sibling?.Ordered ?? list.Ordered;
 			list.Marker = sibling?.Marker ?? list.Marker;
 			list.StartNumber = sibling?.StartNumber ?? 1;
+			list.Loose = sibling?.Loose ?? false;
 		}
 
 		/// <summary>

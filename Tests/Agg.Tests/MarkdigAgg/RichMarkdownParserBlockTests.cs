@@ -225,16 +225,16 @@ namespace Markdig.Agg.Tests
 		}
 
 		[Test]
-		public async Task ChangedGroupIsNotWrittenFromOriginalBytes()
+		public async Task ChangedGroupIsRegeneratedNotWrittenFromOriginalBytes()
 		{
-			// Regenerating a changed group is the writer step; until then it must not silently write stale bytes.
+			// Clean members, but the group changed: the stale wrapper bytes must not be written.
 			var removed = RichMarkdownParser.Parse("- a\n- b\n");
 			removed.Blocks.RemoveAt(1);
-			await Assert.That(() => RichMarkdownWriter.Write(removed)).Throws<System.NotImplementedException>();
+			await Assert.That(RichMarkdownWriter.Write(removed)).IsEqualTo("- a\n");
 
 			var realigned = RichMarkdownParser.Parse("<div align=\"center\">\n\nA\n\n</div>\n");
 			realigned.Blocks[0].Alignment = RichAlignment.Right;
-			await Assert.That(() => RichMarkdownWriter.Write(realigned)).Throws<System.NotImplementedException>();
+			await Assert.That(RichMarkdownWriter.Write(realigned)).IsEqualTo("<div align=\"right\">\n\nA\n\n</div>\n");
 		}
 
 		// List items show as marker + depth (e.g. "-1", ".0"); other blocks as their kind.

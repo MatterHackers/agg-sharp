@@ -303,11 +303,11 @@ namespace Markdig.Agg.Tests
 		}
 
 		[Test]
-		public async Task DirtyModelledBlockIsNotWrittenYet()
+		public async Task DirtyListItemIsRegenerated()
 		{
-			var document = RichMarkdownParser.Parse("- item\n");
+			var document = RichMarkdownParser.Parse("* item\n");
 			document.Blocks[0].Dirty = true;
-			await Assert.That(() => RichMarkdownWriter.Write(document)).Throws<System.NotImplementedException>();
+			await Assert.That(RichMarkdownWriter.Write(document)).IsEqualTo("* item\n");
 		}
 
 		private static string Shape(RichDocument document)

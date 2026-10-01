@@ -42,19 +42,30 @@ namespace Markdig.Agg.Tests
 		private static readonly MarkdownPipeline Pipeline = new MarkdownPipelineBuilder().UseSupportedExtensions().Build();
 
 		/// <summary>
-		/// The judge: rewriting every paragraph and heading must not change the rendered HTML. Blocks in an
-		/// alignment group are left clean - regenerating a changed group is a later step.
+		/// The judge: rewriting every paragraph, heading, list item and quote, with every list, quote and alignment
+		/// group forced to regenerate (as if each had been edited), must not change the rendered HTML.
 		/// </summary>
 		[Test]
 		[MethodDataSource(typeof(RichMarkdownParserTests), nameof(RichMarkdownParserTests.Corpus))]
-		public async Task RewrittenParagraphsAndHeadingsRenderTheSame(string markdown)
+		public async Task RewrittenTextBlocksAndGroupsRenderTheSame(string markdown)
 		{
 			var document = RichMarkdownParser.Parse(markdown);
 			foreach (var block in document.Blocks)
 			{
-				if ((block.Kind == RichBlockKind.Paragraph || block.Kind == RichBlockKind.Heading) && block.AlignGroup == null)
+				block.Dirty |= block.IsTextBlock;
+				if (block.AlignGroup != null)
 				{
-					block.Dirty = true;
+					block.AlignGroup.OriginalMemberCount = 0;
+				}
+
+				if (block.QuoteGroup != null)
+				{
+					block.QuoteGroup.OriginalMemberCount = 0;
+				}
+
+				if (block.ListGroup != null)
+				{
+					block.ListGroup.OriginalMemberCount = 0;
 				}
 			}
 
@@ -85,7 +96,7 @@ namespace Markdig.Agg.Tests
 		[MethodDataSource(nameof(StyleEdges))]
 		public async Task StyleEdgesRenderTheSame(string markdown)
 		{
-			await RewrittenParagraphsAndHeadingsRenderTheSame(markdown);
+			await RewrittenTextBlocksAndGroupsRenderTheSame(markdown);
 		}
 
 		[Test]
@@ -246,7 +257,7 @@ namespace Markdig.Agg.Tests
 		/// Rendered HTML with whitespace runs collapsed: a rewrite joins soft-wrapped lines with a space, which
 		/// renders the same as the line break it replaces.
 		/// </summary>
-		private static string Html(string markdown)
+		internal static string Html(string markdown)
 		{
 			// A rewrite may write <b> as ** (and ** as <strong> where ** cannot flank): the same rendering.
 			string html = Markdown.ToHtml(markdown, Pipeline);

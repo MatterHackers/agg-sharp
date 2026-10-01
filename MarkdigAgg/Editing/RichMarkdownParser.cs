@@ -169,34 +169,51 @@ namespace Markdig.Agg.Editing
 
 			foreach (var child in list)
 			{
-				if (child is not ListItemBlock item
-					|| item.Count == 0
-					|| item[0].GetType() != typeof(ParagraphBlock))
+				if (child is not ListItemBlock item)
 				{
 					return false;
 				}
-
-				var paragraph = (ParagraphBlock)item[0];
-				int paragraphStart = paragraph.Span.Start;
 
 				// The item starts at its marker; indentation before it is whitespace for the separator.
 				int itemStart = SkipSpaces(item.Span.Start);
-
-				// Reference definitions at the top of the item would sit in its source but not its inlines.
-				if (itemStart >= paragraphStart || ParagraphTextStart(paragraph, paragraphStart) != paragraphStart)
+				ParagraphBlock paragraph = null;
+				int itemEnd;
+				int nestedFrom = 1;
+				if (IsEmptyItem(item, itemStart))
 				{
-					return false;
+					// An empty item (what Enter leaves) owns its marker line; any nested lists follow as usual.
+					itemEnd = LineEnd(itemStart);
+					nestedFrom = item.Count > 0 && item[0] is ListBlock ? 0 : 1;
+				}
+				else
+				{
+					if (item.Count == 0 || item[0].GetType() != typeof(ParagraphBlock))
+					{
+						return false;
+					}
+
+					paragraph = (ParagraphBlock)item[0];
+					int paragraphStart = paragraph.Span.Start;
+
+					// Reference definitions at the top of the item would sit in its source but not its inlines.
+					if (itemStart >= paragraphStart || ParagraphTextStart(paragraph, paragraphStart) != paragraphStart)
+					{
+						return false;
+					}
+
+					itemEnd = ParagraphEnd(paragraph);
 				}
 
-				segments.Add(new Segment(itemStart, ParagraphEnd(paragraph), paragraph, RichBlockKind.ListItem, new RichListInfo
+				segments.Add(new Segment(itemStart, itemEnd, paragraph, RichBlockKind.ListItem, new RichListInfo
 				{
 					Ordered = list.IsOrdered,
 					Depth = depth,
 					Marker = list.IsOrdered ? list.OrderedDelimiter : list.BulletType,
 					StartNumber = startNumber,
+					Loose = list.IsLoose,
 				}));
 
-				for (int i = 1; i < item.Count; i++)
+				for (int i = nestedFrom; i < item.Count; i++)
 				{
 					if (item[i] is not ListBlock nested || !AddListSegments(nested, depth + 1, segments))
 					{
@@ -345,6 +362,41 @@ namespace Markdig.Agg.Editing
 		private int ParagraphEnd(ParagraphBlock paragraph) => Math.Min(paragraph.Span.End + 1, body.Length);
 
 		/// <summary>
+		/// The end of the line holding <paramref name="position"/>, before its line break.
+		/// </summary>
+		private int LineEnd(int position)
+		{
+			int lineBreak = body.IndexOf('\n', position);
+			int end = lineBreak < 0 ? body.Length : lineBreak;
+			return end > position && body[end - 1] == '\r' ? end - 1 : end;
+		}
+
+		/// <summary>
+		/// True for an item with no text of its own: a bare marker, a marker whose content starts on the next line
+		/// with a nested list, or the writer's form for an empty first item of a nested list, a marker followed
+		/// by <see cref="RichGroupWriter.EmptyItemComment"/> (a bare marker there would read as its parent's text).
+		/// </summary>
+		private bool IsEmptyItem(ListItemBlock item, int itemStart)
+		{
+			if (item.Count == 0)
+			{
+				return true;
+			}
+
+			int lineEnd = LineEnd(itemStart);
+			if (item[0] is ListBlock)
+			{
+				return item[0].Span.Start > lineEnd;
+			}
+
+			return item[0] is HtmlBlock html
+				&& (item.Count == 1 || item[1] is ListBlock)
+				&& html.Span.Start < lineEnd
+				&& body.Substring(itemStart, lineEnd - itemStart).TrimEnd().EndsWith(" " + RichGroupWriter.EmptyItemComment, StringComparison.Ordinal)
+				&& body.Substring(html.Span.Start, Math.Min(html.Span.End + 1, body.Length) - html.Span.Start).Trim() == RichGroupWriter.EmptyItemComment;
+		}
+
+		/// <summary>
 		/// Markdig ends an ATX heading's span at its text, leaving a closing "#" sequence and trailing spaces
 		/// outside every block. They belong to the heading, so the rest of the line joins it when that is all
 		/// the line holds.
@@ -463,6 +515,13 @@ namespace Markdig.Agg.Editing
 				OriginalSource = body.Substring(start, end - start),
 			};
 			pendingSeparator = "";
+
+			// An empty list item has no paragraph; AddSegments makes it a ListItem with no inlines.
+			if (block == null)
+			{
+				return result;
+			}
+
 			if (block is HtmlBlock)
 			{
 				htmlBlocks.Add(result);

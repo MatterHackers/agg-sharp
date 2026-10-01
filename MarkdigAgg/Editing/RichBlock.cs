@@ -80,6 +80,13 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		public int StartNumber { get; set; } = 1;
 
+		/// <summary>
+		/// Whether the (sub)list this item is in renders its items as paragraphs (markdown's "loose" list: items
+		/// separated by blank lines). Every item of the (sub)list carries it, like <see cref="StartNumber"/>, so a
+		/// regenerated list keeps its spacing; edits create gaps of their own, so the gaps cannot tell.
+		/// </summary>
+		public bool Loose { get; set; }
+
 		public RichListInfo Clone() => (RichListInfo)MemberwiseClone();
 	}
 

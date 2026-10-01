@@ -37,7 +37,7 @@ namespace Markdig.Agg.Editing
 	/// <summary>
 	/// Turns a <see cref="RichDocument"/> back into markdown. Unedited blocks and unchanged groups (see
 	/// <see cref="RichBlockGroup"/>) are copied verbatim, so a document loaded and saved with no edits is
-	/// byte-identical.
+	/// byte-identical; a changed group is regenerated whole by <see cref="RichGroupWriter"/>.
 	/// </summary>
 	public static class RichMarkdownWriter
 	{
@@ -45,93 +45,91 @@ namespace Markdig.Agg.Editing
 		{
 			var blocks = document.Blocks;
 			var markdown = new StringBuilder(document.Frontmatter);
-			var checkedGroups = new HashSet<RichBlockGroup>();
 			string blankLine = RichEditOperations.BlankLine(document);
 			string newline = blankLine.Substring(0, blankLine.Length / 2);
-			for (int i = 0; i < blocks.Count; i++)
+			var unchanged = RichGroupWriter.UnchangedGroups(blocks);
+
+			// After a regenerated unit the next block needs a blank line before it; previousList is the top-level
+			// style of a list just written, so a regenerated list next to it can keep the two apart, and
+			// listContentColumn is where that list's last top-level item's text starts: a block indented that far
+			// after it would be read into that item.
+			bool blankLineNext = false;
+			RichListInfo previousList = null;
+			int listContentColumn = -1;
+			for (int i = 0; i < blocks.Count;)
 			{
 				var block = blocks[i];
-				foreach (var group in GroupsOf(block))
+				int unitEnd = RichGroupWriter.RegeneratedUnitEnd(blocks, i, unchanged);
+				if (unitEnd >= 0)
 				{
-					if (checkedGroups.Add(group) && !IsOriginal(blocks, i, group))
+					markdown.Append(RichGroupWriter.LeadingSeparator(block.SeparatorBefore, newline, i == 0));
+					markdown.Append(RichGroupWriter.WriteUnit(blocks, i, unitEnd, newline, ref previousList, ref listContentColumn));
+					blankLineNext = true;
+					i = unitEnd + 1;
+					continue;
+				}
+
+				// An unchanged wrapper's bytes go around its first and last members; a changed one at Left drops.
+				var align = block.AlignGroup != null && unchanged.Contains(block.AlignGroup) ? block.AlignGroup : null;
+				string text = block.Dirty ? WriteBlock(block, newline) : block.OriginalSource;
+				if (text.Length == 0 && align == null)
+				{
+					// An empty paragraph writes nothing, gap included, so the lists or quotes around it stay apart
+					// exactly as if it were not there.
+					i++;
+					continue;
+				}
+
+				string separator = blankLineNext ? RichGroupWriter.WithBlankLine(block.SeparatorBefore, newline) : block.SeparatorBefore;
+				if (block.Kind != RichBlockKind.ListItem && listContentColumn >= 0
+					&& RichGroupWriter.Column(separator, text) >= listContentColumn)
+				{
+					// Only an edit can put an indented block right after a list (the parser would have read it into
+					// the list): start it at the margin, and fence indented code, whose indentation is its syntax.
+					separator = separator.Substring(0, separator.LastIndexOf('\n') + 1);
+					if (block.Kind == RichBlockKind.CodeBlock)
 					{
-						// See RichBlockGroup: a changed group is regenerated whole, which is its own step of the plan.
-						throw new NotImplementedException($"Writing a changed {group.GetType().Name} is not implemented yet.");
+						text = WriteCode(block, newline, fenced: true);
 					}
 				}
 
-				markdown.Append(block.SeparatorBefore);
-
-				// An original group's wrapper bytes go around its first and last members.
-				var align = block.AlignGroup;
+				markdown.Append(separator);
+				blankLineNext = false;
 				if (align != null && (i == 0 || blocks[i - 1].AlignGroup != align))
 				{
 					markdown.Append(align.OpenSource);
 				}
 
-				markdown.Append(block.Dirty ? WriteBlock(block, newline) : block.OriginalSource);
+				markdown.Append(text);
 				if (align != null && (i == blocks.Count - 1 || blocks[i + 1].AlignGroup != align))
 				{
 					markdown.Append(align.CloseSource);
 				}
+
+				if (block.Kind != RichBlockKind.ListItem)
+				{
+					previousList = null;
+					listContentColumn = -1;
+				}
+				else if (block.List?.Depth == 0)
+				{
+					previousList = block.List;
+					listContentColumn = RichGroupWriter.OriginalContentColumn(block);
+				}
+
+				i++;
 			}
 
 			markdown.Append(document.TrailingText);
 			return markdown.ToString();
 		}
 
-		private static IEnumerable<RichBlockGroup> GroupsOf(RichBlock block)
-		{
-			if (block.AlignGroup != null)
-			{
-				yield return block.AlignGroup;
-			}
-
-			if (block.QuoteGroup != null)
-			{
-				yield return block.QuoteGroup;
-			}
-
-			if (block.ListGroup != null)
-			{
-				yield return block.ListGroup;
-			}
-		}
-
 		/// <summary>
-		/// True when the group, first met at <paramref name="first"/>, is still exactly as parsed: one contiguous
-		/// run of its original member count, every member clean and, for alignment, still at the group's alignment.
+		/// Markdown for an edited block, or for a member of a regenerated alignment wrapper. Raw blocks are never
+		/// edited in the rich view, so their source stands. List items and quotes are always written as part of
+		/// their whole group (see <see cref="RichGroupWriter"/>).
 		/// </summary>
-		private static bool IsOriginal(List<RichBlock> blocks, int first, RichBlockGroup group)
-		{
-			int members = 0;
-			int runEnd = first;
-			for (int i = first; i < blocks.Count; i++)
-			{
-				var block = blocks[i];
-				if (!GroupsOf(block).Contains(group))
-				{
-					continue;
-				}
-
-				bool contiguous = i == runEnd;
-				bool aligned = group is not RichAlignGroup align || block.Alignment == align.Alignment;
-				if (!contiguous || block.Dirty || !aligned)
-				{
-					return false;
-				}
-
-				members++;
-				runEnd = i + 1;
-			}
-
-			return members == group.OriginalMemberCount;
-		}
-
-		/// <summary>
-		/// Markdown for an edited block. Raw blocks are never edited in the rich view, so their source stands.
-		/// </summary>
-		private static string WriteBlock(RichBlock block, string newline)
+		internal static string WriteBlock(RichBlock block, string newline)
 		{
 			if (block.Kind == RichBlockKind.Raw)
 			{
@@ -158,8 +156,8 @@ namespace Markdig.Agg.Editing
 				return WriteTable(block, newline);
 			}
 
-			// Regenerating edited lists and quotes is its own step of the editor plan.
-			throw new NotImplementedException($"Writing an edited {block.Kind} block is not implemented yet.");
+			// Unreachable: the writer sends every ListItem and Quote through its group.
+			throw new InvalidOperationException($"A {block.Kind} block is written with its group.");
 		}
 
 		/// <summary>
@@ -201,13 +199,13 @@ namespace Markdig.Agg.Editing
 		/// An edited code block, fenced with the author's fence and info string as written, or indented when it
 		/// was (CodeFence ""). A fence closes at a run of its character at least as long, so the fence grows past
 		/// the longest such run in the code; indented code cannot start or end with a blank line or be empty, so
-		/// those write fenced.
+		/// those write fenced, as does <paramref name="fenced"/> code (indentation would read as list content).
 		/// </summary>
-		private static string WriteCode(RichBlock block, string newline)
+		private static string WriteCode(RichBlock block, string newline, bool fenced = false)
 		{
 			var lines = block.CodeText.Replace("\r\n", "\n").Split('\n');
 			bool canIndent = block.CodeText.Length > 0 && lines[0].Trim().Length > 0 && lines[^1].Trim().Length > 0;
-			if (block.CodeFence.Length == 0 && canIndent)
+			if (block.CodeFence.Length == 0 && canIndent && !fenced)
 			{
 				return string.Join(newline, lines.Select(line => "    " + line));
 			}
@@ -228,13 +226,34 @@ namespace Markdig.Agg.Editing
 			}
 
 			var fence = new string(fenceChar, Math.Max(fenceLength, longestRun + 1));
-			var markdown = new StringBuilder(fence).Append(block.CodeInfo).Append(newline);
+			var markdown = new StringBuilder(fence).Append(InfoAsWritten(block)).Append(newline);
 			if (block.CodeText.Length > 0)
 			{
 				markdown.Append(string.Join(newline, lines)).Append(newline);
 			}
 
 			return markdown.Append(fence).ToString();
+		}
+
+		/// <summary>
+		/// The code's info string with the author's spacing after the fence ("~~~ c#" stays "~~~ c#") while it
+		/// still matches <see cref="RichBlock.CodeInfo"/>; the parser keeps only the trimmed info.
+		/// </summary>
+		private static string InfoAsWritten(RichBlock block)
+		{
+			string firstLine = block.OriginalSource.TrimStart(' ', '\t');
+			int lineBreak = firstLine.IndexOf('\n');
+			firstLine = (lineBreak < 0 ? firstLine : firstLine.Substring(0, lineBreak)).TrimEnd();
+			if (block.CodeFence.Length > 0 && firstLine.StartsWith(block.CodeFence, StringComparison.Ordinal))
+			{
+				string info = firstLine.Substring(block.CodeFence.Length);
+				if (info.Trim() == block.CodeInfo)
+				{
+					return info;
+				}
+			}
+
+			return block.CodeInfo;
 		}
 
 		/// <summary>
