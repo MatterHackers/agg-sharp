@@ -116,6 +116,29 @@ namespace Markdig.Agg.Tests
 			};
 		}
 
+		/// <summary>
+		/// Whitespace hoisting once restarted its scan from the first token after every move, so a long paragraph
+		/// of spans with spaces at their edges took quadratic time (about 2 s for 8,000 spans in Debug). Counted in
+		/// scan steps rather than milliseconds, so a loaded machine cannot fail it: the scan stays a small multiple
+		/// of the token count (each move costs one step back), where a restarting scan grows with its square.
+		/// </summary>
+		[Test]
+		public async Task ManyEdgeWhitespaceSpansHoistInLinearSteps()
+		{
+			var inlines = new List<RichInline>();
+			for (int i = 0; i < 2000; i++)
+			{
+				inlines.Add(Run("a"));
+				inlines.Add(Run(" b ", bold: true));
+			}
+
+			var markdown = new StringBuilder();
+			RichInlineWriter.Write(inlines, markdown, RichInlineContext.Paragraph, out int tokenCount, out int hoistSteps);
+
+			await Assert.That(markdown.ToString()).IsEqualTo(string.Concat(Enumerable.Repeat("a **b** ", 2000)));
+			await Assert.That(hoistSteps).IsLessThanOrEqualTo(4 * tokenCount);
+		}
+
 		private static async Task AssertReadsBack(IReadOnlyList<RichInline> inlines)
 		{
 			await Assert.That(ReadBackFailure(inlines)).IsNull();

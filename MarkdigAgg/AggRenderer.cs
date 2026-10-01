@@ -132,6 +132,7 @@ namespace Markdig.Renderers
 			ObjectRenderers.Add(new AggCodeInlineRenderer(theme));
 			ObjectRenderers.Add(new AggDelimiterInlineRenderer());
 			ObjectRenderers.Add(new AggEmphasisInlineRenderer());
+			ObjectRenderers.Add(new AggHtmlInlineRenderer());
 			ObjectRenderers.Add(new AggLineBreakInlineRenderer());
 			ObjectRenderers.Add(new AggLinkInlineRenderer());
 			ObjectRenderers.Add(new AggLiteralInlineRenderer());

@@ -29,7 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using Markdig.Renderers.Agg.Inlines;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
@@ -49,9 +49,6 @@ namespace Markdig.Agg.Editing
 			.UseSupportedExtensions()
 			.UsePreciseSourceLocation()
 			.Build();
-
-		// Inline HTML that styles text the way emphasis does; see PairStyleTags.
-		private static readonly Regex StyleTag = new Regex("^</?(strong|b|em|i|del|s|strike)>$", RegexOptions.IgnoreCase);
 
 		private readonly RichDocument document = new RichDocument();
 
@@ -513,7 +510,7 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		private void AddInlines(ContainerInline container, Style style, List<RichInline> inlines)
 		{
-			var styleTags = PairStyleTags(container);
+			var styleTags = HtmlStyleTags.Pair(container);
 			var outerStyles = new Stack<Style>();
 			foreach (var inline in container)
 			{
@@ -524,10 +521,10 @@ namespace Markdig.Agg.Editing
 					if (opens)
 					{
 						outerStyles.Push(style);
-						style = StyleTagName(tag) switch
+						style = HtmlStyleTags.StyleOf(tag) switch
 						{
-							"strong" or "b" => style with { Bold = true },
-							"em" or "i" => style with { Italic = true },
+							HtmlStyleTags.Kind.Bold => style with { Bold = true },
+							HtmlStyleTags.Kind.Italic => style with { Italic = true },
 							_ => style with { Strike = true },
 						};
 					}
@@ -607,48 +604,6 @@ namespace Markdig.Agg.Editing
 						break;
 				}
 			}
-		}
-
-		/// <summary>
-		/// The bare style tags among a container's children (no attributes) that pair up properly nested, each
-		/// mapped to true for the open tag and false for its close. Anything unpaired, crossing another pair or
-		/// split across containers stays an Html atom.
-		/// </summary>
-		private static Dictionary<HtmlInline, bool> PairStyleTags(ContainerInline container)
-		{
-			var paired = new Dictionary<HtmlInline, bool>();
-			var open = new List<HtmlInline>();
-			foreach (var inline in container)
-			{
-				if (inline is not HtmlInline tag || StyleTagName(tag) == null)
-				{
-					continue;
-				}
-
-				if (!tag.Tag.StartsWith("</"))
-				{
-					open.Add(tag);
-				}
-				else if (open.Count > 0 && StyleTagName(open[^1]) == StyleTagName(tag))
-				{
-					paired[open[^1]] = true;
-					paired[tag] = false;
-					open.RemoveAt(open.Count - 1);
-				}
-				else
-				{
-					// Crossed tags: the open ones can no longer close in order, so they stay atoms.
-					open.Clear();
-				}
-			}
-
-			return paired;
-		}
-
-		private static string StyleTagName(HtmlInline tag)
-		{
-			var match = StyleTag.Match(tag.Tag ?? "");
-			return match.Success ? match.Groups[1].Value.ToLowerInvariant() : null;
 		}
 
 		/// <summary>

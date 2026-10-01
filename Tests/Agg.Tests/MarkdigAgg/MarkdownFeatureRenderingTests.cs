@@ -179,6 +179,52 @@ namespace Markdig.Agg.Tests
 		}
 
 		[Test]
+		public async Task PairedHtmlStyleTagsStyleTheWordsBetween()
+		{
+			// The rich editor writes these where markdown delimiters cannot flank, so the viewer must show them.
+			var words = RenderWords("a <strong>heavy</strong> <b>bee</b> <em>slanted</em> <i>eye</i> <del>gone</del> <s>struck</s> "
+				+ "<strike>old</strike> <b><i>both</i></b> <B>upper</b> b");
+
+			async Task AssertStyle(string word, bool italic = false, bool bold = false, bool strike = false)
+			{
+				await Assert.That(words[word].Italic).IsEqualTo(italic);
+				await Assert.That(words[word].Bold).IsEqualTo(bold);
+				await Assert.That(words[word].StrikeThrough).IsEqualTo(strike);
+				await Assert.That(words[word].Printer.TypeFaceStyle.FauxItalic).IsEqualTo(italic);
+			}
+
+			await AssertStyle("a");
+			await AssertStyle("heavy", bold: true);
+			await AssertStyle("bee", bold: true);
+			await AssertStyle("slanted", italic: true);
+			await AssertStyle("eye", italic: true);
+			await AssertStyle("gone", strike: true);
+			await AssertStyle("struck", strike: true);
+			await AssertStyle("old", strike: true);
+			await AssertStyle("both", italic: true, bold: true);
+			await AssertStyle("upper", bold: true);
+			await AssertStyle("b");
+			await Assert.That(words.Keys.Any(word => word.Contains('<'))).IsFalse();
+		}
+
+		[Test]
+		public async Task UnpairedAttributedOrCrossedHtmlStyleTagsAreDropped()
+		{
+			foreach (var markdown in new[] { "<b>open tail", "<b class=y>classy</b> tail", "<b>crossed <i>over</b> end</i> tail" })
+			{
+				var words = RenderWords(markdown);
+				foreach (var word in words.Values)
+				{
+					await Assert.That(word.Bold).IsFalse();
+					await Assert.That(word.Italic).IsFalse();
+				}
+
+				await Assert.That(words.ContainsKey("tail")).IsTrue();
+				await Assert.That(words.Keys.Any(word => word.Contains('<'))).IsFalse();
+			}
+		}
+
+		[Test]
 		public async Task ItalicWordsDrawSlantedGlyphs()
 		{
 			var words = RenderWords("plain *slanted*");

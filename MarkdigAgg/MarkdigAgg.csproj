@@ -29,4 +29,8 @@
     <ProjectReference Include="..\Gui\Gui.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Agg.Tests" />
+  </ItemGroup>
+
 </Project>

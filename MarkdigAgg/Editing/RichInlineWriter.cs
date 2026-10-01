@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -87,9 +88,27 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		public static void Write(IReadOnlyList<RichInline> inlines, StringBuilder markdown, RichInlineContext context = RichInlineContext.Paragraph)
 		{
+			Write(inlines, markdown, context, out _, out _);
+		}
+
+		public static string Write(IReadOnlyList<RichInline> inlines, RichInlineContext context = RichInlineContext.Paragraph)
+		{
+			var markdown = new StringBuilder();
+			Write(inlines, markdown, context);
+			return markdown.ToString();
+		}
+
+		/// <summary>
+		/// <see cref="Write(IReadOnlyList{RichInline}, StringBuilder, RichInlineContext)"/>, also reporting how many
+		/// tokens the whitespace hoisting started with and how many steps its scan took, so a test can hold the scan
+		/// linear by count rather than by the clock.
+		/// </summary>
+		internal static void Write(IReadOnlyList<RichInline> inlines, StringBuilder markdown, RichInlineContext context, out int tokenCount, out int hoistSteps)
+		{
 			var written = Prepare(inlines, context);
 			var tokens = Tokenize(written.ConvertAll(inline => new Segment(inline, SpansOf(inline))));
-			HoistWhitespace(tokens);
+			tokenCount = tokens.Count;
+			hoistSteps = HoistWhitespace(tokens);
 
 			string prefix = markdown.ToString();
 			bool tableCell = context == RichInlineContext.TableCell;
@@ -115,13 +134,6 @@ namespace Markdig.Agg.Editing
 			}
 
 			markdown.Append(output, prefix.Length, output.Length - prefix.Length);
-		}
-
-		public static string Write(IReadOnlyList<RichInline> inlines, RichInlineContext context = RichInlineContext.Paragraph)
-		{
-			var markdown = new StringBuilder();
-			Write(inlines, markdown, context);
-			return markdown.ToString();
 		}
 
 		/// <summary>
@@ -275,51 +287,59 @@ namespace Markdig.Agg.Editing
 		/// whitespace at a styled span's edge moves outside its delimiters. Link brackets have no such rule, and
 		/// moving a space across one would change the link's text, so whitespace stops at a link.
 		/// </summary>
-		private static void HoistWhitespace(List<Token> tokens)
+		/// <returns>How many steps the scan took.</returns>
+		private static int HoistWhitespace(List<Token> tokens)
 		{
-			bool changed = true;
-			while (changed)
+			// Each change only alters what the rules see at its own token and the one before it (a removal or a
+			// hoisted space can newly expose an empty pair, an empty text or an edge space to the token before),
+			// so the scan steps back one token and carries on: a linear scan with no rescans from the start, and
+			// the same rules fire in the same order. (Each list insert or removal still shifts the tokens after it.)
+			int steps = 0;
+			int i = 0;
+			while (i < tokens.Count)
 			{
-				changed = false;
-				for (int i = 0; i < tokens.Count && !changed; i++)
+				steps++;
+				bool changed = false;
+				var token = tokens[i];
+				bool emphasis = token.Span != null && token.Span.Kind != SpanKind.Link;
+				if (token.Kind == TokenKind.Text && token.Text.Length == 0)
 				{
-					var token = tokens[i];
-					bool emphasis = token.Span != null && token.Span.Kind != SpanKind.Link;
-					if (token.Kind == TokenKind.Text && token.Text.Length == 0)
+					tokens.RemoveAt(i);
+					changed = true;
+				}
+				else if (token.Kind == TokenKind.Open && i + 1 < tokens.Count && tokens[i + 1].Kind == TokenKind.Close && tokens[i + 1].Span == token.Span)
+				{
+					// A pair left around nothing (all its text was whitespace) disappears.
+					tokens.RemoveRange(i, 2);
+					changed = true;
+				}
+				else if (emphasis && token.Kind == TokenKind.Open && i + 1 < tokens.Count && tokens[i + 1].Kind == TokenKind.Text)
+				{
+					var next = tokens[i + 1];
+					int lead = next.Text.Length - next.Text.TrimStart().Length;
+					if (lead > 0)
 					{
-						tokens.RemoveAt(i);
+						tokens.Insert(i, new Token { Kind = TokenKind.Text, Text = next.Text.Substring(0, lead) });
+						next.Text = next.Text.Substring(lead);
 						changed = true;
-					}
-					else if (token.Kind == TokenKind.Open && i + 1 < tokens.Count && tokens[i + 1].Kind == TokenKind.Close && tokens[i + 1].Span == token.Span)
-					{
-						// A pair left around nothing (all its text was whitespace) disappears.
-						tokens.RemoveRange(i, 2);
-						changed = true;
-					}
-					else if (emphasis && token.Kind == TokenKind.Open && i + 1 < tokens.Count && tokens[i + 1].Kind == TokenKind.Text)
-					{
-						var next = tokens[i + 1];
-						int lead = next.Text.Length - next.Text.TrimStart().Length;
-						if (lead > 0)
-						{
-							tokens.Insert(i, new Token { Kind = TokenKind.Text, Text = next.Text.Substring(0, lead) });
-							next.Text = next.Text.Substring(lead);
-							changed = true;
-						}
-					}
-					else if (emphasis && token.Kind == TokenKind.Close && i > 0 && tokens[i - 1].Kind == TokenKind.Text)
-					{
-						var previous = tokens[i - 1];
-						string trimmed = previous.Text.TrimEnd();
-						if (trimmed.Length < previous.Text.Length)
-						{
-							tokens.Insert(i + 1, new Token { Kind = TokenKind.Text, Text = previous.Text.Substring(trimmed.Length) });
-							previous.Text = trimmed;
-							changed = true;
-						}
 					}
 				}
+				else if (emphasis && token.Kind == TokenKind.Close && i > 0 && tokens[i - 1].Kind == TokenKind.Text)
+				{
+					var previous = tokens[i - 1];
+					string trimmed = previous.Text.TrimEnd();
+					if (trimmed.Length < previous.Text.Length)
+					{
+						tokens.Insert(i + 1, new Token { Kind = TokenKind.Text, Text = previous.Text.Substring(trimmed.Length) });
+						previous.Text = trimmed;
+						changed = true;
+					}
+				}
+
+				i = changed ? Math.Max(0, i - 1) : i + 1;
 			}
+
+			return steps;
 		}
 
 		/// <summary>
