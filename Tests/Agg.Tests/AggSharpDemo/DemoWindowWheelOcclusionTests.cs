@@ -41,7 +41,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 	// Lars's report: with the Code Example window lying over the System window, turning the wheel over Code Example
 	// scrolled System behind it. The wheel belongs to the window on top; WheelOcclusionRoutingTests covers the rule.
 	// new DemoTheme() writes ThemeConfig.Current.
-	[NotInParallel(SharedStateKeys.ThemeConfigCurrent)]
+	[NotInParallel(new[] { SharedStateKeys.ThemeConfigCurrent, SharedStateKeys.MarkdownWidget })]
 	public class DemoWindowWheelOcclusionTests
 	{
 		private static DemoSpec Spec(string title) => GuiDemoSpecs.All.First(s => s.Title == title);
