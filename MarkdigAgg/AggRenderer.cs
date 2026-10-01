@@ -71,10 +71,32 @@ namespace Markdig.Renderers
 	public class AggRenderer : RendererBase
 	{
 		private readonly Stack<GuiWidget> stack = new Stack<GuiWidget>();
+		private readonly Stack<HAnchor> blockAlignments = new Stack<HAnchor>();
 		private char[] buffer;
 		private ThemeConfig theme;
 
 		internal ThemeConfig Theme => theme;
+
+		/// <summary>
+		/// The horizontal alignment of the paragraphs and headings being written, set by the
+		/// <c>&lt;div align&gt;</c> pairs <see cref="AggHtmlBlockRenderer"/> reads. Left when outside any pair,
+		/// and an open div nobody closes keeps its alignment to the end of the document.
+		/// </summary>
+		internal HAnchor BlockAlignment => blockAlignments.Count > 0 ? blockAlignments.Peek() : HAnchor.Left;
+
+		internal void PushBlockAlignment(HAnchor alignment)
+		{
+			blockAlignments.Push(alignment);
+		}
+
+		internal void PopBlockAlignment()
+		{
+			// A </div> with no open div is stray HTML; ignoring it keeps the rest of the document as written.
+			if (blockAlignments.Count > 0)
+			{
+				blockAlignments.Pop();
+			}
+		}
 
 		public GuiWidget RootWidget { get; }
 
@@ -100,6 +122,7 @@ namespace Markdig.Renderers
 			ObjectRenderers.Add(new AggCodeBlockRenderer(theme));
 			ObjectRenderers.Add(new AggListRenderer(theme));
 			ObjectRenderers.Add(new AggHeadingRenderer());
+			ObjectRenderers.Add(new AggHtmlBlockRenderer());
 			ObjectRenderers.Add(new AggParagraphRenderer());
 			ObjectRenderers.Add(new AggQuoteBlockRenderer());
 			ObjectRenderers.Add(new AggThematicBreakRenderer());
@@ -123,6 +146,7 @@ namespace Markdig.Renderers
 		/// <inheritdoc/>
 		public override object Render(MarkdownObject markdownObject)
 		{
+			blockAlignments.Clear();
 			Write(markdownObject);
 			UiThread.RunOnIdle(() =>
 			{
