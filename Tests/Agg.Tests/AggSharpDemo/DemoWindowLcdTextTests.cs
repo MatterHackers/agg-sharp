@@ -39,8 +39,10 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 	/// The GUI demo's own windows, built the way the demo shell builds them (rounded, buffered, scrolled), show
 	/// LCD subpixel text when the System window's LCD toggle is on - what a user actually looks at.
 	/// </summary>
-	// new DemoTheme() writes ThemeConfig.Current; LcdRenderSettings and DeviceScale are process wide.
-	[NotInParallel(new[] { SharedStateKeys.ThemeConfigCurrent, SharedStateKeys.MarkdownWidget })]
+	// Keyless, so it runs alone: it writes GuiWidget.DeviceScale and LcdRenderSettings.Enabled, which every
+	// layout and text raster in the process reads - no key names all their readers. That also covers
+	// ThemeConfig.Current (new DemoTheme()) and the MarkdownWidget/UiThread the About window touches.
+	[NotInParallel]
 	public class DemoWindowLcdTextTests
 	{
 		[Test]

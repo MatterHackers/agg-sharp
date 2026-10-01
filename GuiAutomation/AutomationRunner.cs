@@ -2182,6 +2182,7 @@ namespace MatterHackers.GuiAutomation
 			bool originalAllowDropState = SystemWindow.EnableAllowDrop;
 			SystemWindow.EnableAllowDrop = false;
 			using var desktopDeactivationIgnored = new DesktopDeactivationIgnored();
+			using var realInputIgnored = new RealInputIgnored();
 
 			// The run's input is simulated, so its windows need not take the foreground from the person using
 			// the machine. Not restored afterwards: runs overlap (parallel tests), and one finishing must not
@@ -2268,9 +2269,6 @@ namespace MatterHackers.GuiAutomation
 			{
 				DebugLogger.LogWarning("AutomationRunner", $"Failed to reset WinformsSystemWindow state: {ex.Message}");
 			}
-
-			// Reset EnablePlatformWindowInput for the next test - this is critical for tests to receive input events
-			IPlatformWindow.EnablePlatformWindowInput = true;
 
 			// IMPORTANT: Reset UiThread LAST after window is fully closed to avoid clearing CloseOnIdle actions
 			try

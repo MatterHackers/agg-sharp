@@ -223,6 +223,13 @@ namespace MatterHackers.Agg.UI
 
 		private void ControlToHook_KeyDown(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
 		{
+			// Gated like the mouse: a test window the user clicks to watch would otherwise type their real
+			// keystrokes into the field the run is driving.
+			if (!IPlatformWindow.EnablePlatformWindowInput)
+			{
+				return;
+			}
+
 			if (AggContext.OperatingSystem == OSType.Mac
 			   && windowsKeyEvent.KeyCode == System.Windows.Forms.Keys.Cancel)
 			{
@@ -254,6 +261,11 @@ namespace MatterHackers.Agg.UI
 
 		private void ControlToHook_KeyPress(object sender, System.Windows.Forms.KeyPressEventArgs windowsKeyPressEvent)
 		{
+			if (!IPlatformWindow.EnablePlatformWindowInput)
+			{
+				return;
+			}
+
 			var aggKeyPressEvent = new KeyPressEventArgs(windowsKeyPressEvent.KeyChar);
 			widgetToSendTo.OnKeyPress(aggKeyPressEvent);
 			windowsKeyPressEvent.Handled = aggKeyPressEvent.Handled;
@@ -261,6 +273,12 @@ namespace MatterHackers.Agg.UI
 
 		private void ControlToHook_KeyUp(object sender, System.Windows.Forms.KeyEventArgs windowsKeyEvent)
 		{
+			// Also gated: a real key up must not release a key the run is holding down in Keyboard.
+			if (!IPlatformWindow.EnablePlatformWindowInput)
+			{
+				return;
+			}
+
 			// Only process the key up event if we were the ones to receive the key down event.
 			// This is because the SaveFileDialog is returning us the key up event for enter after it closes.
 			var aggKeyEvent = new KeyEventArgs((Keys)windowsKeyEvent.KeyData);
