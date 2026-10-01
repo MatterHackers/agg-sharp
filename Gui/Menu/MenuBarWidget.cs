@@ -177,6 +177,16 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
 		{
+			if (mouseEvent.PointerType == PointerType.Touch)
+			{
+				// A finger has no hover, as in agg-gui: the move a finger's landing makes would otherwise switch
+				// the open menu to the title it landed on, and the tap's press would then toggle that one shut.
+				// Menus open and switch on the tap alone, and a touch drag on the bar is never a drag-to-row.
+				SetHoverIndex(-1);
+				base.OnMouseMove(mouseEvent);
+				return;
+			}
+
 			int hovered = MenuAt(mouseEvent.Position);
 
 			SetHoverIndex(hovered);

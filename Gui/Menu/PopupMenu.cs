@@ -207,94 +207,8 @@ namespace MatterHackers.Agg.UI
 					&& row.SubMenu.ChainContainsFocus());
 		}
 
-		/// <summary>
-		/// Where the pointer was the last time it crossed onto a row of this menu, in screen space. The apex
-		/// of the wedge <see cref="PointerIsAimingAtOpenSubMenu"/> tests against.
-		/// </summary>
-		private Vector2? lastRowHoverPosition;
-
-		/// <summary>
-		/// Drops the wedge apex, so the next hover on a row of this menu is judged on its own.
-		/// </summary>
-		private void ForgetRowHoverPosition()
-		{
-			lastRowHoverPosition = null;
-		}
-
-		/// <summary>
-		/// True when the pointer is between where it last was and the near edge of <paramref name="subMenu"/> -
-		/// on its way into the open sub menu rather than choosing the row it happens to be over.
-		/// </summary>
-		/// <remarks>
-		/// This is the "safe triangle" every desktop menu needs and for the same reason: a sub menu hangs down
-		/// from the row that opened it, so every row of it below the first is reached by moving down and to the
-		/// right, and that path crosses the rows underneath the opening row. Windows buys the same forgiveness
-		/// with a dwell timer before the crossed row takes over; a wedge does it on geometry alone, which means
-		/// it is decided by where the pointer is rather than by how fast it got there - no timer to tune, and
-		/// nothing that behaves differently on a loaded machine.
-		/// <para>
-		/// The apex is where the pointer last entered a row of this menu, so the wedge covers the paths that
-		/// start on the opening row. A pointer moving along the menu instead (same x, different row) is never
-		/// inside it - the wedge has no width at the apex - so hovering a sibling still closes the sub menu.
-		/// </para>
-		/// </remarks>
-		private bool PointerIsAimingAtOpenSubMenu(Vector2 pointer, PopupMenu subMenu)
-		{
-			if (lastRowHoverPosition == null
-				|| subMenu == null)
-			{
-				return false;
-			}
-
-			var subMenuBounds = subMenu.TransformToScreenSpace(subMenu.LocalBounds);
-			if (subMenuBounds.Width <= 0
-				|| subMenuBounds.Height <= 0)
-			{
-				// Queued to be shown but not laid out yet - there is nothing to aim at
-				return false;
-			}
-
-			var apex = lastRowHoverPosition.Value;
-
-			// The edge the pointer has to cross to get in. A sub menu that had to open to the left (AltMate,
-			// near the right of the screen) is entered through its right edge instead.
-			double edgeX = subMenuBounds.Left >= apex.X ? subMenuBounds.Left : subMenuBounds.Right;
-
-			double toEdge = edgeX - apex.X;
-			double travelled = pointer.X - apex.X;
-
-			if (toEdge * travelled <= 0
-				|| Math.Abs(travelled) > Math.Abs(toEdge))
-			{
-				// Not headed for the edge at all, or already past it - either way the pointer is not in transit
-				return false;
-			}
-
-			return PointIsInTriangle(
-				pointer,
-				apex,
-				new Vector2(edgeX, subMenuBounds.Bottom),
-				new Vector2(edgeX, subMenuBounds.Top));
-		}
-
-		/// <summary>
-		/// Standard half-plane test: the point is inside when it is on the same side of all three edges.
-		/// Points on an edge count as inside, so a pointer skimming the wedge boundary is not rejected.
-		/// </summary>
-		private static bool PointIsInTriangle(Vector2 point, Vector2 a, Vector2 b, Vector2 c)
-		{
-			double Side(Vector2 from, Vector2 to)
-			{
-				return (to.X - from.X) * (point.Y - from.Y) - (to.Y - from.Y) * (point.X - from.X);
-			}
-
-			double ab = Side(a, b);
-			double bc = Side(b, c);
-			double ca = Side(c, a);
-
-			return (ab >= 0 && bc >= 0 && ca >= 0)
-				|| (ab <= 0 && bc <= 0 && ca <= 0);
-		}
+		/// <summary>The safe triangle that keeps a sub menu reachable across the rows under its opener.</summary>
+		private readonly SubMenuAimWedge aimWedge = new SubMenuAimWedge();
 
 		/// <summary>
 		/// The mouse has entered <paramref name="row"/>. Moves the highlight there, closes the sub menu a
@@ -326,7 +240,7 @@ namespace MatterHackers.Agg.UI
 
 			// The pointer has arrived somewhere in this menu, so whatever wedge the menu above was holding
 			// open for it is spent - a hover back out onto one of that menu's rows is a choice now, not transit.
-			this.ParentMenuItem?.OwningMenu?.ForgetRowHoverPosition();
+			this.ParentMenuItem?.OwningMenu?.aimWedge.Forget();
 
 			var openRow = OpenSubMenuRow();
 
@@ -335,20 +249,20 @@ namespace MatterHackers.Agg.UI
 				// The mouse came back onto the row whose sub menu is up, which is what happens on the way out
 				// of that sub menu. Leave focus alone: pulling it back here would close the sub menu the user
 				// is aiming at, and re-opening it is not possible - it never closed.
-				lastRowHoverPosition = pointerInScreenSpace;
+				aimWedge.Remember(pointerInScreenSpace);
 
 				return;
 			}
 
 			if (openRow != null
-				&& PointerIsAimingAtOpenSubMenu(pointerInScreenSpace, openRow.SubMenu))
+				&& aimWedge.PointerIsAimingAt(pointerInScreenSpace, openRow.SubMenu))
 			{
 				// Crossed on the way into the open sub menu. Leaving the highlight (and so the focus that
 				// holds the sub menu up) alone is what keeps the sub menu reachable.
 				return;
 			}
 
-			lastRowHoverPosition = pointerInScreenSpace;
+			aimWedge.Remember(pointerInScreenSpace);
 
 			row.Focus();
 
@@ -808,6 +722,41 @@ namespace MatterHackers.Agg.UI
 			}
 
 			/// <summary>
+			/// A press on this row while its sub menu is up leaves the sub menu up, as agg-gui's handle_left_down
+			/// does (it sets <c>open_path</c> to the pressed row): the press chooses this row, which is already open.
+			/// </summary>
+			/// <remarks>
+			/// The press takes the focus out of the sub menu twice over - the window unfocuses every popup the
+			/// press is not on before it reaches this row, and this row then focuses itself - and a popup that has
+			/// lost the focus closes from the idle queue. Handing the focus straight back to the sub menu, before
+			/// the press unwinds, is what that close then finds. The ancestors the press unwinds through leave it
+			/// there: the focus landed outside them, which their own focus grab respects.
+			/// <para>
+			/// That last part holds only because a sub menu sits above its owner in the window's child order, so
+			/// the window's mouse-down unfocuses it before the owner's ancestors record their "focused before"
+			/// leaf. Reorder popups below their owner and those ancestors would see the sub menu as the leaf that
+			/// was already focused, grab the focus back, and the sub menu would close again -
+			/// <c>MenuTouchTapTests</c> catches that.
+			/// </para>
+			/// </remarks>
+			public override void OnMouseDown(MouseEventArgs mouseEvent)
+			{
+				var openSubMenu = SubMenu;
+
+				base.OnMouseDown(mouseEvent);
+
+				// Parent is null while the sub menu is still queued to be shown, and there is nothing to keep yet
+				if (openSubMenu != null
+					&& openSubMenu == SubMenu
+					&& !openSubMenu.HasBeenClosed
+					&& openSubMenu.Parent != null
+					&& this.Focused)
+				{
+					openSubMenu.Focus();
+				}
+			}
+
+			/// <summary>
 			/// The row an open sub menu came out of keeps its fill, which is the standard desktop menu
 			/// convention: hovering into the sub menu takes both the mouse and the focus off this row, and
 			/// without this it went back to drawing as an ordinary row - nothing on screen then said which
@@ -1059,49 +1008,6 @@ namespace MatterHackers.Agg.UI
 		internal const double WindowEdgeInset = 5;
 
 		/// <summary>
-		/// The scroll window a clamped menu keeps its rows in.
-		/// </summary>
-		/// <remarks>
-		/// This exists only so that <see cref="ScrollableWidget.OnKeyDown"/> does not claim Up and Down to
-		/// nudge the viewport 16 pixels. Once a row has keyboard focus the scroll window is on the routing
-		/// path between the menu and that row, so the plain widget would swallow every arrow key before the
-		/// menu could move its highlight. Inside a menu the arrows belong to the highlight, and
-		/// <see cref="PopupMenu.MoveHighlight(int)"/> does the scrolling that keeps it visible.
-		/// </remarks>
-		internal class MenuScrollWindow : ScrollableWidget
-		{
-			public MenuScrollWindow()
-				: base(true)
-			{
-			}
-
-			public override void OnKeyDown(KeyEventArgs keyEvent)
-			{
-				if (keyEvent.KeyCode == Keys.Up
-					|| keyEvent.KeyCode == Keys.Down)
-				{
-					// The focused row still gets its turn; only the base class's scroll nudge is skipped, so
-					// the key arrives at the menu unclaimed.
-					// Returning early also skips GuiWidget's Tab handling and its public KeyDown event for
-					// these two keys. Neither matters to a menu - Tab is not Up or Down, and nothing
-					// subscribes to a menu scroller's KeyDown - but a subscriber added later would silently
-					// not hear the arrows.
-					var childWithFocus = GetChildContainingFocus();
-					if (childWithFocus != null
-						&& childWithFocus.Visible
-						&& childWithFocus.Enabled)
-					{
-						childWithFocus.OnKeyDown(keyEvent);
-					}
-
-					return;
-				}
-
-				base.OnKeyDown(keyEvent);
-			}
-		}
-
-		/// <summary>
 		/// Constrain this menu to <paramref name="maxHeight"/>, moving its items into a scrolling area when
 		/// they do not fit. This is not the same operation as the same named
 		/// <see cref="PopupWidget.MakeMenuHaveScroll(double)"/>: that one resizes a scroll window the popup
@@ -1127,7 +1033,7 @@ namespace MatterHackers.Agg.UI
 			// callers clamp before handing one over). Re-clamp the scroll window we built rather than
 			// reparenting it into a second one, which would nest scroll bar inside scroll bar.
 			if (this.Children.Count == 1
-				&& this.Children[0] is MenuScrollWindow alreadyScrolling)
+				&& this.Children[0] is PopupMenuScrollWindow alreadyScrolling)
 			{
 				var contentHeight = alreadyScrolling.ScrollArea.Children.FirstOrDefault()?.Height ?? maxHeight;
 
@@ -1161,7 +1067,7 @@ namespace MatterHackers.Agg.UI
 				contentColumn.AddChild(item);
 			}
 
-			var scrollingWindow = new MenuScrollWindow
+			var scrollingWindow = new PopupMenuScrollWindow
 			{
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Absolute,
@@ -1438,6 +1344,15 @@ namespace MatterHackers.Agg.UI
 					return;
 				}
 
+				// A finger has no hover, as in agg-gui's update_hover: on touch a sub menu opens only on the tap.
+				// The finger going down moves the hover here, and between that and the lift the device runs
+				// frames - so a hover-opened sub menu was already up when the tap's press landed, and where it
+				// overlaps its menu (a narrow screen) that press could hit one of its rows instead of this one.
+				if (mouseEvent.PointerType == PointerType.Touch)
+				{
+					return;
+				}
+
 				this.Parents<PopupMenu>().FirstOrDefault()?.OnRowHover(
 					this,
 					this.TransformToScreenSpace(new Vector2(mouseEvent.X, mouseEvent.Y)));
@@ -1524,34 +1439,6 @@ namespace MatterHackers.Agg.UI
 			}
 
 			return Vector2.Zero;
-		}
-	}
-
-	public static class PopupMenuExtensions
-	{
-		public static void ShowMenu(this PopupMenu popupMenu, GuiWidget anchorWidget, MouseEventArgs mouseEvent)
-		{
-			popupMenu.ShowMenu(anchorWidget, mouseEvent.Position);
-		}
-
-		public static void ShowMenu(this PopupMenu popupMenu, GuiWidget anchorWidget, Vector2 menuPosition)
-		{
-			var systemWindow = anchorWidget.PopupHostWindow();
-			PopupMenu.ClearToolTipsAbove(anchorWidget);
-
-			systemWindow.ShowPopup(
-				popupMenu.Theme,
-				new MatePoint(anchorWidget)
-				{
-					Mate = new MateOptions(MateEdge.Left, MateEdge.Top),
-					AltMate = new MateOptions(MateEdge.Left, MateEdge.Bottom)
-				},
-				new MatePoint(popupMenu)
-				{
-					Mate = new MateOptions(MateEdge.Left, MateEdge.Top),
-					AltMate = new MateOptions(MateEdge.Right, MateEdge.Bottom)
-				},
-				altBounds: new RectangleDouble(menuPosition.X + 1, menuPosition.Y + 1, menuPosition.X + 1, menuPosition.Y + 1));
 		}
 	}
 }

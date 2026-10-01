@@ -86,7 +86,7 @@ namespace MatterHackers.Agg.Tests
 			["examples/PolygonPathing/GreatBritanPathStorage.cs"] = 1886,
 			["examples/PolygonPathing/PolygonPathing.cs"] = 890,
 			["Gui/GUIWidget.cs"] = 3965,
-			["Gui/Menu/PopupMenu.cs"] = 1326,
+			["Gui/Menu/PopupMenu.cs"] = 1227,
 			["Gui/TextWidgets/InternalTextEditWidget.cs"] = 1537,
 			["GuiAutomation/AutomationRunner.cs"] = 2023,
 			["MarkdigAgg/MarkdownWidget.cs"] = 991,

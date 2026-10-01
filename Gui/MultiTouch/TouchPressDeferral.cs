@@ -193,7 +193,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			// the finger has gone, so nothing is hovered any more - the sentinel the hosts use for "nowhere"
-			deliverMove(new MouseEventArgs(MouseButtons.None, 0, -10, -10, 0));
+			deliverMove(new MouseEventArgs(MouseButtons.None, 0, -10, -10, 0) { PointerType = PointerType.Touch });
 			press = null;
 		}
 
