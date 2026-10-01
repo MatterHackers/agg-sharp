@@ -166,7 +166,7 @@ namespace MatterHackers.RenderGl
 			var nativeRenderer = this.NativeRenderer;
 			if (nativeRenderer != null)
 			{
-				nativeRenderer.BeginSceneRendering(new SceneRenderContext(world, viewport, lighting));
+				nativeRenderer.BeginSceneRendering(new SceneRenderContext(world, viewport, lighting, this.DeviceScale));
 				this.scenePassOpen = true;
 			}
 		}

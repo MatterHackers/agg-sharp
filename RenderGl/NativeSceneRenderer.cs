@@ -43,12 +43,22 @@ namespace MatterHackers.RenderGl
 
 	public sealed class SceneRenderContext
 	{
-		public SceneRenderContext(WorldView worldView, RectangleDouble viewport, LightingData lighting)
+		/// <param name="worldView">The camera.</param>
+		/// <param name="viewport">The scene's viewport, in device pixels.</param>
+		/// <param name="lighting">The scene's lights.</param>
+		/// <param name="deviceScale">Device pixels per UI unit (GuiWidget.DeviceScale); 2 on a Retina mac.
+		/// Screen-space sizes the compositor draws, such as the selection outline, are set in units and
+		/// multiplied by this.</param>
+		public SceneRenderContext(WorldView worldView, RectangleDouble viewport, LightingData lighting, double deviceScale = 1)
 		{
 			WorldView = worldView;
 			Viewport = viewport;
 			Lighting = lighting;
+			DeviceScale = deviceScale;
 		}
+
+		/// <summary>Device pixels per UI unit; see the constructor.</summary>
+		public double DeviceScale { get; }
 
 		public LightingData Lighting { get; }
 

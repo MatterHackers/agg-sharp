@@ -126,6 +126,12 @@ namespace MatterHackers.RenderGl.Scene
 
 		private const int OutlineUniformSize = 32;
 
+		/// <summary>
+		/// How wide the selection outline is, in UI units (points on a mac). The D3D oracle wrote a bare 2 at
+		/// 1x, which is where this was tuned; see <see cref="WriteOutlineUniform"/> for the pixel conversion.
+		/// </summary>
+		internal const float SelectionOutlineWidth = 2;
+
 		private const int DownsampleUniformSize = 16;
 
 		/// <summary>
@@ -2804,12 +2810,14 @@ namespace MatterHackers.RenderGl.Scene
 		{
 			var span = this.outlineScratch.AsSpan();
 
-			// The outline width is in target pixels, so it scales with the capture the same way the
-			// wireframe width does - it has to downsample back to the same ~2 screen pixels.
+			// The shader wants the width in target pixels: units times DeviceScale gives device pixels (so
+			// it is as wide on a Retina mac as at 1x, not half), and a supersampled capture multiplies again
+			// so it downsamples back to the same width on screen.
+			double deviceScale = this.activeSceneRenderContext?.DeviceScale ?? 1;
 			GlUniformBlock.WriteVector4(
 				span,
 				0,
-				2.0f * this.SupersampleScale,
+				(float)(SelectionOutlineWidth * deviceScale * this.SupersampleScale),
 				0.35f,
 				this.targetWidth,
 				this.targetHeight);
