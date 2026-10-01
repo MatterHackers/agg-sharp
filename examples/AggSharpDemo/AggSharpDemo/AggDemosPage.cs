@@ -181,29 +181,38 @@ namespace MatterHackers.AggSharpDemo
 				VAnchor = VAnchor.Stretch,
 			};
 
-			var header = new FlowLayoutWidget(FlowDirection.LeftToRight)
+			// The name and the render mode toggle share the first row and the description wraps on its own row
+			// beneath, so a long description on a narrow (phone) page can neither run off the edge nor push the
+			// toggle out of reach.
+			var titleRow = new FlowLayoutWidget(FlowDirection.LeftToRight)
 			{
 				HAnchor = HAnchor.Stretch,
 				Margin = new BorderDouble(0, 0, 0, 8),
 			};
-			var name = new TextWidget(demo.Name, pointSize: 14, bold: true);
-			header.AddChild(name);
-			var description = new TextWidget("  " + demo.Description, pointSize: 10)
+			var name = new TextWidget(demo.Name, pointSize: 14, bold: true)
 			{
-				VAnchor = VAnchor.Center,
+				Name = "AGG Demo Name",
 			};
-			header.AddChild(description);
-			header.AddChild(new HorizontalSpacer());
+			titleRow.AddChild(name);
+			titleRow.AddChild(new HorizontalSpacer());
 
 			var softwareToggle = new CheckBox("Software (AGG reference)")
 			{
+				Name = "AGG Demo Software Toggle",
 				VAnchor = VAnchor.Center,
 			};
 			softwareToggle.CheckedStateChanged += (sender, e) =>
 				view.RenderMode = softwareToggle.Checked ? AggDemoRenderMode.Software : AggDemoRenderMode.Gpu;
-			header.AddChild(softwareToggle);
+			titleRow.AddChild(softwareToggle);
 
-			page.AddChild(header);
+			var description = new WrappedTextWidget(demo.Description, pointSize: 10)
+			{
+				Name = "AGG Demo Description",
+				Margin = new BorderDouble(0, 6, 0, 2),
+			};
+
+			page.AddChild(titleRow);
+			page.AddChild(description);
 			page.AddChild(view);
 
 			recolor = () =>
