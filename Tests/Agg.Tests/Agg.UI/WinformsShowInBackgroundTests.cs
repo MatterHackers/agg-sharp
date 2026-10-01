@@ -47,7 +47,10 @@ namespace MatterHackers.Agg.UI.Tests
 	/// window is stood in for by a window of the test's own (through BackgroundWindowPlacement.ForegroundWindow),
 	/// so the z-order checks do not depend on what the machine running them has in front.
 	/// </summary>
-	[NotInParallel(nameof(WinformsShowInBackgroundTests))]
+	// Its windows take and then clear the process-wide MainWindowsFormsWindow latch, which every automation
+	// window reads on Show - so it shares the automation key. Under a key of its own it ran beside
+	// WindowDeactivationTests and cleared that window's latch between its construction and its Show.
+	[NotInParallel(new[] { nameof(WinformsShowInBackgroundTests), nameof(MatterHackers.GuiAutomation.AutomationRunner.ShowWindowAndExecuteTests) })]
 	public class WinformsShowInBackgroundTests
 	{
 		private const uint GW_HWNDNEXT = 2;

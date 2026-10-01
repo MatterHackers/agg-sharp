@@ -123,12 +123,108 @@ namespace MatterHackers.Agg.UI.Tests
 					mainForm.Dispose();
 				}
 
-				// MainWindowsFormsWindow is normally cleared in OnClosed, which only runs for
-				// windows that were shown; clear the latch directly so later tests start clean.
-				typeof(WinformsSystemWindow)
-					.GetProperty(nameof(WinformsSystemWindow.MainWindowsFormsWindow), BindingFlags.Public | BindingFlags.Static)
-					.SetValue(null, null);
+				ClearMainWindowLatch();
 			}
+		}
+
+		/// <summary>
+		/// A window built while another was the main window, which then closes before this one shows: the
+		/// main-window latch is null by the time Show() reads it. Show() dereferenced it for CenterInParent and
+		/// threw a NullReferenceException (seen in a full Agg.Tests run, where a concurrent test's window closed
+		/// between an automation window's construction and its Show); there is no parent left to center on, so
+		/// it centers on the screen.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		public async Task ACenteredWindowWhoseMainWindowClosedBeforeItShowsCentersOnTheScreen()
+		{
+			bool savedEnableAllowDrop = SystemWindow.EnableAllowDrop;
+			SystemWindow.EnableAllowDrop = false;
+			ClearMainWindowLatch();
+
+			TestWinformsWindow mainForm = null;
+			TestWinformsWindow childForm = null;
+
+			try
+			{
+				mainForm = new TestWinformsWindow { AggSystemWindow = new SystemWindow(300, 300) };
+				childForm = new TestWinformsWindow { AggSystemWindow = new SystemWindow(200, 100) { CenterInParent = true } };
+
+				mainForm.Show();
+				mainForm.AggSystemWindow = null;
+				mainForm.Close();
+				await Assert.That(WinformsSystemWindow.MainWindowsFormsWindow).IsNull();
+
+				childForm.Show();
+
+				await Assert.That(childForm.Visible).IsTrue();
+			}
+			finally
+			{
+				SystemWindow.EnableAllowDrop = savedEnableAllowDrop;
+				CloseAndDispose(childForm);
+				CloseAndDispose(mainForm);
+				ClearMainWindowLatch();
+			}
+		}
+
+		/// <summary>
+		/// A main window whose latch was already handed on - AutomationRunner's ResetFirstWindowFlag clears it
+		/// between tests while an earlier window may still be up, and the next window constructed takes it -
+		/// must not clear its successor's latch when it finally closes.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		public async Task ClosingAFormerMainWindowLeavesItsSuccessorAsMain()
+		{
+			bool savedEnableAllowDrop = SystemWindow.EnableAllowDrop;
+			SystemWindow.EnableAllowDrop = false;
+			ClearMainWindowLatch();
+
+			TestWinformsWindow formerMain = null;
+			TestWinformsWindow successor = null;
+
+			try
+			{
+				formerMain = new TestWinformsWindow { AggSystemWindow = new SystemWindow(300, 300) };
+				formerMain.Show();
+
+				ClearMainWindowLatch();
+				successor = new TestWinformsWindow { AggSystemWindow = new SystemWindow(200, 100) };
+				await Assert.That(ReferenceEquals(WinformsSystemWindow.MainWindowsFormsWindow, successor)).IsTrue();
+
+				formerMain.AggSystemWindow = null;
+				formerMain.Close();
+
+				await Assert.That(ReferenceEquals(WinformsSystemWindow.MainWindowsFormsWindow, successor)).IsTrue();
+			}
+			finally
+			{
+				SystemWindow.EnableAllowDrop = savedEnableAllowDrop;
+				CloseAndDispose(successor);
+				CloseAndDispose(formerMain);
+				ClearMainWindowLatch();
+			}
+		}
+
+		private static void CloseAndDispose(TestWinformsWindow form)
+		{
+			if (form != null && !form.IsDisposed)
+			{
+				// Detach the agg window first so Close() skips the OnShouldClose cascade.
+				form.AggSystemWindow = null;
+				form.Close();
+				form.Dispose();
+			}
+		}
+
+		// MainWindowsFormsWindow is normally cleared in OnClosed, which only runs for
+		// windows that were shown; clear the latch directly so tests start and end clean.
+		private static void ClearMainWindowLatch()
+		{
+			typeof(WinformsSystemWindow)
+				.GetProperty(nameof(WinformsSystemWindow.MainWindowsFormsWindow), BindingFlags.Public | BindingFlags.Static)
+				.SetValue(null, null);
 		}
 	}
 }

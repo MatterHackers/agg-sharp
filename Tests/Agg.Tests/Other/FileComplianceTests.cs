@@ -95,7 +95,7 @@ namespace MatterHackers.Agg.Tests
 			["PlatformLinux/linux/X11SystemWindow.cs"] = 3172,
 			["PlatformLinux/linux/Xlib.cs"] = 949,
 			["PlatformMac/mac/MacSystemWindow.cs"] = 2815,
-			["PlatformWin32/win32/WinformsSystemWindow.cs"] = 1676,
+			["PlatformWin32/win32/WinformsSystemWindow.cs"] = 1651,
 			["PolygonMesh/Csg/ManifoldKernel.cs"] = 1302,
 			["PolygonMesh/Mesh.cs"] = 2435,
 			["PolygonMesh/RayTracer/Primitive/Shapes/Cylinder.cs"] = 891,
