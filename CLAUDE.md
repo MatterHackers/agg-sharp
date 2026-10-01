@@ -28,7 +28,7 @@ When a bug is reported, always follow this workflow:
 - Tests should run as fast as possible—fast tests get run more often
 - Write tests for regressions and complex logic
 - Avoid redundant tests that verify the same behavior
-- All tests must pass before merging
+- **Full suite only before a push to any remote.** A step or merge runs only its new tests and the test classes covering the code it touched; the whole suite runs once, on main, before pushing
 - When test failures occur, use the fix-test-failures agent (`.claude/agents/fix-test-failures.md`) — it treats all failures as real bugs and resolves them through instrumentation and root cause analysis, never by weakening tests
 - **File size limit: 800 non-empty lines per `.cs` file.** `FileComplianceTests` (`Tests/Agg.Tests/Other/FileComplianceTests.cs`) enforces it. Files already over the limit are frozen at their current size in its `ExplicitFileLimits`; those limits only ever go down, and an entry is removed once its file is back under 800. When a file hits its limit, decompose it — use the `file-size-refactoring` skill (never partial classes, never compressing code to squeeze under).
 
