@@ -167,7 +167,7 @@ namespace Markdig.Agg.Tests
 		public async Task IndentedCodeThatLooksLikeAnAlignTagIsNotAGroup()
 		{
 			var document = RichMarkdownParser.Parse("Intro\n\n    <div align=\"center\">\n\nX\n\n    </div>\n");
-			await Assert.That(Shape(document)).IsEqualTo("Paragraph:Intro|Raw:    <div align=\"center\">\n|Paragraph:X|Raw:    </div>");
+			await Assert.That(Shape(document)).IsEqualTo("Paragraph:Intro|CodeBlock:    <div align=\"center\">|Paragraph:X|CodeBlock:    </div>");
 			await Assert.That(document.Blocks[2].Alignment).IsEqualTo(RichAlignment.Left);
 			await Assert.That(document.Blocks[2].AlignGroup).IsNull();
 		}

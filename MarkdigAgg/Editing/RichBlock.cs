@@ -123,12 +123,25 @@ namespace Markdig.Agg.Editing
 		public string CodeText { get; set; } = "";
 
 		/// <summary>
-		/// A CodeBlock's info string (language), or "" when it has none.
+		/// A CodeBlock's language for display: the first word of <see cref="CodeInfo"/>, or "" when it has none.
 		/// </summary>
 		public string CodeLanguage { get; set; } = "";
 
 		/// <summary>
-		/// A Table's rows, header row first; every row has one cell per column.
+		/// A fenced CodeBlock's whole info string exactly as written after the opening fence (trimmed; entities,
+		/// escapes and words after the language kept), so a rewrite reproduces it. "" for none or indented code.
+		/// </summary>
+		public string CodeInfo { get; set; } = "";
+
+		/// <summary>
+		/// A CodeBlock's opening fence as written ("```", "~~~~", ...), so a rewrite keeps the author's fence
+		/// (a longer fence is how a block shows ``` inside it). "" for an indented code block.
+		/// </summary>
+		public string CodeFence { get; set; } = "```";
+
+		/// <summary>
+		/// A Table's rows, header row first; every row has one cell per column (a row written short is padded
+		/// with empty cells).
 		/// </summary>
 		public List<List<RichTableCell>> TableRows { get; set; } = new List<List<RichTableCell>>();
 
@@ -142,7 +155,9 @@ namespace Markdig.Agg.Editing
 		/// The exact markdown this block was parsed from; written back verbatim while the block is not Dirty.
 		/// A ListItem's source runs from its marker to the end of its paragraph (its indentation and any nested
 		/// items' lines are not in it: indentation is whitespace in <see cref="SeparatorBefore"/>, nested items
-		/// are blocks of their own). A Quote's source carries its own "&gt; " prefixes; for the second and later
+		/// are blocks of their own). A fenced CodeBlock's source starts at its line's start, so an indented fence's
+		/// indentation is in it, not the separator: that indent is stripped from the content lines too, so it
+		/// belongs to the block. A Quote's source carries its own "&gt; " prefixes; for the second and later
 		/// paragraphs of one blockquote it also starts with the "&gt;" line that separates them from the paragraph
 		/// before, so the separator between them stays a bare line break. Which quote or list a block belongs to
 		/// is <see cref="QuoteGroup"/> / <see cref="ListGroup"/>, never inferred from these bytes.

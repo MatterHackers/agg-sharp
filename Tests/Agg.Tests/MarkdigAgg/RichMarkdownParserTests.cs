@@ -86,6 +86,12 @@ namespace Markdig.Agg.Tests
 			yield return "<div align=\"center\">\n\nNever closed\n";
 			yield return "<div>\n\n<div align=\"center\">\n\nNested\n\n</div>\n\n</div>\n";
 			yield return "<div align=\"center\">\n\n- list\n\n</div>\n";
+
+			// Code blocks and tables (see RichMarkdownParserCodeTableTests for their shapes).
+			foreach (var markdown in RichMarkdownParserCodeTableTests.Samples)
+			{
+				yield return markdown;
+			}
 		}
 
 		[Test]
@@ -248,9 +254,9 @@ namespace Markdig.Agg.Tests
 		[Test]
 		public async Task UnmodelledBlocksAreRaw()
 		{
-			var document = RichMarkdownParser.Parse("```\nc\n```\n\n---\n\n| a |\n|---|\n| 1 |\n\n<div>\nx\n</div>\n");
+			var document = RichMarkdownParser.Parse("---\n\n+---+\n| a |\n+---+\n\n<div>\nx\n</div>\n");
 			await Assert.That(document.Blocks.All(b => b.Kind == RichBlockKind.Raw)).IsTrue();
-			await Assert.That(document.Blocks.Count).IsEqualTo(4);
+			await Assert.That(document.Blocks.Count).IsEqualTo(3);
 		}
 
 		[Test]

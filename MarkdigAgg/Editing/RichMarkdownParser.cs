@@ -37,8 +37,8 @@ namespace Markdig.Agg.Editing
 	/// <summary>
 	/// Reads markdown into a <see cref="RichDocument"/> whose blocks partition the source exactly, so
 	/// <see cref="RichMarkdownWriter.Write"/> of an unedited document gives back the same bytes.
-	/// Paragraphs, headings, single-paragraph list items, plain-paragraph quotes and &lt;div align&gt; groups are
-	/// modelled; every other block is Raw (shown rendered, edited in the Markdown tab).
+	/// Paragraphs, headings, single-paragraph list items, plain-paragraph quotes, &lt;div align&gt; groups, code
+	/// blocks and pipe tables are modelled; every other block is Raw (shown rendered, edited in the Markdown tab).
 	/// </summary>
 	public class RichMarkdownParser
 	{
@@ -113,6 +113,11 @@ namespace Markdig.Agg.Editing
 				if (block is HeadingBlock)
 				{
 					end = HeadingLineEnd(end);
+				}
+				else if (RichCodeAndTables.IsCode(block))
+				{
+					start = RichCodeAndTables.CodeStart((CodeBlock)block, body, start, cursor);
+					end = RichCodeAndTables.CodeEnd((CodeBlock)block, end);
 				}
 				else if (block.GetType() == typeof(ParagraphBlock))
 				{
@@ -467,20 +472,32 @@ namespace Markdig.Agg.Editing
 			bool isHeading = block.GetType() == typeof(HeadingBlock);
 			if (isParagraph || isHeading)
 			{
-				var inlines = new List<RichInline>();
-				var leaf = (LeafBlock)block;
-				if (leaf.Inline != null)
-				{
-					AddInlines(leaf.Inline, default, inlines);
-				}
-
-				RichInlines.MergeAdjacent(inlines);
-				result.Inlines = inlines;
+				result.Inlines = InlinesOf((LeafBlock)block);
 				result.Kind = isHeading ? RichBlockKind.Heading : RichBlockKind.Paragraph;
 				result.HeadingLevel = isHeading ? ((HeadingBlock)block).Level : 0;
 			}
+			else if (RichCodeAndTables.IsCode(block))
+			{
+				RichCodeAndTables.ReadCode((CodeBlock)block, body, result);
+			}
+			else if (block is Markdig.Extensions.Tables.Table table)
+			{
+				RichCodeAndTables.ReadTable(table, result, InlinesOf);
+			}
 
 			return result;
+		}
+
+		private List<RichInline> InlinesOf(LeafBlock leaf)
+		{
+			var inlines = new List<RichInline>();
+			if (leaf.Inline != null)
+			{
+				AddInlines(leaf.Inline, default, inlines);
+			}
+
+			RichInlines.MergeAdjacent(inlines);
+			return inlines;
 		}
 
 		private record struct Style(bool Bold, bool Italic, bool Strike, string LinkUrl, string LinkTitle, string LinkLabel);
