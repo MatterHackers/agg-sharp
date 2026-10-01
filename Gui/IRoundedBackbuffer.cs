@@ -42,5 +42,19 @@ namespace MatterHackers.Agg.UI
 	{
 		/// <summary>The corner radius in the widget's own units; 0 composites the buffer unclipped.</summary>
 		double BackbufferCornerRadius { get; }
+
+		/// <summary>
+		/// True when the widget's own background paints its whole buffer opaque (up to the rounded clip), so
+		/// text painted over it lands on known pixels and may carry LCD subpixel colour even though the buffer
+		/// is a compositing layer - agg-gui's <c>set_layer_opaque_backdrop</c>. Without it every label inside a
+		/// rounded window was greyscale with LCD text on.
+		/// </summary>
+		bool HasOpaqueBackdrop { get; }
+
+		/// <summary>
+		/// Paints the widget's backdrop into its buffer, before its ordinary background - unclipped, since the
+		/// rounded clip the buffer is composited through shapes it. Only called when painting into the buffer.
+		/// </summary>
+		void PaintBackdrop(Graphics2D layerGraphics);
 	}
 }

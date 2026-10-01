@@ -51,7 +51,27 @@ namespace MatterHackers.Agg.Font
 		/// so the snapped baselines land on whole *device* pixels. Y only — horizontal subpixel
 		/// positioning is preserved. Improves the crispness of horizontal stems at 1:1 scale.
 		/// </summary>
-		public static bool SnapBaselinesToWholePixels { get; set; } = true;
+		/// <remarks>
+		/// A change bumps <see cref="TextStyleSettings.Epoch"/>: widget backbuffers re-raster on that epoch, and
+		/// without it every label already on screen kept the pixels it was first rastered with, so turning
+		/// snapping off (the GUI demo's Hinting toggle) looked like it did nothing.
+		/// </remarks>
+		public static bool SnapBaselinesToWholePixels
+		{
+			get => snapBaselinesToWholePixels;
+			set
+			{
+				if (snapBaselinesToWholePixels == value)
+				{
+					return;
+				}
+
+				snapBaselinesToWholePixels = value;
+				TextStyleSettings.NotifyTextLayoutChanged();
+			}
+		}
+
+		private static volatile bool snapBaselinesToWholePixels = true;
 
 		private string text = "";
 

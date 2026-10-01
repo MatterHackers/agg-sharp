@@ -103,10 +103,39 @@ namespace MatterHackers.Agg.UI
 		/// The rounded clip radius <paramref name="widget"/> asks for (<see cref="IRoundedBackbuffer"/>), 0 for
 		/// none. <see cref="GuiWidget.ResolveBackbufferMode"/> treats a clipped widget like a faded one: the
 		/// clip scales whole pixels by the corner coverage, and LCD planes composited straight into the
-		/// destination's channels have no single alpha to scale. So text inside a rounded window's panel is
-		/// greyscale-antialiased, never subpixel - accepted, as agg-gui's rounded layers are too.
+		/// destination's channels have no single alpha to scale. The panel itself is therefore never LCD planes;
+		/// its text can still be subpixel inside it, over an opaque backdrop (see <see cref="PaintBackdrop"/>).
 		/// </summary>
 		internal static double ClipRadius(GuiWidget widget) => (widget as IRoundedBackbuffer)?.BackbufferCornerRadius ?? 0;
+
+		/// <summary>
+		/// Called before the widget's background in a raster into its buffer: paints a rounded widget's backdrop
+		/// (<see cref="IRoundedBackbuffer.PaintBackdrop"/>), and once an opaque one is down
+		/// (<see cref="IRoundedBackbuffer.HasOpaqueBackdrop"/>) the buffer is no longer transparent anywhere, so
+		/// what draws into it may use subpixel text. A faded buffer stays transparent: its pixels are blended
+		/// again against content the subpixel phase knew nothing about.
+		/// </summary>
+		private void PaintBackdrop(Graphics2D layerGraphics)
+		{
+			if (this.widget is not IRoundedBackbuffer rounded)
+			{
+				return;
+			}
+
+			rounded.PaintBackdrop(layerGraphics);
+			if (rounded.HasOpaqueBackdrop
+				&& this.widget.BackbufferOpacity >= 1)
+			{
+				layerGraphics.IsTransparentCompositingLayer = false;
+			}
+		}
+
+		/// <summary>Whether the buffer's pixels can carry subpixel colour, and so depend on the LCD settings.</summary>
+		private bool CanHoldSubpixelPixels(BackbufferMode mode)
+		{
+			return mode == BackbufferMode.LcdCoverage
+				|| (this.widget is IRoundedBackbuffer rounded && rounded.HasOpaqueBackdrop);
+		}
 
 		internal WidgetBackbuffer(GuiWidget widget)
 		{
@@ -126,7 +155,19 @@ namespace MatterHackers.Agg.UI
 		/// the old settings. The reference's <c>typography_epoch</c> on <c>BackbufferCache</c>, for the same
 		/// reason.
 		/// </summary>
-		internal long LcdEpoch { get; set; }
+		internal long LcdEpoch { get; set; } = LcdRenderSettings.Epoch;
+
+		/// <summary>
+		/// True when the last raster composited a buffer that can hold subpixel pixels (or one holding such a
+		/// buffer): this buffer's pixels then depend on the LCD settings too, though it holds none of its own.
+		/// A rounded window's panel inside the window's own buffer is the case - without this the window kept
+		/// compositing its stale pixels and an LCD change never reached the panel.
+		/// </summary>
+		private bool holdsSubpixelContent;
+
+		/// <summary>Set by any subpixel-dependent buffer composited during the raster in progress on this thread.</summary>
+		[System.ThreadStatic]
+		private static bool compositedSubpixelContent;
 
 		/// <summary>
 		/// <see cref="TextStyleSettings.Epoch"/> as of the last raster: those settings reshape every glyph, in
@@ -285,9 +326,12 @@ namespace MatterHackers.Agg.UI
 			// and a settings change that landed mid-raster would never be re-rastered.
 			long lcdEpoch = LcdRenderSettings.Epoch;
 			long textStyleEpoch = TextStyleSettings.Epoch;
+			// An LCD settings change re-rasters only buffers that can hold subpixel pixels: LCD coverage, or an
+			// opaque backdrop its children paint subpixel text into (see PaintBackdrop). Any other buffer has
+			// nothing the change could alter, and a Gamma drag would otherwise repaint every one of them.
 			if (mode != this.Mode
 				|| this.TextStyleEpoch != textStyleEpoch
-				|| (mode == BackbufferMode.LcdCoverage && this.LcdEpoch != lcdEpoch)
+				|| (this.LcdEpoch != lcdEpoch && (this.holdsSubpixelContent || this.CanHoldSubpixelPixels(mode)))
 				|| (mode == BackbufferMode.GpuTexture && !this.LayerFits(graphics2D, extraW, extraH)))
 			{
 				child.isCurrentlyInvalid = true;
@@ -295,12 +339,22 @@ namespace MatterHackers.Agg.UI
 
 			if (child.isCurrentlyInvalid)
 			{
-				this.Rasterize(
-					mode,
-					extraW,
-					extraH,
-					Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction),
-					graphics2D);
+				bool outerCompositedSubpixelContent = compositedSubpixelContent;
+				compositedSubpixelContent = false;
+				try
+				{
+					this.Rasterize(
+						mode,
+						extraW,
+						extraH,
+						Affine.NewTranslation(-xOffset + xFraction, -yOffset + yFraction),
+						graphics2D);
+					this.holdsSubpixelContent = compositedSubpixelContent;
+				}
+				finally
+				{
+					compositedSubpixelContent = outerCompositedSubpixelContent;
+				}
 
 				this.Mode = mode;
 				this.LcdEpoch = lcdEpoch;
@@ -319,6 +373,11 @@ namespace MatterHackers.Agg.UI
 			}
 
 			graphics2D.SetTransform(Affine.NewTranslation(offsetToRenderSurface));
+
+			if (this.holdsSubpixelContent || this.CanHoldSubpixelPixels(mode))
+			{
+				compositedSubpixelContent = true;
+			}
 
 			this.CompositeOnto(
 				graphics2D,
@@ -449,6 +508,7 @@ namespace MatterHackers.Agg.UI
 			backBufferGraphics2D.IsTransparentCompositingLayer = true;
 			backBufferGraphics2D.Clear(new Color(0, 0, 0, 0));
 			backBufferGraphics2D.SetTransform(transformToBuffer);
+			this.PaintBackdrop(backBufferGraphics2D);
 			this.widget.OnDrawBackground(backBufferGraphics2D);
 			this.widget.OnDraw(backBufferGraphics2D);
 
@@ -509,6 +569,7 @@ namespace MatterHackers.Agg.UI
 			// subpixel geometry. The layer starts every paint cleared to transparent.
 			layerGraphics.IsTransparentCompositingLayer = true;
 			layerGraphics.SetTransform(transformToBuffer);
+			this.PaintBackdrop(layerGraphics);
 			this.widget.OnDrawBackground(layerGraphics);
 			this.widget.OnDraw(layerGraphics);
 		}

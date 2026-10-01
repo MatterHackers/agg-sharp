@@ -274,6 +274,98 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 		}
 
 		/// <summary>
+		/// With LCD text on, labels inside a rounded window's GPU layer are subpixel - the panel paints the
+		/// window's opaque body into the layer first. The window composites the same whether or not it buffers
+		/// itself, and the label's subpixel pixels match the CPU path's. One label crosses the panel's rounded
+		/// corner: the LCD passes write colour, never alpha, so they are only safe because the body fills the whole
+		/// layer opaque (the rounded clip is applied when the layer is composited, scaling colour and alpha together).
+		/// </summary>
+		[Test]
+		public async Task LcdTextInARoundedWindowsGpuLayerIsSubpixelAndMatchesTheCpuPath()
+		{
+			bool wasEnabled = LcdCoverage.LcdRenderSettings.Enabled;
+			double wasScale = GuiWidget.DeviceScale;
+			try
+			{
+				GuiWidget.DeviceScale = 1;
+				LcdCoverage.LcdRenderSettings.Enabled = true;
+				using var capture = WebGpuOffscreenCapture.Create(FrameWidth * 2, FrameWidth);
+
+				TextWidget label = null;
+				GuiWidget Build(bool doubleBuffer)
+				{
+					var root = new GuiWidget(FrameWidth * 2, FrameWidth) { BackgroundColor = Color.White };
+					var client = new GuiWidget(200, 90) { HAnchor = HAnchor.Stretch, VAnchor = VAnchor.Stretch };
+					label = new TextWidget("Hello World", pointSize: 12, textColor: Color.Black) { Position = new Vector2(20, 40) };
+					client.AddChild(label);
+					client.AddChild(new TextWidget("Corner", pointSize: 12, textColor: Color.Black) { Position = new Vector2(-6, -4) });
+					var window = new WindowWidget(new ThemeConfig(), client)
+					{
+						BackgroundColor = Color.White,
+						CornerRadius = 8,
+						DoubleBuffer = doubleBuffer,
+					};
+					window.Position = new Vector2(20, 10);
+					root.AddChild(window);
+					root.PerformLayout();
+					return root;
+				}
+
+				GuiWidget plainRoot = Build(doubleBuffer: false);
+				ImageBuffer plain = await RenderAsync(capture, plainRoot);
+				GuiWidget gpuRoot = Build(doubleBuffer: true);
+				ImageBuffer gpu = await RenderAsync(capture, gpuRoot);
+				RectangleDouble text = label.TransformToScreenSpace(label.LocalBounds);
+
+				GuiWidget cpuRoot = Build(doubleBuffer: true);
+				var cpu = new ImageBuffer(capture.Width, capture.Height, 32, new BlenderPreMultBGRA());
+				Graphics2D cpuGraphics = cpu.NewGraphics2D();
+				cpuGraphics.Clear(Color.White);
+				cpuRoot.OnDraw(cpuGraphics);
+
+				bool chroma = false;
+				for (int y = 0; y < gpu.Height && !chroma; y++)
+				{
+					for (int x = 0; x < gpu.Width; x++)
+					{
+						Color pixel = gpu.GetPixel(x, y);
+						if (Math.Abs(pixel.Red0To255 - pixel.Blue0To255) > 24)
+						{
+							chroma = true;
+							break;
+						}
+					}
+				}
+
+				await Assert.That(chroma).IsTrue().Because("black LCD text on a white body has coloured fringes");
+				await AssertImagesClose(plain, gpu, "a rounded window with LCD text through its own GPU layer", tolerance: 2);
+
+				// Over the label only: vector edges (the border's corner) tessellate on the GPU and scanline on the
+				// CPU, but the LCD text is the same CPU-built mask on both.
+				int worst = 0;
+				for (int y = (int)text.Bottom; y < (int)text.Top; y++)
+				{
+					for (int x = (int)text.Left; x < (int)text.Right; x++)
+					{
+						Color a = cpu.GetPixel(x, y);
+						Color b = gpu.GetPixel(x, y);
+						worst = Math.Max(worst, Math.Max(Math.Abs(a.red - b.red), Math.Max(Math.Abs(a.green - b.green), Math.Abs(a.blue - b.blue))));
+					}
+				}
+
+				await Assert.That(worst).IsLessThanOrEqualTo(3).Because("the GPU layer's LCD text matches the CPU path's");
+				plainRoot.Close();
+				gpuRoot.Close();
+				cpuRoot.Close();
+			}
+			finally
+			{
+				LcdCoverage.LcdRenderSettings.Enabled = wasEnabled;
+				GuiWidget.DeviceScale = wasScale;
+			}
+		}
+
+		/// <summary>
 		/// The straight-alpha draws - a translucent pixel-aligned <see cref="Graphics2D.FillRectangle(double, double, double, double, IColorType)"/>
 		/// and a partly transparent image - over the widget's opaque background and over transparent parts of
 		/// the layer. Inside a premultiplied layer their alpha has to accumulate as a + dstA(1 - a); blending

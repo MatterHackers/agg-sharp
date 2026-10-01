@@ -27,7 +27,7 @@ namespace MatterHackers.Agg.UI
 		private double deviceGrabWidth => grabWidth * DeviceScale;
 
         private readonly ThemeConfig theme;
-        private readonly RoundedPanel windowBackground;
+        private readonly WindowRoundedPanel windowBackground;
 
         /// <summary>
         /// The right hand end of the title bar, holding the close button and anything
@@ -107,7 +107,7 @@ namespace MatterHackers.Agg.UI
 			this.theme = theme;
 			maximizer = new WindowMaximizer(this, () => deviceGrabWidth);
             
-			windowBackground = new RoundedPanel()
+			windowBackground = new WindowRoundedPanel(this)
 			{
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
@@ -179,19 +179,8 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		/// <summary>
-		/// The visible window inside the grab border, which carries the rounded clip its backbuffer is
-		/// composited through (see <see cref="CornerRadius"/>).
-		/// </summary>
-		private class RoundedPanel : FlowLayoutWidget, IRoundedBackbuffer
-		{
-			public RoundedPanel()
-				: base(FlowDirection.TopToBottom)
-			{
-			}
-
-			public double BackbufferCornerRadius { get; set; }
-		}
+		/// <summary>True when the panel, not the window, paints the body: a rounded window (see <see cref="WindowRoundedPanel"/>).</summary>
+		internal bool PanelPaintsBody => cornerRadius > 0;
 
 		/// <summary>
 		/// The colour of the soft drop shadow drawn around the window; its alpha is how dark the shadow is at its
@@ -203,7 +192,20 @@ namespace MatterHackers.Agg.UI
 		/// <see cref="ShadowBlur"/> plus the length of <see cref="ShadowOffset"/> should stay within it; anything
 		/// past it is clipped at the window's bounds.
 		/// </remarks>
-		public Color ShadowColor { get; set; } = Color.Transparent;
+		public Color ShadowColor
+		{
+			get => shadowColor;
+			set
+			{
+				if (shadowColor != value)
+				{
+					shadowColor = value;
+					Invalidate();
+				}
+			}
+		}
+
+		private Color shadowColor = Color.Transparent;
 
 		/// <summary>How far the shadow is shifted from the window, in design units (negative Y is down).</summary>
 		public Vector2 ShadowOffset { get; set; }
@@ -215,7 +217,30 @@ namespace MatterHackers.Agg.UI
 		/// A colour painted behind the title bar, following the window's rounded top corners. Transparent, the
 		/// default, lets the window's background show through as before.
 		/// </summary>
-		public Color TitleBarColor { get; set; } = Color.Transparent;
+		public Color TitleBarColor
+		{
+			get => titleBarColor;
+			set
+			{
+				if (titleBarColor != value)
+				{
+					titleBarColor = value;
+
+					// A rounded window paints it into the panel's buffer, which the window's own Invalidate does not reach.
+					windowBackground.Invalidate();
+					Invalidate();
+				}
+			}
+		}
+
+		private Color titleBarColor = Color.Transparent;
+
+		/// <summary>A rounded window's body lives in the panel's buffer, which the window's own Invalidate does not reach.</summary>
+		public override void OnBackgroundColorChanged(EventArgs e)
+		{
+			windowBackground?.Invalidate();
+			base.OnBackgroundColorChanged(e);
+		}
 
 		private bool IsStyled => cornerRadius > 0 || ShadowColor.Alpha0To255 > 0 || TitleBarColor.Alpha0To255 > 0;
 
@@ -591,10 +616,11 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Never <see cref="BackbufferMode.LcdCoverage"/> for a rounded window: its panel's rounded clip keeps
-		/// every glyph in it greyscale (see <see cref="CornerRadius"/>), so the window's buffer would hold
-		/// nothing subpixel, and the LCD planes are painted on the CPU where a GPU surface would otherwise keep
-		/// a retained layer. With LCD text on, that CPU raster of every window froze the GUI demo's first frame.
+		/// Never <see cref="BackbufferMode.LcdCoverage"/> for a rounded window: its panel is buffered on its own
+		/// (and its text is subpixel inside that buffer, over the opaque body the panel paints), so the window's
+		/// buffer would hold nothing subpixel of its own, and the LCD planes are painted on the CPU where a GPU
+		/// surface would otherwise keep a retained layer. With LCD text on, that CPU raster of every window froze
+		/// the GUI demo's first frame.
 		/// </summary>
 		public override BackbufferMode ResolveBackbufferMode(Graphics2D destination)
 		{
@@ -683,8 +709,39 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
+			if (!PanelPaintsBody)
+			{
+				DrawBody(graphics2D, panel);
+			}
+		}
+
+		/// <summary>
+		/// The window's background and title bar colour over <paramref name="panel"/>, the visible window in
+		/// <paramref name="graphics2D"/>'s coordinates.
+		/// </summary>
+		/// <param name="square">True to paint plain rectangles, for a buffer whose rounded clip shapes them.</param>
+		internal void DrawBody(Graphics2D graphics2D, RectangleDouble panel, bool square = false)
+		{
+			var radius = cornerRadius * DeviceScale;
+			if (square)
+			{
+				if (BackgroundColor.Alpha0To255 > 0)
+				{
+					graphics2D.FillRectangle(panel, BackgroundColor);
+				}
+
+				if (TitleBarColor.Alpha0To255 > 0
+					&& TitleBar != null)
+				{
+					graphics2D.FillRectangle(new RectangleDouble(panel.Left, panel.Top - TitleBar.Height, panel.Right, panel.Top), TitleBarColor);
+				}
+
+				return;
+			}
+
 			if (BackgroundColor.Alpha0To255 > 0)
 			{
+				RectangleDouble? backgroundCovers = BackgroundColor.Alpha0To255 == 255 ? OpaqueRoundedFill.SolidInterior(graphics2D, panel, radius) : null;
 				if (backgroundCovers is RectangleDouble interior)
 				{
 					graphics2D.Clear(interior, BackgroundColor);

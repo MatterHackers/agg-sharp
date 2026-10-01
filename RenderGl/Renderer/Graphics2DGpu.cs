@@ -1145,9 +1145,18 @@ namespace MatterHackers.RenderGl
         /// That is the reference's behaviour exactly (its <c>ColorWrites::RED</c> and friends exclude alpha),
         /// and a deliberate divergence from the software
         /// <see cref="LcdBuffer.CompositeOnto(ImageBuffer, int, int, double, RectangleInt?)"/>, which sets
-        /// destination alpha to <c>max</c> over the three channel alphas. There is no third pixel format to
-        /// write it in here: this runs against the window's framebuffer, whose alpha is not read by anything
-        /// downstream, and a fourth pass to maintain it would cost a full quad for a channel nobody samples.
+        /// destination alpha to <c>max</c> over the three channel alphas. The destination is either the
+        /// window's framebuffer, whose alpha nothing downstream reads, or a retained layer that answered
+        /// <see cref="CanCompositeLcdBuffer"/> only because it is not a transparent compositing layer - which in
+        /// practice means a rounded window's panel, whose opaque body is painted over the panel's whole bounds
+        /// before anything else (the rounded clip is applied when the layer is composited), so it covers every
+        /// pixel the client area and title bar draw into. Not quite every pixel of the layer: a panel at a
+        /// fractional offset gets an extra row and column, and its bounds' edge pixels are only partly covered.
+        /// LCD text never lands there - the client area is padded in from the panel's sides and bottom by the
+        /// corner inset, and title bar text is centred well below the top edge - so destination alpha is
+        /// already 1 wherever these passes land, leaving it alone keeps the layer's premultiplied colour within
+        /// its alpha, and a fourth pass would cost a full quad for nothing. A layer that cleared the flag over a
+        /// translucent backdrop, or drew subpixel ink onto its own edge pixels, would break that.
         /// </para>
         /// <para>
         /// No transform is applied, matching the base class - the planes are finished pixels and resampling

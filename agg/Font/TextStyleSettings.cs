@@ -130,6 +130,17 @@ namespace MatterHackers.Agg.Font
 			return Math.Abs(weight) < .05 ? 0 : -weight * emSizeInPixels / 15;
 		}
 
+		/// <summary>
+		/// Bumps <see cref="Epoch"/> for a text setting that lives elsewhere but, like these, changes the pixels of
+		/// text already rastered (<see cref="TypeFacePrinter.SnapBaselinesToWholePixels"/>), so the caches that
+		/// watch this epoch rebuild. Glyph images are left alone: each is one glyph, which a baseline move does
+		/// not reshape.
+		/// </summary>
+		internal static void NotifyTextLayoutChanged()
+		{
+			Interlocked.Increment(ref epoch);
+		}
+
 		/// <summary>Puts every setting back to its default.</summary>
 		public static void Reset()
 		{
