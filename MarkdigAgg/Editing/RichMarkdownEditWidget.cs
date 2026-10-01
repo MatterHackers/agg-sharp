@@ -40,7 +40,7 @@ namespace Markdig.Agg.Editing
 	/// markdown viewer shows it. Each block keeps its own layout, so an edit re-lays out only the block it touched.
 	/// Raw blocks show rendered by the viewer as child widgets; tables draw as an editable grid.
 	/// </summary>
-	public class RichMarkdownEditWidget : ScrollableWidget
+	public class RichMarkdownEditWidget : ScrollableWidget, IRichEditCommands
 	{
 		private readonly RichDocumentView view;
 		private RichDocument document = new RichDocument();
@@ -147,9 +147,32 @@ namespace Markdig.Agg.Editing
 		public RichEditHistory History { get; } = new RichEditHistory();
 
 		/// <summary>
-		/// Styles Cmd/Ctrl+B or I flipped at a collapsed caret for the next typed text; cleared when the caret moves.
+		/// Styles Cmd/Ctrl+B or I (or the toolbar) flipped at a collapsed caret for the next typed text; cleared when
+		/// the caret moves. A change raises <see cref="SelectionChanged"/> so the toolbar's buttons follow it.
 		/// </summary>
-		public RichPendingStyle PendingStyle { get; set; }
+		public RichPendingStyle PendingStyle
+		{
+			get => pendingStyle;
+			set
+			{
+				if (pendingStyle != value)
+				{
+					pendingStyle = value;
+
+					// As Cmd/Ctrl+B does: the text typed with the new style is its own undo step.
+					History.BreakCoalescing();
+					SelectionChanged?.Invoke(this, EventArgs.Empty);
+				}
+			}
+		}
+
+		private RichPendingStyle pendingStyle;
+
+		/// <summary>
+		/// Raised on every change of the selection, the caret's wrap side or <see cref="PendingStyle"/> - by the
+		/// keyboard, the mouse, an edit, an undo or code - after the new selection is stored.
+		/// </summary>
+		public event EventHandler SelectionChanged;
 
 		/// <summary>
 		/// Mac (Option word steps, Cmd+arrows to line and document ends) or Windows/Linux key bindings; defaults to
@@ -172,6 +195,21 @@ namespace Markdig.Agg.Editing
 		{
 			keyboard.Apply(kind, edit, text);
 		}
+
+		/// <summary>
+		/// The formatting toolbar's edit (<see cref="IRichEditCommands"/>): one undo step of kind Other when it
+		/// changed something, and every block laid out again, since a toolbar op may add, remove or reshape blocks
+		/// anywhere (a table goes after a whole list, a code block replaces several paragraphs).
+		/// </summary>
+		void IRichEditCommands.ApplyEdit(Func<RichDocument, RichSelection, (RichSelection Selection, bool Changed)> edit)
+		{
+			keyboard.Apply(RichEditKind.Other, edit, relayoutAll: true);
+		}
+
+		/// <summary>
+		/// Gives this editor the keyboard focus, so typing continues after a toolbar click.
+		/// </summary>
+		public void FocusText() => Focus();
 
 		internal bool CaretShowing => caretBlink.Showing;
 
@@ -291,13 +329,19 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		internal void SetSelectionAfterEdit(RichSelection selection, bool caretAtLineEnd = false)
 		{
+			bool changed = selection != this.selection || caretAtLineEnd != CaretAtLineEnd || !pendingStyle.IsEmpty;
 			this.selection = selection;
 			CaretAtLineEnd = caretAtLineEnd;
 
-			// A pending Bold belongs to the caret it was picked at; typed text has taken it on by now.
-			PendingStyle = default;
+			// A pending Bold belongs to the caret it was picked at; typed text has taken it on by now. Cleared through
+			// the field so the change raises SelectionChanged once, below.
+			pendingStyle = default;
 			caretBlink?.Restart();
 			view.Invalidate();
+			if (changed)
+			{
+				SelectionChanged?.Invoke(this, EventArgs.Empty);
+			}
 		}
 
 		/// <summary>

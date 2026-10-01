@@ -67,9 +67,10 @@ namespace Markdig.Agg.Editing
 		/// selection and whether anything changed), commits, places the selection and re-lays out the blocks from
 		/// the old selection's to the new one's. Blocks the edit inserted are laid out and removed ones dropped (with
 		/// their Raw hosts) by the relayout itself, and blocks it reshaped without naming them (list children lifted
-		/// a level) are noticed there too.
+		/// a level) are noticed there too. With <paramref name="relayoutAll"/> every block is laid out again instead -
+		/// the toolbar's contract (<see cref="IRichEditCommands.ApplyEdit"/>), whose ops may touch blocks anywhere.
 		/// </summary>
-		public void Apply(RichEditKind kind, Func<RichDocument, RichSelection, (RichSelection Selection, bool Changed)> edit, string text = null)
+		public void Apply(RichEditKind kind, Func<RichDocument, RichSelection, (RichSelection Selection, bool Changed)> edit, string text = null, bool relayoutAll = false)
 		{
 			var document = editor.Document;
 			var before = editor.Selection;
@@ -87,6 +88,12 @@ namespace Markdig.Agg.Editing
 					editor.History.BreakCoalescing();
 				}
 
+				return;
+			}
+
+			if (relayoutAll)
+			{
+				editor.RelayoutAll();
 				return;
 			}
 
