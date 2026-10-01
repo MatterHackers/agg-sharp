@@ -107,8 +107,20 @@ namespace MatterHackers.PolygonMesh.Sdf
 		/// cancelled - the build's dominant work, counted rather than timed.</summary>
 		internal long FloodWork { get; private set; }
 
-		/// <summary>Test seam: called with the flood's running work count.</summary>
-		internal Action<long> FloodProgress { get; set; }
+		/// <summary>
+		/// Called with the flood's running work count - the voxels processed so far, compared with
+		/// <see cref="FloodWork"/> of an earlier build or an estimate of the band's size - so a long
+		/// build can move a progress bar. Called once per voxel from the flood's worker threads, so it
+		/// must be cheap and thread safe.
+		/// </summary>
+		public Action<long> FloodProgress { get; set; }
+
+		/// <summary>
+		/// Whether the build orients the part's shells first. Leave it true unless the caller has
+		/// already run <see cref="MinkowskiProcessing.OrientShellsAsSolid"/> on the mesh it passes
+		/// (Hollow Out does, for its outer shell), which makes a second pass pure cost.
+		/// </summary>
+		public bool OrientShells { get; init; } = true;
 
 		/// <summary>Gets the sampled field (negative inside), for tests; null until built.</summary>
 		internal DenseGrid3f Field => grid;
@@ -144,10 +156,13 @@ namespace MatterHackers.PolygonMesh.Sdf
 			// Orient first, as the kernel does, so the preview is of the same solid the exact
 			// Dilate / Erode will build - its repair also joins split seams the crossing count
 			// would otherwise see as doubled walls.
-			Mesh oriented;
+			Mesh oriented = source;
 			try
 			{
-				oriented = MinkowskiProcessing.OrientShellsAsSolid(source, cancellationToken);
+				if (OrientShells)
+				{
+					oriented = MinkowskiProcessing.OrientShellsAsSolid(source, cancellationToken);
+				}
 			}
 			catch (MeshImportRejectedException)
 			{

@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -98,10 +99,14 @@ namespace MatterHackers.PolygonMesh.Sdf
 								return;
 							}
 
-							// A node exactly on the iso gives t = 0, and each of its crossing edges
-							// a vertex at the same point, so the triangles between them have no
-							// area. Acceptable for a preview: the topology is still closed.
-							double t = f / (double)(f - g);
+							// A node exactly on the iso would give t = 0 (or 1), and each of its
+							// crossing edges a vertex at the same point, so the triangles between
+							// them would have no area - wrong in a final result such as Hollow
+							// Out's cavity. Keeping t a thousandth of a cell off the node keeps
+							// those vertices apart, so every triangle has area, and moves the
+							// surface by no more than that; the topology is untouched, so the mesh
+							// stays closed and manifold. Welding them instead could pinch it.
+							double t = Math.Clamp(f / (double)(f - g), 1e-3, 1 - 1e-3);
 							edges.Add((inSlice * 3) + axis);
 							positions.Add(origin.x + ((i + (axis == 0 ? t : 0)) * cellSize));
 							positions.Add(origin.y + ((j + (axis == 1 ? t : 0)) * cellSize));
