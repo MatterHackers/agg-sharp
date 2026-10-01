@@ -59,7 +59,7 @@ namespace Markdig.Agg.Tests
 		private const string NoOuterPipes = "a | b\n--- | :-:\n1 | 2\n";
 		private const string ShortRows = "| a | b | c |\n|---|---|---|\n| 1 |\n| | x |\n";
 		private const string CrlfTable = "| a |\r\n|---|\r\n| **b** |\r\n";
-		private const string TableAtoms = "| ![i](a.png) | <b>x</b> |\n|---|---|\n";
+		private const string TableAtoms = "| ![i](a.png) | <span>x</span> |\n|---|---|\n";
 		private const string WideRow = "|a|b|\n|-|-|\n|1|2|3|\n";
 		private const string GridTable = "+---+\n| a |\n+===+\n| b |\n+---+\n";
 		private const string TableInAlign = "<div align=\"center\">\n\n| a |\n|---|\n| 1 |\n\n</div>\n";
@@ -236,18 +236,6 @@ namespace Markdig.Agg.Tests
 			await Assert.That(copy.Blocks[0].CodeFence).IsEqualTo("~~~~");
 			await Assert.That(copy.Blocks[1].TableRows[1][0].Inlines).IsNotSameReferenceAs(document.Blocks[1].TableRows[1][0].Inlines);
 			await Assert.That(RichMarkdownWriter.Write(copy)).IsEqualTo(RichMarkdownWriter.Write(document));
-		}
-
-		[Test]
-		public async Task DirtyCodeAndTableAreNotWrittenYet()
-		{
-			var document = RichMarkdownParser.Parse(BacktickFence + "\n" + AlignedTable);
-			document.Blocks.First(b => b.Kind == RichBlockKind.CodeBlock).Dirty = true;
-			await Assert.That(() => RichMarkdownWriter.Write(document)).Throws<System.NotImplementedException>();
-
-			var table = RichMarkdownParser.Parse(AlignedTable);
-			table.Blocks[0].Dirty = true;
-			await Assert.That(() => RichMarkdownWriter.Write(table)).Throws<System.NotImplementedException>();
 		}
 
 		private static string Kinds(RichDocument document) => string.Join("|", document.Blocks.Select(b => b.Kind));

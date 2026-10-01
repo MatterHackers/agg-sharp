@@ -213,7 +213,7 @@ namespace Markdig.Agg.Tests
 		[Test]
 		public async Task AtomsKeepTheirExactSource()
 		{
-			var block = RichMarkdownParser.Parse("![a](b.png) <b>x</b> <http://a.com> www.c.com end  \nnext\n").Blocks.Single();
+			var block = RichMarkdownParser.Parse("![a](b.png) <span>x</span> <http://a.com> www.c.com end  \nnext\n").Blocks.Single();
 			var atoms = block.Inlines.OfType<InlineAtom>().ToList();
 			await Assert.That(atoms.Select(a => a.Kind).ToArray()).IsEquivalentTo(new[]
 			{
@@ -225,12 +225,30 @@ namespace Markdig.Agg.Tests
 				InlineAtomKind.HardBreak,
 			});
 			await Assert.That(atoms[0].RawMarkdown).IsEqualTo("![a](b.png)");
-			await Assert.That(atoms[1].RawMarkdown).IsEqualTo("<b>");
-			await Assert.That(atoms[2].RawMarkdown).IsEqualTo("</b>");
+			await Assert.That(atoms[1].RawMarkdown).IsEqualTo("<span>");
+			await Assert.That(atoms[2].RawMarkdown).IsEqualTo("</span>");
 			await Assert.That(atoms[3].RawMarkdown).IsEqualTo("<http://a.com>");
 			await Assert.That(atoms[4].RawMarkdown).IsEqualTo("www.c.com");
 			await Assert.That(atoms[5].RawMarkdown).IsEqualTo("  \n");
 			await Assert.That(PlainText(block)).IsEqualTo("? ?x? ? ? end?next");
+		}
+
+		[Test]
+		public async Task PairedStyleTagsBecomeStyles()
+		{
+			var styled = RichMarkdownParser.Parse("a<b>x<i>y</i></b><del>z</del><S>w</S>\n").Blocks.Single();
+			await Assert.That(styled.Inlines.OfType<InlineAtom>().Count()).IsEqualTo(0);
+			var runs = styled.Inlines.Cast<RichRun>().ToList();
+			await Assert.That(string.Join(",", runs.Select(r => r.Text + (r.Bold ? "B" : "") + (r.Italic ? "I" : "") + (r.Strike ? "S" : ""))))
+				.IsEqualTo("a,xB,yBI,zwS");
+
+			// Attributes, an unpaired tag or crossed pairs keep their tags as atoms.
+			foreach (var markdown in new[] { "<b class=\"k\">x</b>\n", "a <b>x\n", "<b><i>x</b></i>\n" })
+			{
+				var block = RichMarkdownParser.Parse(markdown).Blocks.Single();
+				await Assert.That(block.Inlines.OfType<InlineAtom>().Count()).IsGreaterThan(0);
+				await Assert.That(block.Inlines.Any(inline => inline.Bold || inline.Italic)).IsFalse();
+			}
 		}
 
 		[Test]
@@ -287,7 +305,7 @@ namespace Markdig.Agg.Tests
 		[Test]
 		public async Task DirtyModelledBlockIsNotWrittenYet()
 		{
-			var document = RichMarkdownParser.Parse("Text\n");
+			var document = RichMarkdownParser.Parse("- item\n");
 			document.Blocks[0].Dirty = true;
 			await Assert.That(() => RichMarkdownWriter.Write(document)).Throws<System.NotImplementedException>();
 		}

@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 
@@ -48,6 +49,9 @@ namespace Markdig.Agg.Editing
 			.UseSupportedExtensions()
 			.UsePreciseSourceLocation()
 			.Build();
+
+		// Inline HTML that styles text the way emphasis does; see PairStyleTags.
+		private static readonly Regex StyleTag = new Regex("^</?(strong|b|em|i|del|s|strike)>$", RegexOptions.IgnoreCase);
 
 		private readonly RichDocument document = new RichDocument();
 
@@ -509,8 +513,32 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		private void AddInlines(ContainerInline container, Style style, List<RichInline> inlines)
 		{
+			var styleTags = PairStyleTags(container);
+			var outerStyles = new Stack<Style>();
 			foreach (var inline in container)
 			{
+				// A paired <strong>/<em>/<del> (or <b>/<i>/<s>/<strike>) styles what lies between, so text the
+				// writer had to wrap in tags (where ** would not read as bold) stays editable.
+				if (inline is HtmlInline tag && styleTags.TryGetValue(tag, out bool opens))
+				{
+					if (opens)
+					{
+						outerStyles.Push(style);
+						style = StyleTagName(tag) switch
+						{
+							"strong" or "b" => style with { Bold = true },
+							"em" or "i" => style with { Italic = true },
+							_ => style with { Strike = true },
+						};
+					}
+					else
+					{
+						style = outerStyles.Pop();
+					}
+
+					continue;
+				}
+
 				switch (inline)
 				{
 					case LiteralInline literal:
@@ -528,7 +556,7 @@ namespace Markdig.Agg.Editing
 						break;
 
 					case LineBreakInline lineBreak when lineBreak.IsHard:
-						inlines.Add(new InlineAtom(InlineAtomKind.HardBreak, HardBreakSource(lineBreak)));
+						inlines.Add(Atom(style, InlineAtomKind.HardBreak, HardBreakSource(lineBreak)));
 						break;
 
 					case LineBreakInline:
@@ -537,20 +565,20 @@ namespace Markdig.Agg.Editing
 						break;
 
 					case HtmlInline:
-						inlines.Add(new InlineAtom(InlineAtomKind.Html, Slice(inline)));
+						inlines.Add(Atom(style, InlineAtomKind.Html, Slice(inline)));
 						break;
 
 					case AutolinkInline:
-						inlines.Add(new InlineAtom(InlineAtomKind.Autolink, Slice(inline)));
+						inlines.Add(Atom(style, InlineAtomKind.Autolink, Slice(inline)));
 						break;
 
 					case LinkInline link when link.IsImage:
-						inlines.Add(new InlineAtom(InlineAtomKind.Image, Slice(inline)));
+						inlines.Add(Atom(style, InlineAtomKind.Image, Slice(inline)));
 						break;
 
 					case LinkInline link when link.IsAutoLink:
 						// A bare www. or http link found by the AutoLinks extension.
-						inlines.Add(new InlineAtom(InlineAtomKind.Autolink, Slice(inline)));
+						inlines.Add(Atom(style, InlineAtomKind.Autolink, Slice(inline)));
 						break;
 
 					case LinkInline link:
@@ -575,10 +603,52 @@ namespace Markdig.Agg.Editing
 						break;
 
 					default:
-						inlines.Add(new InlineAtom(InlineAtomKind.Raw, Slice(inline)));
+						inlines.Add(Atom(style, InlineAtomKind.Raw, Slice(inline)));
 						break;
 				}
 			}
+		}
+
+		/// <summary>
+		/// The bare style tags among a container's children (no attributes) that pair up properly nested, each
+		/// mapped to true for the open tag and false for its close. Anything unpaired, crossing another pair or
+		/// split across containers stays an Html atom.
+		/// </summary>
+		private static Dictionary<HtmlInline, bool> PairStyleTags(ContainerInline container)
+		{
+			var paired = new Dictionary<HtmlInline, bool>();
+			var open = new List<HtmlInline>();
+			foreach (var inline in container)
+			{
+				if (inline is not HtmlInline tag || StyleTagName(tag) == null)
+				{
+					continue;
+				}
+
+				if (!tag.Tag.StartsWith("</"))
+				{
+					open.Add(tag);
+				}
+				else if (open.Count > 0 && StyleTagName(open[^1]) == StyleTagName(tag))
+				{
+					paired[open[^1]] = true;
+					paired[tag] = false;
+					open.RemoveAt(open.Count - 1);
+				}
+				else
+				{
+					// Crossed tags: the open ones can no longer close in order, so they stay atoms.
+					open.Clear();
+				}
+			}
+
+			return paired;
+		}
+
+		private static string StyleTagName(HtmlInline tag)
+		{
+			var match = StyleTag.Match(tag.Tag ?? "");
+			return match.Success ? match.Groups[1].Value.ToLowerInvariant() : null;
 		}
 
 		/// <summary>
@@ -603,17 +673,21 @@ namespace Markdig.Agg.Editing
 
 		private static string NullIfEmpty(string text) => string.IsNullOrEmpty(text) ? null : text;
 
-		private static RichRun Run(string text, Style style)
+		private static RichRun Run(string text, Style style) => ApplyStyle(new RichRun(text), style);
+
+		// Atoms carry the style around them too, so a rewrite can wrap an image in **bold** or a link again.
+		private static InlineAtom Atom(Style style, InlineAtomKind kind, string rawMarkdown) => ApplyStyle(new InlineAtom(kind, rawMarkdown), style);
+
+		private static T ApplyStyle<T>(T inline, Style style)
+			where T : RichInline
 		{
-			return new RichRun(text)
-			{
-				Bold = style.Bold,
-				Italic = style.Italic,
-				Strike = style.Strike,
-				LinkUrl = style.LinkUrl,
-				LinkTitle = style.LinkTitle,
-				LinkLabel = style.LinkLabel,
-			};
+			inline.Bold = style.Bold;
+			inline.Italic = style.Italic;
+			inline.Strike = style.Strike;
+			inline.LinkUrl = style.LinkUrl;
+			inline.LinkTitle = style.LinkTitle;
+			inline.LinkLabel = style.LinkLabel;
+			return inline;
 		}
 
 		/// <summary>

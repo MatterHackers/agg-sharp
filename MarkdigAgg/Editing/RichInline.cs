@@ -39,6 +39,45 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		public abstract int Length { get; }
 
+		// The style lives here, not only on runs, because an atom keeps only its own markdown: an image inside
+		// **bold** or a link must remember the bold or link, or rewriting its block would drop it.
+		public bool Bold { get; set; }
+
+		public bool Italic { get; set; }
+
+		public bool Strike { get; set; }
+
+		/// <summary>
+		/// The link target when this inline is (part of) a link's text, otherwise null.
+		/// </summary>
+		public string LinkUrl { get; set; }
+
+		/// <summary>
+		/// The link's title ([text](url "title")), or null when it has none.
+		/// </summary>
+		public string LinkTitle { get; set; }
+
+		/// <summary>
+		/// The reference label as written when the link is a reference link ([text][label], [label][] or [label]),
+		/// or null for an inline link. When set, the writer emits [text][label] so the definition elsewhere in the
+		/// document stays the link's source of truth; LinkUrl is then only the resolved target, for clicking.
+		/// </summary>
+		public string LinkLabel { get; set; }
+
+		/// <summary>
+		/// True when the two inlines carry the same style (a run's Code included). Only runs ever merge.
+		/// </summary>
+		public bool HasSameStyle(RichInline other)
+		{
+			return Bold == other.Bold
+				&& Italic == other.Italic
+				&& Strike == other.Strike
+				&& LinkUrl == other.LinkUrl
+				&& LinkTitle == other.LinkTitle
+				&& LinkLabel == other.LinkLabel
+				&& (this as RichRun)?.Code == (other as RichRun)?.Code;
+		}
+
 		public abstract RichInline Clone();
 	}
 
@@ -58,46 +97,9 @@ namespace Markdig.Agg.Editing
 
 		public string Text { get; set; } = "";
 
-		public bool Bold { get; set; }
-
-		public bool Italic { get; set; }
-
 		public bool Code { get; set; }
 
-		public bool Strike { get; set; }
-
-		/// <summary>
-		/// The link target when this run is (part of) a link's text, otherwise null.
-		/// </summary>
-		public string LinkUrl { get; set; }
-
-		/// <summary>
-		/// The link's title ([text](url "title")), or null when it has none.
-		/// </summary>
-		public string LinkTitle { get; set; }
-
-		/// <summary>
-		/// The reference label as written when the link is a reference link ([text][label], [label][] or [label]),
-		/// or null for an inline link. When set, the writer emits [text][label] so the definition elsewhere in the
-		/// document stays the link's source of truth; LinkUrl is then only the resolved target, for clicking.
-		/// </summary>
-		public string LinkLabel { get; set; }
-
 		public override int Length => Text.Length;
-
-		/// <summary>
-		/// True when the two runs would render and write identically apart from their text, so they can be merged.
-		/// </summary>
-		public bool HasSameStyle(RichRun other)
-		{
-			return Bold == other.Bold
-				&& Italic == other.Italic
-				&& Code == other.Code
-				&& Strike == other.Strike
-				&& LinkUrl == other.LinkUrl
-				&& LinkTitle == other.LinkTitle
-				&& LinkLabel == other.LinkLabel;
-		}
 
 		/// <summary>
 		/// A run with this run's style and the given text.
