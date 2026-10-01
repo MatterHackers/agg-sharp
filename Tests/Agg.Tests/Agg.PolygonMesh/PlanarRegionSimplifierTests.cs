@@ -123,7 +123,39 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 		[Test]
 		[Explicit]
-		public async Task AngleProbe()
+		public async Task ReleaseTimings()
+		{
+			var block = new VertexStorage();
+			block.MoveTo(0, 0);
+			block.LineTo(30, 0);
+			block.LineTo(30, 20);
+			block.LineTo(0, 20);
+			block.ClosePolygon();
+			AddCircle(block, new Vector2(8, 11), 4, 48);
+			Time("block dilate", block.Extrude(10), 1);
+			string path = Path.Combine(Environment.GetEnvironmentVariable("HOME") ?? string.Empty, "Development/MatterCAD/StaticData/OEMSettings/SampleParts/Phil A Ment.stl");
+			var phil = StlProcessing.Load(path, CancellationToken.None);
+			Time("phil hollow", phil, -2.2);
+			if (Environment.GetEnvironmentVariable("PLANAR_PHIL_DILATE") == "1")
+			{
+				Time("phil dilate", phil, 1, MeshSdfGrid.MaxResolution);
+			}
+
+			await Task.CompletedTask;
+		}
+
+		private static void Time(string name, Mesh part, double iso, int resolution = 128)
+		{
+			var clock = Stopwatch.StartNew();
+			var source = new MeshSdfGrid(part, Math.Abs(iso), resolution).Extract(iso);
+			double build = clock.Elapsed.TotalMilliseconds;
+			clock.Restart();
+			var simplified = PlanarRegionSimplifier.Simplify(source);
+			Console.WriteLine($"timing {name}: {source.Faces.Count} -> {simplified.Faces.Count}, build {build:0} ms, simplify {clock.Elapsed.TotalMilliseconds:0} ms");
+		}
+
+		[Test]
+		public async Task WorkGrowsLinearlyWithTheMesh()
 		{
 			var outline = new VertexStorage();
 			outline.MoveTo(0, 0);
@@ -131,33 +163,31 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			outline.LineTo(30, 20);
 			outline.LineTo(0, 20);
 			outline.ClosePolygon();
-			var source = new MeshSdfGrid(outline.Extrude(10), 1, 64).Extract(-1);
-			foreach (double angle in new[] { 1e-4, 1e-3, 1e-2 })
+			AddCircle(outline, new Vector2(8, 11), 4, 48);
+			var single = new MeshSdfGrid(outline.Extrude(10), 1, 64).Extract(1);
+
+			// Two copies with their own vertices: every region, boundary and edge twice over. They
+			// share their place, so the bounds and the float rounding are the same as the single's.
+			var doubled = new Mesh();
+			doubled.Vertices.AddRange(single.Vertices);
+			doubled.Vertices.AddRange(single.Vertices);
+
+			int offset = single.Vertices.Count;
+			foreach (var face in single.Faces)
 			{
-				foreach (double distance in new[] { 1e-6, 1e-5, 1e-4 })
-				{
-					Console.WriteLine($"probe {angle} {distance}: {source.Faces.Count} -> {PlanarRegionSimplifier.Simplify(source, angle, distance).Faces.Count}");
-				}
+				doubled.Faces.Add(face.v0, face.v1, face.v2, doubled.Vertices);
 			}
 
-			await Task.CompletedTask;
-		}
+			foreach (var face in single.Faces)
+			{
+				doubled.Faces.Add(face.v0 + offset, face.v1 + offset, face.v2 + offset, doubled.Vertices);
+			}
 
-		[Test]
-		[Explicit]
-		public async Task PhilTiming()
-		{
-			string path = Path.Combine(Environment.GetEnvironmentVariable("HOME") ?? string.Empty, "Development/MatterCAD/StaticData/OEMSettings/SampleParts/Phil A Ment.stl");
-			var part = StlProcessing.Load(path, CancellationToken.None);
-			var clock = Stopwatch.StartNew();
-			var sdf = new MeshSdfGrid(part, 1, MeshSdfGrid.MaxResolution);
-			var source = sdf.Extract(1);
-			double sdfSeconds = clock.Elapsed.TotalSeconds;
-			clock.Restart();
-			var simplified = PlanarRegionSimplifier.Simplify(source);
-			double simplifySeconds = clock.Elapsed.TotalSeconds;
-			Console.WriteLine($"phil: {source.Faces.Count} -> {simplified.Faces.Count}, sdf+extract {sdfSeconds:0.00} s, simplify {simplifySeconds:0.00} s");
-			await Assert.That(simplified.IsManifold()).IsTrue();
+			var simplifiedSingle = PlanarRegionSimplifier.Simplify(single, 1e-4, 1e-7, out long singleWork);
+			var simplifiedDoubled = PlanarRegionSimplifier.Simplify(doubled, 1e-4, 1e-7, out long doubledWork);
+			Console.WriteLine($"work {singleWork} -> {doubledWork}");
+			await Assert.That(simplifiedDoubled.Faces.Count).IsEqualTo(2 * simplifiedSingle.Faces.Count);
+			await Assert.That((double)doubledWork).IsLessThanOrEqualTo(2.5 * singleWork);
 		}
 
 		private static void AddCircle(VertexStorage outline, Vector2 center, double radius, int sides)

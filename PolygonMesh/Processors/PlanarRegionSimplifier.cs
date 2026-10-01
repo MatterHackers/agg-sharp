@@ -62,7 +62,18 @@ namespace MatterHackers.PolygonMesh.Processors
 		/// extent, a vertex may sit off its region's plane.</param>
 		public static Mesh Simplify(Mesh mesh, double angleTolerance = 1e-4, double relativeDistanceTolerance = 1e-7)
 		{
+			return Simplify(mesh, angleTolerance, relativeDistanceTolerance, out _);
+		}
+
+		/// <summary>
+		/// <see cref="Simplify(Mesh, double, double)"/>, also counting its inner-loop steps (faces
+		/// grown, boundary vertices scanned and triangulated, edges checked) so a test can guard that
+		/// the cost stays linear in the mesh.
+		/// </summary>
+		internal static Mesh Simplify(Mesh mesh, double angleTolerance, double relativeDistanceTolerance, out long work)
+		{
 			ArgumentNullException.ThrowIfNull(mesh);
+			work = 0;
 			int faceCount = mesh.Faces.Count;
 			var positions = new Vector3[mesh.Vertices.Count];
 			for (int i = 0; i < positions.Length; i++)
@@ -90,7 +101,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 			// Directed half-edge -> its index (face * 3 + corner). A repeated directed edge is a
 			// non-manifold spot; its faces are kept out of every region.
-			var halfEdges = new Dictionary<long, int>(faceCount * 3);
+			var halfEdges = new Dictionary<long, int>(faceCount * 3, EdgeKeyComparer.Instance);
 			var eligible = new bool[faceCount];
 			Array.Fill(eligible, true);
 			for (int h = 0; h < faceCount * 3; h++)
@@ -132,6 +143,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				while (stack.Count > 0)
 				{
 					int f = stack.Pop();
+					work++;
 					region.Faces.Add(f);
 					for (int corner = 0; corner < 3; corner++)
 					{
@@ -173,50 +185,74 @@ namespace MatterHackers.PolygonMesh.Processors
 				active[r] = regions[r].Faces.Count >= 2 && TraceBoundary(regions[r], r, faceVerts, regionOf, halfEdges);
 			}
 
-			// Retriangulate every active region; a region that fails keeps its faces and the vertex
-			// drops are worked out again, since its neighbours may no longer drop the vertices they
-			// share with it. A new diagonal can also join two boundary vertices a neighbour already
-			// joins, giving an edge four faces; the regions that made such an edge are reverted too.
+			// Retriangulate every active region. One that fails keeps its faces and takes back the
+			// vertices it dropped; only the neighbour that dropped them with it is redone, so a failure
+			// costs its own region and one neighbour, never a fresh pass. A new diagonal can also join
+			// two boundary vertices a neighbour already joins, giving an edge four faces; the regions
+			// that made such an edge fall back the same way.
 			var replacements = new List<int[]>[regions.Count];
-			while (true)
+			var (dropped, firstRegion, secondRegion) = FindDroppedVertices(regions, active, regionOf, faceVerts, positions, distanceTolerance, ref work);
+			var queued = new bool[regions.Count];
+			var pending = new Queue<int>();
+			for (int r = 0; r < regions.Count; r++)
 			{
-				var dropped = FindDroppedVertices(regions, active, regionOf, faceVerts, positions, distanceTolerance);
-				bool failed = false;
-				for (int r = 0; r < regions.Count; r++)
+				if (active[r])
 				{
-					replacements[r] = active[r] ? Retriangulate(regions[r], dropped, faceVerts, positions, distanceTolerance) : null;
-					if (active[r] && replacements[r] == null)
-					{
-						active[r] = false;
-						failed = true;
-					}
+					queued[r] = true;
+					pending.Enqueue(r);
 				}
+			}
 
-				if (failed)
+			void FallBack(int r)
+			{
+				active[r] = false;
+				replacements[r] = null;
+				foreach (var loop in regions[r].Loops)
 				{
-					continue;
-				}
-
-				var result = Assemble(mesh.Vertices, faceCount, faceVerts, regionOf, replacements, out var badEdges);
-				var reverted = false;
-				foreach (var (_, owners) in badEdges)
-				{
-					foreach (var owner in owners)
+					foreach (int vertex in loop)
 					{
-						foreach (int r in owner)
+						if (dropped[vertex])
 						{
-							if (r >= 0 && active[r])
+							dropped[vertex] = false;
+							int other = firstRegion[vertex] == r ? secondRegion[vertex] : firstRegion[vertex];
+							if (active[other] && !queued[other])
 							{
-								active[r] = false;
-								reverted = true;
+								queued[other] = true;
+								pending.Enqueue(other);
 							}
 						}
 					}
 				}
+			}
 
-				if (!reverted)
+			while (true)
+			{
+				while (pending.Count > 0)
 				{
-					return result;
+					int r = pending.Dequeue();
+					queued[r] = false;
+					if (active[r])
+					{
+						replacements[r] = Retriangulate(regions[r], dropped, faceVerts, positions, distanceTolerance, ref work);
+						if (replacements[r] == null)
+						{
+							FallBack(r);
+						}
+					}
+				}
+
+				var clashing = FindClashingRegions(faceCount, faceVerts, regionOf, replacements, ref work);
+				if (clashing.Count == 0)
+				{
+					return BuildMesh(mesh.Vertices, faceCount, faceVerts, regionOf, replacements);
+				}
+
+				foreach (int r in clashing)
+				{
+					if (active[r])
+					{
+						FallBack(r);
+					}
 				}
 			}
 		}
@@ -288,7 +324,7 @@ namespace MatterHackers.PolygonMesh.Processors
 		/// dropped only when all of it lies on the segment between the kept vertices at its ends, and
 		/// both regions see the same run between the same ends, so they drop the same vertices.
 		/// </summary>
-		private static bool[] FindDroppedVertices(List<Region> regions, bool[] active, int[] regionOf, int[] faceVerts, Vector3[] positions, double distanceTolerance)
+		private static (bool[] Dropped, int[] FirstRegion, int[] SecondRegion) FindDroppedVertices(List<Region> regions, bool[] active, int[] regionOf, int[] faceVerts, Vector3[] positions, double distanceTolerance, ref long work)
 		{
 			int vertexCount = positions.Length;
 			var first = new int[vertexCount];
@@ -337,6 +373,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 				foreach (var loop in regions[r].Loops)
 				{
+					work += loop.Count;
 					for (int i = 0; i < loop.Count; i++)
 					{
 						int vertex = loop[i];
@@ -360,6 +397,7 @@ namespace MatterHackers.PolygonMesh.Processors
 
 				foreach (var loop in regions[r].Loops)
 				{
+					work += loop.Count;
 					int anchor = loop.FindIndex(vertex => !dropped[vertex]);
 					if (anchor < 0)
 					{
@@ -404,7 +442,7 @@ namespace MatterHackers.PolygonMesh.Processors
 				}
 			}
 
-			return dropped;
+			return (dropped, first, second);
 		}
 
 		private static double DistanceToSegment(Vector3 point, Vector3 a, Vector3 b)
@@ -415,7 +453,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			return (point - (a + (ab * t))).Length;
 		}
 
-		private static List<int[]> Retriangulate(Region region, bool[] dropped, int[] faceVerts, Vector3[] positions, double distanceTolerance)
+		private static List<int[]> Retriangulate(Region region, bool[] dropped, int[] faceVerts, Vector3[] positions, double distanceTolerance, ref long work)
 		{
 			// Project onto the plane; the faces wind counter-clockwise about the normal, so the
 			// outer loop comes out counter-clockwise and the holes clockwise, as the ear clipper wants.
@@ -426,6 +464,7 @@ namespace MatterHackers.PolygonMesh.Processors
 			int boundaryCount = 0;
 			foreach (var loop in region.Loops)
 			{
+				work += loop.Count;
 				var kept = new List<PolyVert>(loop.Count);
 				foreach (int vertex in loop)
 				{
@@ -498,10 +537,75 @@ namespace MatterHackers.PolygonMesh.Processors
 		}
 
 		/// <summary>
-		/// Builds the output mesh and reports, per undirected edge, which regions (-1 for an unmerged
-		/// face) contribute each of its half-edges, so the caller can find edges that lost manifoldness.
+		/// The merged regions whose new triangles use an edge that is not used exactly once each way
+		/// in the result - a diagonal that repeats an edge elsewhere.
 		/// </summary>
-		private static Mesh Assemble(List<Vector3Float> vertices, int faceCount, int[] faceVerts, int[] regionOf, List<int[]>[] replacements, out List<(long Edge, List<List<int>> Owners)> badEdges)
+		private static HashSet<int> FindClashingRegions(int faceCount, int[] faceVerts, int[] regionOf, List<int[]>[] replacements, ref long work)
+		{
+			// Per directed edge: its use count, and whether a new triangle is one of the users.
+			var directed = new Dictionary<long, (int Count, bool New)>(faceCount * 3, EdgeKeyComparer.Instance);
+			void Use(int a, int b, bool isNew)
+			{
+				long key = EdgeKey(a, b);
+				directed.TryGetValue(key, out var use);
+				directed[key] = (use.Count + 1, use.New || isNew);
+			}
+
+			for (int f = 0; f < faceCount; f++)
+			{
+				int r = regionOf[f];
+				if (r < 0 || replacements[r] == null)
+				{
+					Use(faceVerts[3 * f], faceVerts[(3 * f) + 1], false);
+					Use(faceVerts[(3 * f) + 1], faceVerts[(3 * f) + 2], false);
+					Use(faceVerts[(3 * f) + 2], faceVerts[3 * f], false);
+				}
+			}
+
+			foreach (var triangles in replacements)
+			{
+				if (triangles != null)
+				{
+					foreach (var t in triangles)
+					{
+						Use(t[0], t[1], true);
+						Use(t[1], t[2], true);
+						Use(t[2], t[0], true);
+					}
+				}
+			}
+
+			work += directed.Count;
+			var badEdges = new HashSet<long>();
+			foreach (var (key, use) in directed)
+			{
+				directed.TryGetValue(EdgeKey((int)(uint)key, (int)(key >> 32)), out var reverse);
+				if ((use.New || reverse.New) && (use.Count != 1 || reverse.Count != 1))
+				{
+					badEdges.Add(key);
+				}
+			}
+
+			var clashing = new HashSet<int>();
+			if (badEdges.Count == 0)
+			{
+				return clashing;
+			}
+
+			bool Bad(int a, int b) => badEdges.Contains(EdgeKey(a, b)) || badEdges.Contains(EdgeKey(b, a));
+			for (int r = 0; r < replacements.Length; r++)
+			{
+				if (replacements[r] != null && replacements[r].Exists(t => Bad(t[0], t[1]) || Bad(t[1], t[2]) || Bad(t[2], t[0])))
+				{
+					clashing.Add(r);
+				}
+			}
+
+			return clashing;
+		}
+
+		/// <summary>Builds the mesh from the kept vertices only, renumbered in their old order.</summary>
+		private static Mesh BuildMesh(List<Vector3Float> vertices, int faceCount, int[] faceVerts, int[] regionOf, List<int[]>[] replacements)
 		{
 			var triangles = new List<(int A, int B, int C, int Region)>();
 			for (int f = 0; f < faceCount; f++)
@@ -513,58 +617,17 @@ namespace MatterHackers.PolygonMesh.Processors
 				}
 			}
 
-			for (int r = 0; r < replacements.Length; r++)
+			foreach (var replacement in replacements)
 			{
-				if (replacements[r] != null)
+				if (replacement != null)
 				{
-					foreach (var t in replacements[r])
+					foreach (var t in replacement)
 					{
-						triangles.Add((t[0], t[1], t[2], r));
+						triangles.Add((t[0], t[1], t[2], 0));
 					}
 				}
 			}
 
-			// An edge is good when each direction is used exactly once; on a bad one, every region
-			// that used it is a suspect.
-			var directed = new Dictionary<long, List<int>>(triangles.Count * 3);
-			foreach (var (a, b, c, region) in triangles)
-			{
-				AddDirected(directed, a, b, region);
-				AddDirected(directed, b, c, region);
-				AddDirected(directed, c, a, region);
-			}
-
-			badEdges = new List<(long, List<List<int>>)>();
-			foreach (var (key, owners) in directed)
-			{
-				int a = (int)(key >> 32);
-				int b = (int)(uint)key;
-				directed.TryGetValue(EdgeKey(b, a), out var reverse);
-				bool introduced = owners.Exists(r => r >= 0) || (reverse != null && reverse.Exists(r => r >= 0));
-				if (introduced && (owners.Count != 1 || reverse == null || reverse.Count != 1))
-				{
-					badEdges.Add((key, new List<List<int>> { owners, reverse ?? new List<int>() }));
-				}
-			}
-
-			return BuildMesh(vertices, triangles);
-		}
-
-		private static void AddDirected(Dictionary<long, List<int>> directed, int a, int b, int region)
-		{
-			long key = EdgeKey(a, b);
-			if (!directed.TryGetValue(key, out var owners))
-			{
-				owners = new List<int>(1);
-				directed[key] = owners;
-			}
-
-			owners.Add(region);
-		}
-
-		/// <summary>Builds the mesh from the kept vertices only, renumbered in their old order.</summary>
-		private static Mesh BuildMesh(List<Vector3Float> vertices, List<(int A, int B, int C, int Region)> triangles)
-		{
 			var newIndex = new int[vertices.Count];
 			Array.Fill(newIndex, -1);
 			var keptVertices = new List<Vector3Float>();
@@ -588,6 +651,19 @@ namespace MatterHackers.PolygonMesh.Processors
 			}
 
 			return result;
+		}
+
+		/// <summary>
+		/// Hashes a packed (a, b) vertex pair well. long's own hash is a ^ b, which neighbouring
+		/// vertex indices collide on by the thousand; that made the edge maps quadratic.
+		/// </summary>
+		private sealed class EdgeKeyComparer : IEqualityComparer<long>
+		{
+			public static readonly EdgeKeyComparer Instance = new EdgeKeyComparer();
+
+			public bool Equals(long x, long y) => x == y;
+
+			public int GetHashCode(long key) => (int)(((ulong)key * 0x9E3779B97F4A7C15UL) >> 32);
 		}
 
 		private sealed class Region
