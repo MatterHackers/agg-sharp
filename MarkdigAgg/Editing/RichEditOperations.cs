@@ -70,6 +70,7 @@ namespace Markdig.Agg.Editing
 				return RichSelection.At(position);
 			}
 
+			AddParagraphIfEmpty(document);
 			if (IsCodeOrTable(document.Blocks[position.BlockIndex]))
 			{
 				return RichTableCodeOperations.InsertText(document, position, text, style);
@@ -114,6 +115,11 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		public static RichSelection DeleteSelection(RichDocument document, RichSelection selection)
 		{
+			if (document.Blocks.Count == 0)
+			{
+				return RichSelection.At(default);
+			}
+
 			if (selection.WholeBlock)
 			{
 				int index = selection.Anchor.BlockIndex;
@@ -128,6 +134,11 @@ namespace Markdig.Agg.Editing
 			var start = DocPosition.Min(a, b);
 			var end = DocPosition.Max(a, b);
 			var blocks = document.Blocks;
+			if (blocks.Count == 0)
+			{
+				return RichSelection.At(default);
+			}
+
 			if (start == end)
 			{
 				return RichSelection.At(start);
@@ -197,6 +208,7 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		public static RichSelection SplitBlock(RichDocument document, DocPosition position)
 		{
+			AddParagraphIfEmpty(document);
 			var blocks = document.Blocks;
 			int index = position.BlockIndex;
 			var block = blocks[index];
@@ -255,6 +267,11 @@ namespace Markdig.Agg.Editing
 		public static RichSelection Backspace(RichDocument document, DocPosition position)
 		{
 			var blocks = document.Blocks;
+			if (blocks.Count == 0)
+			{
+				return RichSelection.At(default);
+			}
+
 			int index = position.BlockIndex;
 			var block = blocks[index];
 			if (IsCodeOrTable(block))
@@ -329,6 +346,11 @@ namespace Markdig.Agg.Editing
 		public static RichSelection Delete(RichDocument document, DocPosition position)
 		{
 			var blocks = document.Blocks;
+			if (blocks.Count == 0)
+			{
+				return RichSelection.At(default);
+			}
+
 			int index = position.BlockIndex;
 			var block = blocks[index];
 			if (IsCodeOrTable(block))
@@ -382,6 +404,12 @@ namespace Markdig.Agg.Editing
 
 		internal static DocPosition EndOf(RichDocument document, int index)
 		{
+			if (index >= document.Blocks.Count)
+			{
+				// Only an empty document has no block here; its one caret stop is the start.
+				return new DocPosition(index, 0);
+			}
+
 			var block = document.Blocks[index];
 			if (block.Kind == RichBlockKind.Table && block.TableRows.Count > 0)
 			{
@@ -391,6 +419,17 @@ namespace Markdig.Agg.Editing
 			}
 
 			return new DocPosition(index, block.TextLength());
+		}
+
+		/// <summary>
+		/// An empty document (no blocks at all) gets one empty paragraph so typing or Enter has somewhere to go.
+		/// </summary>
+		private static void AddParagraphIfEmpty(RichDocument document)
+		{
+			if (document.Blocks.Count == 0)
+			{
+				document.Blocks.Add(new RichBlock { Kind = RichBlockKind.Paragraph, Dirty = true });
+			}
 		}
 
 		private static bool IsCodeOrTable(RichBlock block)
@@ -518,7 +557,7 @@ namespace Markdig.Agg.Editing
 			RemoveBlockRange(document, first, last - first + 1);
 			if (blocks.Count == 0)
 			{
-				blocks.Add(new RichBlock { Kind = RichBlockKind.Paragraph, Dirty = true });
+				AddParagraphIfEmpty(document);
 				return RichSelection.At(new DocPosition(0, 0));
 			}
 
@@ -570,49 +609,11 @@ namespace Markdig.Agg.Editing
 			{
 				var before = blocks[first - 1];
 				var after = blocks[first];
-				ForceRegenerationIfJoined(before.ListGroup, after.ListGroup);
-				ForceRegenerationIfJoined(before.QuoteGroup, after.QuoteGroup);
+				RichGroupRepair.ForceRegenerationIfJoined(before.ListGroup, after.ListGroup);
+				RichGroupRepair.ForceRegenerationIfJoined(before.QuoteGroup, after.QuoteGroup);
 			}
 
-			NormalizeListDepths(document);
-		}
-
-		private static void ForceRegenerationIfJoined(RichBlockGroup before, RichBlockGroup after)
-		{
-			if (before != null && after != null && before != after)
-			{
-				// OriginalMemberCount 0 never matches a member count, so the writer regenerates the group.
-				before.OriginalMemberCount = 0;
-				after.OriginalMemberCount = 0;
-			}
-		}
-
-		/// <summary>
-		/// Lifts list items so each list starts at Depth 0 and no item is more than one level deeper than the
-		/// item before it - deeper has no markdown form. Removing a parent item's line is what breaks this.
-		/// </summary>
-		private static void NormalizeListDepths(RichDocument document)
-		{
-			RichListGroup group = null;
-			int previousDepth = -1;
-			foreach (var block in document.Blocks)
-			{
-				if (block.ListGroup == null)
-				{
-					group = null;
-					continue;
-				}
-
-				int allowed = block.ListGroup == group ? previousDepth + 1 : 0;
-				if (block.List.Depth > allowed)
-				{
-					block.List.Depth = allowed;
-					block.Dirty = true;
-				}
-
-				group = block.ListGroup;
-				previousDepth = block.List.Depth;
-			}
+			RichGroupRepair.NormalizeListDepths(document);
 		}
 
 		/// <summary>
@@ -625,83 +626,37 @@ namespace Markdig.Agg.Editing
 		{
 			var blocks = document.Blocks;
 			var block = blocks[index];
-			var group = block.ListGroup;
 			block.Dirty = true;
 			int depth = block.List.Depth;
 			if (depth > 0)
 			{
-				for (int i = index + 1; i < blocks.Count && blocks[i].ListGroup == group && blocks[i].List.Depth > depth; i++)
+				int subtreeEnd = RichGroupRepair.SubtreeEnd(blocks, index);
+				for (int i = index; i <= subtreeEnd; i++)
 				{
 					blocks[i].List.Depth--;
 					blocks[i].Dirty = true;
 				}
 
-				block.List.Depth--;
+				// Exactly what Shift-Tab (RichBlockOperations.Outdent) does, so both give the same list.
+				RichGroupRepair.AdoptLevelStyle(blocks, index);
+				RichGroupRepair.Repair(document, index, subtreeEnd);
 				return;
 			}
 
-			var follower = index + 1 < blocks.Count ? blocks[index + 1] : null;
-			bool followerWasMember = follower != null && follower.ListGroup == group;
+			// The items after it become a list of their own; a nested follower (its child) is lifted with its run.
 			block.Kind = RichBlockKind.Paragraph;
 			block.List = null;
 			block.ListGroup = null;
-			SplitOffFollowingMembers(blocks, index, group, b => b.ListGroup, (b, g) => b.ListGroup = (RichListGroup)g);
-			if (!followerWasMember || follower.List.Depth == 0)
-			{
-				return;
-			}
-
-			// The follower was this item's child (the split-off tail, or the rest of the list when it left from
-			// the front); lift the whole run by its depth.
-			var followers = follower.ListGroup;
-			int shift = follower.List.Depth;
-			for (int i = index + 1; i < blocks.Count && blocks[i].ListGroup == followers; i++)
-			{
-				blocks[i].List.Depth = Math.Max(0, blocks[i].List.Depth - shift);
-				blocks[i].Dirty = true;
-			}
+			RichGroupRepair.Repair(document, index, index);
 		}
 
 		private static void LeaveQuote(RichDocument document, int index)
 		{
 			var block = document.Blocks[index];
-			var group = block.QuoteGroup;
 			block.Kind = RichBlockKind.Paragraph;
 			block.QuoteGroup = null;
 			block.Dirty = true;
-			SplitOffFollowingMembers(document.Blocks, index, group, b => b.QuoteGroup, (b, g) => b.QuoteGroup = (RichQuoteGroup)g);
-		}
-
-		/// <summary>
-		/// After the block at <paramref name="index"/> left <paramref name="group"/> from the middle, gives the
-		/// members after it a new group of the same kind. One group object spanning a gap would read to the writer
-		/// as one list or quote with a stranger inside; two groups write as the two lists or quotes the user sees.
-		/// The new group has OriginalMemberCount 0, so it is always regenerated.
-		/// </summary>
-		private static void SplitOffFollowingMembers(
-			List<RichBlock> blocks,
-			int index,
-			RichBlockGroup group,
-			Func<RichBlock, RichBlockGroup> getGroup,
-			Action<RichBlock, RichBlockGroup> setGroup)
-		{
-			if (group == null || index == 0 || getGroup(blocks[index - 1]) != group)
-			{
-				// Leaving from the front: the remaining members are still one contiguous run.
-				return;
-			}
-
-			RichBlockGroup tail = null;
-			for (int i = index + 1; i < blocks.Count && getGroup(blocks[i]) == group; i++)
-			{
-				if (tail == null)
-				{
-					tail = group.Clone();
-					tail.OriginalMemberCount = 0;
-				}
-
-				setGroup(blocks[i], tail);
-			}
+			RichGroupRepair.SplitAllIntoRuns(document.Blocks);
 		}
 
 		/// <summary>

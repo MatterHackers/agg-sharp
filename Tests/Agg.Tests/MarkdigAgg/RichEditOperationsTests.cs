@@ -492,5 +492,26 @@ namespace Markdig.Agg.Tests
 			await Assert.That(document.Blocks.Any(b => b.Dirty)).IsFalse();
 			await Assert.That(selection).IsEqualTo(RichSelection.At(P(1, 1)));
 		}
+
+		[Test]
+		public async Task AnEmptyDocumentTakesTypingAndIgnoresDeletes()
+		{
+			var document = RichMarkdownParser.Parse("");
+			await Assert.That(RichEditOperations.Backspace(document, P(0, 0))).IsEqualTo(RichSelection.At(P(0, 0)));
+			await Assert.That(RichEditOperations.Delete(document, P(0, 0))).IsEqualTo(RichSelection.At(P(0, 0)));
+			await Assert.That(RichEditOperations.DeleteRange(document, P(0, 0), P(0, 1))).IsEqualTo(RichSelection.At(P(0, 0)));
+			await Assert.That(RichEditOperations.DeleteSelection(document, RichEditOperations.WholeBlock(document, 0))).IsEqualTo(RichSelection.At(P(0, 0)));
+			await Assert.That(document.Blocks.Count).IsEqualTo(0);
+
+			// Typing into nothing starts the paragraph a first-time user expects to be there.
+			var typed = RichEditOperations.InsertText(document, P(0, 0), "hi");
+			await Assert.That(Texts(document)).IsEqualTo("hi");
+			await Assert.That(document.Blocks[0].Kind).IsEqualTo(RichBlockKind.Paragraph);
+			await Assert.That(typed).IsEqualTo(RichSelection.At(P(0, 2)));
+
+			var entered = RichMarkdownParser.Parse("");
+			await Assert.That(RichEditOperations.SplitBlock(entered, P(0, 0))).IsEqualTo(RichSelection.At(P(1, 0)));
+			await Assert.That(entered.Blocks.Count).IsEqualTo(2);
+		}
 	}
 }
