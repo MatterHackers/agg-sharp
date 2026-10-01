@@ -28,27 +28,102 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Markdig.Agg.Editing
 {
 	/// <summary>
-	/// Turns a <see cref="RichDocument"/> back into markdown. Unedited blocks are copied verbatim, so a document
-	/// loaded and saved with no edits is byte-identical.
+	/// Turns a <see cref="RichDocument"/> back into markdown. Unedited blocks and unchanged groups (see
+	/// <see cref="RichBlockGroup"/>) are copied verbatim, so a document loaded and saved with no edits is
+	/// byte-identical.
 	/// </summary>
 	public static class RichMarkdownWriter
 	{
 		public static string Write(RichDocument document)
 		{
+			var blocks = document.Blocks;
 			var markdown = new StringBuilder(document.Frontmatter);
-			foreach (var block in document.Blocks)
+			var checkedGroups = new HashSet<RichBlockGroup>();
+			for (int i = 0; i < blocks.Count; i++)
 			{
+				var block = blocks[i];
+				foreach (var group in GroupsOf(block))
+				{
+					if (checkedGroups.Add(group) && !IsOriginal(blocks, i, group))
+					{
+						// See RichBlockGroup: a changed group is regenerated whole, which is its own step of the plan.
+						throw new NotImplementedException($"Writing a changed {group.GetType().Name} is not implemented yet.");
+					}
+				}
+
 				markdown.Append(block.SeparatorBefore);
+
+				// An original group's wrapper bytes go around its first and last members.
+				var align = block.AlignGroup;
+				if (align != null && (i == 0 || blocks[i - 1].AlignGroup != align))
+				{
+					markdown.Append(align.OpenSource);
+				}
+
 				markdown.Append(block.Dirty ? WriteBlock(block) : block.OriginalSource);
+				if (align != null && (i == blocks.Count - 1 || blocks[i + 1].AlignGroup != align))
+				{
+					markdown.Append(align.CloseSource);
+				}
 			}
 
 			markdown.Append(document.TrailingText);
 			return markdown.ToString();
+		}
+
+		private static IEnumerable<RichBlockGroup> GroupsOf(RichBlock block)
+		{
+			if (block.AlignGroup != null)
+			{
+				yield return block.AlignGroup;
+			}
+
+			if (block.QuoteGroup != null)
+			{
+				yield return block.QuoteGroup;
+			}
+
+			if (block.ListGroup != null)
+			{
+				yield return block.ListGroup;
+			}
+		}
+
+		/// <summary>
+		/// True when the group, first met at <paramref name="first"/>, is still exactly as parsed: one contiguous
+		/// run of its original member count, every member clean and, for alignment, still at the group's alignment.
+		/// </summary>
+		private static bool IsOriginal(List<RichBlock> blocks, int first, RichBlockGroup group)
+		{
+			int members = 0;
+			int runEnd = first;
+			for (int i = first; i < blocks.Count; i++)
+			{
+				var block = blocks[i];
+				if (!GroupsOf(block).Contains(group))
+				{
+					continue;
+				}
+
+				bool contiguous = i == runEnd;
+				bool aligned = group is not RichAlignGroup align || block.Alignment == align.Alignment;
+				if (!contiguous || block.Dirty || !aligned)
+				{
+					return false;
+				}
+
+				members++;
+				runEnd = i + 1;
+			}
+
+			return members == group.OriginalMemberCount;
 		}
 
 		/// <summary>

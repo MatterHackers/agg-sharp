@@ -65,10 +65,39 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		public RichDocument Clone()
 		{
+			// Each group is cloned once and shared among the copied members, so the copy's blocks group exactly
+			// as the original's do while editing one document's group never touches the other's.
+			var groups = new Dictionary<RichBlockGroup, RichBlockGroup>();
+			T Remap<T>(T group)
+				where T : RichBlockGroup
+			{
+				if (group == null)
+				{
+					return null;
+				}
+
+				if (!groups.TryGetValue(group, out var copy))
+				{
+					copy = group.Clone();
+					groups.Add(group, copy);
+				}
+
+				return (T)copy;
+			}
+
+			var blocks = Blocks.ConvertAll(block =>
+			{
+				var copy = block.Clone();
+				copy.AlignGroup = Remap(block.AlignGroup);
+				copy.QuoteGroup = Remap(block.QuoteGroup);
+				copy.ListGroup = Remap(block.ListGroup);
+				return copy;
+			});
+
 			return new RichDocument
 			{
 				Frontmatter = Frontmatter,
-				Blocks = Blocks.ConvertAll(block => block.Clone()),
+				Blocks = blocks,
 				TrailingText = TrailingText,
 			};
 		}

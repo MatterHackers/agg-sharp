@@ -75,7 +75,8 @@ namespace Markdig.Agg.Editing
 		public char Marker { get; set; } = '-';
 
 		/// <summary>
-		/// The number an ordered list starts at; only meaningful on the first item of an ordered list.
+		/// The number an ordered list (or nested sublist) starts at. Every item of the (sub)list carries it, so
+		/// deleting the first item keeps the start.
 		/// </summary>
 		public int StartNumber { get; set; } = 1;
 
@@ -109,7 +110,8 @@ namespace Markdig.Agg.Editing
 		public RichListInfo List { get; set; }
 
 		/// <summary>
-		/// Paragraph and heading alignment, stored in markdown as a &lt;div align&gt; wrapper.
+		/// Paragraph and heading alignment, stored in markdown as a &lt;div align&gt; wrapper. An edit changes
+		/// this; <see cref="AlignGroup"/> keeps the wrapper's parsed alignment.
 		/// </summary>
 		public RichAlignment Alignment { get; set; }
 
@@ -138,6 +140,12 @@ namespace Markdig.Agg.Editing
 
 		/// <summary>
 		/// The exact markdown this block was parsed from; written back verbatim while the block is not Dirty.
+		/// A ListItem's source runs from its marker to the end of its paragraph (its indentation and any nested
+		/// items' lines are not in it: indentation is whitespace in <see cref="SeparatorBefore"/>, nested items
+		/// are blocks of their own). A Quote's source carries its own "&gt; " prefixes; for the second and later
+		/// paragraphs of one blockquote it also starts with the "&gt;" line that separates them from the paragraph
+		/// before, so the separator between them stays a bare line break. Which quote or list a block belongs to
+		/// is <see cref="QuoteGroup"/> / <see cref="ListGroup"/>, never inferred from these bytes.
 		/// </summary>
 		public string OriginalSource { get; set; } = "";
 
@@ -145,10 +153,25 @@ namespace Markdig.Agg.Editing
 		/// The markdown between the previous block (or the frontmatter, for the first block) and this one,
 		/// usually blank lines. Kept on the block so inserting and deleting blocks keeps each gap with its block.
 		/// Holds only blank/whitespace text: alignment wrappers (&lt;div align&gt; / &lt;/div&gt;) are never
-		/// stored here; the writer derives them from <see cref="Alignment"/> (where an untouched wrapper's original
-		/// bytes live is the parser's call).
+		/// stored here; an untouched wrapper's original bytes live on <see cref="AlignGroup"/>.
 		/// </summary>
 		public string SeparatorBefore { get; set; } = "";
+
+		/// <summary>
+		/// The &lt;div align&gt; wrapper this paragraph or heading sits in, shared with the other members; null
+		/// outside a wrapper. See <see cref="RichBlockGroup"/> for when its original bytes are written.
+		/// </summary>
+		public RichAlignGroup AlignGroup { get; set; }
+
+		/// <summary>
+		/// The blockquote this Quote block is a paragraph of, shared with its other paragraphs.
+		/// </summary>
+		public RichQuoteGroup QuoteGroup { get; set; }
+
+		/// <summary>
+		/// The top-level list this ListItem belongs to, shared with every item at any depth of that list.
+		/// </summary>
+		public RichListGroup ListGroup { get; set; }
 
 		/// <summary>
 		/// True once an edit touched this block; the writer regenerates dirty blocks and copies the rest verbatim.
@@ -195,6 +218,10 @@ namespace Markdig.Agg.Editing
 			}
 		}
 
+		/// <summary>
+		/// A deep copy of the block's own content. Group references are kept, so the copy is still a member of
+		/// the same groups; <see cref="RichDocument.Clone"/> remaps them to cloned groups.
+		/// </summary>
 		public RichBlock Clone()
 		{
 			var copy = (RichBlock)MemberwiseClone();

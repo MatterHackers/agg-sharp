@@ -37,7 +37,8 @@ namespace Markdig.Agg.Editing
 	/// <summary>
 	/// Reads markdown into a <see cref="RichDocument"/> whose blocks partition the source exactly, so
 	/// <see cref="RichMarkdownWriter.Write"/> of an unedited document gives back the same bytes.
-	/// Paragraphs and headings are modelled; every other block is Raw (shown rendered, edited in the Markdown tab).
+	/// Paragraphs, headings, single-paragraph list items, plain-paragraph quotes and &lt;div align&gt; groups are
+	/// modelled; every other block is Raw (shown rendered, edited in the Markdown tab).
 	/// </summary>
 	public class RichMarkdownParser
 	{
@@ -54,6 +55,10 @@ namespace Markdig.Agg.Editing
 
 		// Whitespace seen since the last block; it becomes the next block's SeparatorBefore (or the TrailingText).
 		private string pendingSeparator = "";
+
+		// Raw blocks parsed from a Markdig HtmlBlock: only these can be an alignment wrapper's tags (an indented
+		// code block holding "<div align>" text must stay code).
+		private readonly HashSet<RichBlock> htmlBlocks = new HashSet<RichBlock>();
 
 		private RichMarkdownParser()
 		{
@@ -84,6 +89,19 @@ namespace Markdig.Agg.Editing
 					continue;
 				}
 
+				// A list or quote of plain paragraphs becomes one block per paragraph; anything richer is one Raw block.
+				var segments = block switch
+				{
+					ListBlock list => ListSegments(list, cursor),
+					QuoteBlock quote => QuoteSegments(quote, cursor),
+					_ => null,
+				};
+				if (segments != null)
+				{
+					cursor = AddSegments(cursor, segments);
+					continue;
+				}
+
 				int start = Math.Max(block.Span.Start, cursor);
 				// Markdig span ends are inclusive.
 				int end = Math.Min(block.Span.End + 1, body.Length);
@@ -108,7 +126,217 @@ namespace Markdig.Agg.Editing
 
 			AddGap(cursor, body.Length);
 			document.TrailingText = pendingSeparator;
+			RichAlignGroups.Fold(document.Blocks, htmlBlocks);
 		}
+
+		/// <summary>
+		/// One modelled block cut out of a list or quote: the source range it owns and the paragraph it reads.
+		/// </summary>
+		private record Segment(int Start, int End, ParagraphBlock Paragraph, RichBlockKind Kind, RichListInfo List);
+
+		/// <summary>
+		/// One ListItem segment per item, nested lists flattened in source order with their Depth, or null when
+		/// any item holds more than one paragraph or anything but a paragraph and nested lists. Null makes the
+		/// whole top-level list one Raw block: splitting a list around an unmodelled item would let an edit to
+		/// its neighbours renumber or re-indent markdown the rich view cannot show.
+		/// </summary>
+		private List<Segment> ListSegments(ListBlock list, int cursor)
+		{
+			var segments = new List<Segment>();
+			if (!AddListSegments(list, 0, segments) || segments.Count == 0 || segments[0].Start < cursor)
+			{
+				return null;
+			}
+
+			return GapsAreWhitespace(segments) ? segments : null;
+		}
+
+		private bool AddListSegments(ListBlock list, int depth, List<Segment> segments)
+		{
+			// Without the ListExtras extension an ordered list's BulletType is always '1'; anything else is a
+			// form the writer could not reproduce.
+			int startNumber = 1;
+			if (list.IsOrdered && (list.BulletType != '1' || !int.TryParse(list.OrderedStart ?? "1", out startNumber)))
+			{
+				return false;
+			}
+
+			foreach (var child in list)
+			{
+				if (child is not ListItemBlock item
+					|| item.Count == 0
+					|| item[0].GetType() != typeof(ParagraphBlock))
+				{
+					return false;
+				}
+
+				var paragraph = (ParagraphBlock)item[0];
+				int paragraphStart = paragraph.Span.Start;
+
+				// The item starts at its marker; indentation before it is whitespace for the separator.
+				int itemStart = SkipSpaces(item.Span.Start);
+
+				// Reference definitions at the top of the item would sit in its source but not its inlines.
+				if (itemStart >= paragraphStart || ParagraphTextStart(paragraph, paragraphStart) != paragraphStart)
+				{
+					return false;
+				}
+
+				segments.Add(new Segment(itemStart, ParagraphEnd(paragraph), paragraph, RichBlockKind.ListItem, new RichListInfo
+				{
+					Ordered = list.IsOrdered,
+					Depth = depth,
+					Marker = list.IsOrdered ? list.OrderedDelimiter : list.BulletType,
+					StartNumber = startNumber,
+				}));
+
+				for (int i = 1; i < item.Count; i++)
+				{
+					if (item[i] is not ListBlock nested || !AddListSegments(nested, depth + 1, segments))
+					{
+						return false;
+					}
+				}
+			}
+
+			return true;
+		}
+
+		/// <summary>
+		/// One Quote segment per paragraph of a blockquote whose children are all paragraphs, or null (Raw) for
+		/// nested quotes, lists, code and the like. Each segment's source keeps its "&gt;" prefixes. The "&gt;"
+		/// line between two paragraphs starts the second segment, leaving a bare line break as the separator,
+		/// and "&gt;" lines closing the quote end the last segment.
+		/// </summary>
+		private List<Segment> QuoteSegments(QuoteBlock quote, int cursor)
+		{
+			int quoteStart = SkipSpaces(quote.Span.Start);
+			int quoteEnd = Math.Min(quote.Span.End + 1, body.Length);
+			if (quote.Count == 0 || quoteStart < cursor || quoteStart >= body.Length || body[quoteStart] != '>')
+			{
+				return null;
+			}
+
+			var segments = new List<Segment>();
+			int start = quoteStart;
+			foreach (var child in quote)
+			{
+				if (child.GetType() != typeof(ParagraphBlock))
+				{
+					return null;
+				}
+
+				var paragraph = (ParagraphBlock)child;
+				int paragraphStart = paragraph.Span.Start;
+				if (segments.Count > 0)
+				{
+					int lineBreak = body.IndexOf('\n', segments[^1].End);
+					if (lineBreak < 0 || lineBreak >= paragraphStart)
+					{
+						return null;
+					}
+
+					start = lineBreak + 1;
+				}
+
+				if (start > paragraphStart
+					|| !OnlyQuoteMarkers(start, paragraphStart)
+					|| ParagraphTextStart(paragraph, paragraphStart) != paragraphStart)
+				{
+					return null;
+				}
+
+				segments.Add(new Segment(start, ParagraphEnd(paragraph), paragraph, RichBlockKind.Quote, null));
+			}
+
+			int lastEnd = segments[^1].End;
+			if (quoteEnd > lastEnd)
+			{
+				if (!OnlyQuoteMarkers(lastEnd, quoteEnd))
+				{
+					return null;
+				}
+
+				int lastMarker = body.LastIndexOf('>', quoteEnd - 1, quoteEnd - lastEnd);
+				if (lastMarker >= 0)
+				{
+					segments[^1] = segments[^1] with { End = lastMarker + 1 };
+				}
+			}
+
+			return GapsAreWhitespace(segments) ? segments : null;
+		}
+
+		/// <summary>
+		/// Adds the segments' blocks: the text before the first is an ordinary gap, the whitespace between them
+		/// separators. Returns where the last one ends.
+		/// </summary>
+		private int AddSegments(int cursor, List<Segment> segments)
+		{
+			AddGap(cursor, segments[0].Start);
+
+			// The segments of one call are one top-level list or one blockquote.
+			RichListGroup listGroup = segments[0].Kind == RichBlockKind.ListItem ? new RichListGroup { OriginalMemberCount = segments.Count } : null;
+			RichQuoteGroup quoteGroup = segments[0].Kind == RichBlockKind.Quote ? new RichQuoteGroup { OriginalMemberCount = segments.Count } : null;
+			for (int i = 0; i < segments.Count; i++)
+			{
+				var segment = segments[i];
+				if (i > 0)
+				{
+					pendingSeparator += body.Substring(segments[i - 1].End, segment.Start - segments[i - 1].End);
+				}
+
+				var block = BuildBlock(segment.Paragraph, segment.Start, segment.End);
+				block.Kind = segment.Kind;
+				block.List = segment.List;
+				block.ListGroup = listGroup;
+				block.QuoteGroup = quoteGroup;
+				document.Blocks.Add(block);
+			}
+
+			return segments[^1].End;
+		}
+
+		private bool GapsAreWhitespace(List<Segment> segments)
+		{
+			for (int i = 1; i < segments.Count; i++)
+			{
+				int gapStart = segments[i - 1].End;
+				int gapEnd = segments[i].Start;
+				if (gapEnd < gapStart || !string.IsNullOrWhiteSpace(body.Substring(gapStart, gapEnd - gapStart)))
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		private bool OnlyQuoteMarkers(int start, int end)
+		{
+			for (int i = start; i < end; i++)
+			{
+				if (body[i] != '>' && !char.IsWhiteSpace(body[i]))
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		private int SkipSpaces(int position)
+		{
+			while (position < body.Length && (body[position] == ' ' || body[position] == '\t'))
+			{
+				position++;
+			}
+
+			return position;
+		}
+
+		// Markdig span ends are inclusive.
+		private int ParagraphEnd(ParagraphBlock paragraph) => Math.Min(paragraph.Span.End + 1, body.Length);
 
 		/// <summary>
 		/// Markdig ends an ATX heading's span at its text, leaving a closing "#" sequence and trailing spaces
@@ -229,6 +457,10 @@ namespace Markdig.Agg.Editing
 				OriginalSource = body.Substring(start, end - start),
 			};
 			pendingSeparator = "";
+			if (block is HtmlBlock)
+			{
+				htmlBlocks.Add(result);
+			}
 
 			// Exact types only: extension blocks deriving from these (tables, for one) are not plain text.
 			bool isParagraph = block.GetType() == typeof(ParagraphBlock);

@@ -68,6 +68,24 @@ namespace Markdig.Agg.Tests
 			yield return "* [ ] task\n* [x] done\n\n\n";
 			yield return "Title link [t](/u \"title\")\n";
 			yield return "trailing spaces   \n\n  \t\n";
+
+			// Lists, quotes and alignment groups (see RichMarkdownParserBlockTests for their shapes).
+			yield return "- a\n  - b\n    - c\n  - d\n- e\n";
+			yield return "3. three\n4. four\n\n10) ten\n11) eleven\n";
+			yield return "* star\n* star two\n\n+ plus\n+ plus two\r\n";
+			yield return "- loose\n\n- items\n\n\n- far apart\n";
+			yield return "- [ ] task\n- [x] done\n  wrapped line\n";
+			yield return "- one para\n\n  second para\n- next\n";
+			yield return "- item\n\n  ```\n  code\n  ```\n";
+			yield return "> one para\n> two lines\n";
+			yield return "> first\n>\n> second\n>\n";
+			yield return "  > indented\r\n  >\r\n  > quote\r\n";
+			yield return "> outer\n>\n> > nested\n";
+			yield return "<div align=\"center\">\n\n# Title\n\nCentered **text**\n\nMore\n\n</div>\n\nAfter\n";
+			yield return "<div align=\"right\">\r\n\r\nRight\r\n\r\n</div>";
+			yield return "<div align=\"center\">\n\nNever closed\n";
+			yield return "<div>\n\n<div align=\"center\">\n\nNested\n\n</div>\n\n</div>\n";
+			yield return "<div align=\"center\">\n\n- list\n\n</div>\n";
 		}
 
 		[Test]
@@ -230,9 +248,9 @@ namespace Markdig.Agg.Tests
 		[Test]
 		public async Task UnmodelledBlocksAreRaw()
 		{
-			var document = RichMarkdownParser.Parse("- a\n\n> q\n\n```\nc\n```\n\n---\n\n| a |\n|---|\n| 1 |\n\n<div>\nx\n</div>\n");
+			var document = RichMarkdownParser.Parse("```\nc\n```\n\n---\n\n| a |\n|---|\n| 1 |\n\n<div>\nx\n</div>\n");
 			await Assert.That(document.Blocks.All(b => b.Kind == RichBlockKind.Raw)).IsTrue();
-			await Assert.That(document.Blocks.Count).IsEqualTo(6);
+			await Assert.That(document.Blocks.Count).IsEqualTo(4);
 		}
 
 		[Test]
