@@ -189,6 +189,13 @@ namespace Markdig.Agg.Editing
 				}
 			}
 
+			// A hard break with nothing after it (Shift+Enter at a paragraph's end, not yet typed past) means nothing
+			// in markdown: written, its backslash would read back as literal text.
+			while (inlines.Count > 0 && inlines[^1] is InlineAtom { Kind: InlineAtomKind.HardBreak })
+			{
+				inlines.RemoveAt(inlines.Count - 1);
+			}
+
 			RichInlines.MergeAdjacent(inlines);
 			return inlines;
 		}

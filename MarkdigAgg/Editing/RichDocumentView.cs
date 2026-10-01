@@ -84,6 +84,12 @@ namespace Markdig.Agg.Editing
 
 		public IRichBlockLayout LayoutOf(int index) => entries[index].Layout;
 
+		/// <summary>
+		/// How many blocks have a layout: fewer than the document's before the first width, or between an edit and
+		/// its relayout.
+		/// </summary>
+		public int LaidOutCount => entries.Count;
+
 		public double OriginOf(int index) => Height - entries[index].Top - entries[index].Layout.Height;
 
 		public GuiWidget RawHost(int index)
@@ -160,9 +166,11 @@ namespace Markdig.Agg.Editing
 				if (!cached.TryGetValue(block, out var entry)
 					|| changed == null
 					|| changed.Contains(block)
-					|| entry.Number != numbers[i])
+					|| entry.Number != numbers[i]
+					|| entry.Inputs != LayoutInputs.Of(block))
 				{
-					// A renumbered ordered item re-lays out too: an edit above it moved its number.
+					// A renumbered ordered item re-lays out too: an edit above it moved its number. So does a block an
+					// edit reshaped without naming it - list children lifted a level when their parent left the list.
 					entry = new Entry(block, LayoutBlock(block, numbers[i]), numbers[i]);
 				}
 
@@ -433,7 +441,7 @@ namespace Markdig.Agg.Editing
 				double origin = Height - entry.Top - layout.Height;
 				RichBlockPainter.DrawSelection(graphics2D, layout, origin, selection, i, layoutWidth, colors.Selection);
 				RichBlockPainter.DrawBlock(graphics2D, layout, origin, style, colors, images.Loaded);
-				if (focused && selection.IsEmpty && i == selection.Caret.BlockIndex)
+				if (focused && editor.CaretShowing && selection.IsEmpty && i == selection.Caret.BlockIndex)
 				{
 					var caret = selection.Caret;
 					RichBlockPainter.DrawCaret(graphics2D, layout, origin, new RichCaret(caret.Offset, editor.CaretAtLineEnd, caret.Row, caret.Column), style, colors.Caret);
@@ -473,6 +481,18 @@ namespace Markdig.Agg.Editing
 			return result;
 		}
 
+		/// <summary>
+		/// A block's shape as its layout sees it: kind, heading level, list level and marker, alignment.
+		/// </summary>
+		private readonly record struct LayoutInputs(RichBlockKind Kind, int HeadingLevel, int Depth, bool Ordered, char Marker, RichAlignment Alignment)
+		{
+			public static LayoutInputs Of(RichBlock block)
+			{
+				var list = block.List;
+				return new LayoutInputs(block.Kind, block.HeadingLevel, list?.Depth ?? 0, list?.Ordered ?? false, list?.Marker ?? '\0', block.Alignment);
+			}
+		}
+
 		private sealed class Entry
 		{
 			public Entry(RichBlock block, IRichBlockLayout layout, int number)
@@ -480,9 +500,16 @@ namespace Markdig.Agg.Editing
 				Block = block;
 				Layout = layout;
 				Number = number;
+				Inputs = LayoutInputs.Of(block);
 			}
 
 			public RichBlock Block { get; }
+
+			/// <summary>
+			/// What the layout was built from besides the text, to notice a block changed in place by an edit that
+			/// did not name it.
+			/// </summary>
+			public LayoutInputs Inputs { get; }
 
 			public IRichBlockLayout Layout { get; }
 

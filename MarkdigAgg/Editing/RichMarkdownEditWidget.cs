@@ -47,6 +47,8 @@ namespace Markdig.Agg.Editing
 		private ThemeConfig theme;
 		private RichSelection selection;
 		private readonly RichEditorMouse mouse;
+		private readonly RichEditorKeyboard keyboard;
+		private readonly RichCaretBlink caretBlink;
 
 		public RichMarkdownEditWidget(ThemeConfig theme)
 			: base(autoScroll: true)
@@ -66,6 +68,8 @@ namespace Markdig.Agg.Editing
 
 			view = new RichDocumentView(this);
 			AddChild(view);
+			keyboard = new RichEditorKeyboard(this);
+			caretBlink = new RichCaretBlink(view, () => ContainsFocus && !HasBeenClosed);
 			EnsureABlock();
 			mouse = new RichEditorMouse(this);
 		}
@@ -103,6 +107,9 @@ namespace Markdig.Agg.Editing
 		internal void SetSelectionByUser(RichSelection newSelection, bool caretAtLineEnd)
 		{
 			SetSelection(newSelection, caretAtLineEnd);
+
+			// Even a click where the caret already was ends the typing run, as in other editors.
+			History.BreakCoalescing();
 			SelectionChangedByUser?.Invoke(this, EventArgs.Empty);
 		}
 
@@ -135,6 +142,59 @@ namespace Markdig.Agg.Editing
 		}
 
 		/// <summary>
+		/// This view's own undo history; loading markdown clears it.
+		/// </summary>
+		public RichEditHistory History { get; } = new RichEditHistory();
+
+		/// <summary>
+		/// Styles Cmd/Ctrl+B or I flipped at a collapsed caret for the next typed text; cleared when the caret moves.
+		/// </summary>
+		public RichPendingStyle PendingStyle { get; set; }
+
+		/// <summary>
+		/// Mac (Option word steps, Cmd+arrows to line and document ends) or Windows/Linux key bindings; defaults to
+		/// the plain text field's choice for this OS.
+		/// </summary>
+		public bool UseMacKeyBindings { get; set; } = InternalTextEditWidget.UseMacKeyBindings;
+
+		/// <summary>
+		/// Raised by Cmd/Ctrl+K: the host asks for a link and applies it with <see cref="ApplyEdit"/>.
+		/// </summary>
+		public event EventHandler LinkRequested;
+
+		/// <summary>
+		/// Makes one undoable edit, as the keyboard does: <paramref name="edit"/> mutates the document it is given
+		/// (with the current selection) and returns the new selection and whether anything changed; the editor
+		/// records it, places the selection, re-lays out and raises <see cref="DocumentChanged"/>.
+		/// <paramref name="text"/> is the typed text for <see cref="RichEditKind.Typing"/>.
+		/// </summary>
+		public void ApplyEdit(RichEditKind kind, Func<RichDocument, RichSelection, (RichSelection Selection, bool Changed)> edit, string text = null)
+		{
+			keyboard.Apply(kind, edit, text);
+		}
+
+		internal bool CaretShowing => caretBlink.Showing;
+
+		internal int LaidOutBlockCount => view.LaidOutCount;
+
+		internal void RequestLink() => LinkRequested?.Invoke(this, EventArgs.Empty);
+
+		internal void RaiseDocumentChanged() => DocumentChanged?.Invoke(this, EventArgs.Empty);
+
+		public override void OnKeyDown(KeyEventArgs keyEvent)
+		{
+			// Before base, which moves focus on an unhandled Tab: the editor decides first whether Tab is its own.
+			keyboard.KeyDown(keyEvent);
+			base.OnKeyDown(keyEvent);
+		}
+
+		public override void OnKeyPress(KeyPressEventArgs keyPressEvent)
+		{
+			keyboard.KeyPress(keyPressEvent);
+			base.OnKeyPress(keyPressEvent);
+		}
+
+		/// <summary>
 		/// Raised after an edit, from <see cref="Relayout(int)"/> and <see cref="RelayoutAll"/>. Loading markdown
 		/// through <see cref="Markdown"/> is not an edit and does not raise it.
 		/// </summary>
@@ -150,6 +210,7 @@ namespace Markdig.Agg.Editing
 			set
 			{
 				ScrollPositionFromTop = Vector2.Zero;
+				History.Clear();
 				SetDocument(RichMarkdownParser.Parse(value ?? ""), RichSelection.At(new DocPosition(0, 0)));
 			}
 		}
@@ -216,8 +277,26 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		public void SetSelection(RichSelection selection, bool caretAtLineEnd)
 		{
+			// A move other than by editing ends the typing run, so the next keystroke is its own undo step.
+			if (selection != this.selection || caretAtLineEnd != CaretAtLineEnd)
+			{
+				History.BreakCoalescing();
+			}
+
+			SetSelectionAfterEdit(selection, caretAtLineEnd);
+		}
+
+		/// <summary>
+		/// Places the selection an edit produced without ending the typing run.
+		/// </summary>
+		internal void SetSelectionAfterEdit(RichSelection selection, bool caretAtLineEnd = false)
+		{
 			this.selection = selection;
 			CaretAtLineEnd = caretAtLineEnd;
+
+			// A pending Bold belongs to the caret it was picked at; typed text has taken it on by now.
+			PendingStyle = default;
+			caretBlink?.Restart();
 			view.Invalidate();
 		}
 
@@ -342,6 +421,7 @@ namespace Markdig.Agg.Editing
 			base.OnContainsFocusChanged(e);
 
 			// The caret and the empty hint both depend on focus.
+			caretBlink.Restart();
 			view.Invalidate();
 		}
 

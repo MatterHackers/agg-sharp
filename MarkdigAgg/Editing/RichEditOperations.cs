@@ -264,8 +264,15 @@ namespace Markdig.Agg.Editing
 		/// next Backspace deletes it knowingly. Just after a Raw block's own caret stop it selects that block; at
 		/// its start the caret moves to the end of a text block before it.
 		/// </summary>
-		public static RichSelection Backspace(RichDocument document, DocPosition position)
+		public static RichSelection Backspace(RichDocument document, DocPosition position) => Backspace(document, position, out _);
+
+		/// <summary>
+		/// <see cref="Backspace(RichDocument, DocPosition)"/>, saying whether it changed the document (false when it
+		/// only moved the caret or selected a block), so the editor leaves no empty undo step.
+		/// </summary>
+		public static RichSelection Backspace(RichDocument document, DocPosition position, out bool changed)
 		{
+			changed = false;
 			var blocks = document.Blocks;
 			if (blocks.Count == 0)
 			{
@@ -276,7 +283,7 @@ namespace Markdig.Agg.Editing
 			var block = blocks[index];
 			if (IsCodeOrTable(block))
 			{
-				return RichTableCodeOperations.Backspace(document, position);
+				return RichTableCodeOperations.Backspace(document, position, out changed);
 			}
 
 			if (block.Kind == RichBlockKind.Raw)
@@ -295,6 +302,7 @@ namespace Markdig.Agg.Editing
 				return blocks[index - 1].IsTextBlock ? RichSelection.At(EndOf(document, index - 1)) : WholeBlock(document, index - 1);
 			}
 
+			changed = true;
 			if (position.Offset > 0)
 			{
 				int previous = PreviousStop(block.Inlines, position.Offset);
@@ -320,16 +328,13 @@ namespace Markdig.Agg.Editing
 					return RichSelection.At(position);
 			}
 
-			if (index == 0)
+			if (index == 0 || !blocks[index - 1].IsTextBlock)
 			{
-				return RichSelection.At(position);
+				changed = false;
+				return index == 0 ? RichSelection.At(position) : WholeBlock(document, index - 1);
 			}
 
 			var before = blocks[index - 1];
-			if (!before.IsTextBlock)
-			{
-				return WholeBlock(document, index - 1);
-			}
 
 			var caret = new DocPosition(index - 1, before.TextLength());
 			AppendInlines(before, block);
@@ -343,8 +348,14 @@ namespace Markdig.Agg.Editing
 		/// kind and groups); a Raw (or code/table) block after the caret is selected whole instead. Before a Raw
 		/// block's own caret stop it selects that block.
 		/// </summary>
-		public static RichSelection Delete(RichDocument document, DocPosition position)
+		public static RichSelection Delete(RichDocument document, DocPosition position) => Delete(document, position, out _);
+
+		/// <summary>
+		/// <see cref="Delete(RichDocument, DocPosition)"/>, saying whether it changed the document.
+		/// </summary>
+		public static RichSelection Delete(RichDocument document, DocPosition position, out bool changed)
 		{
+			changed = false;
 			var blocks = document.Blocks;
 			if (blocks.Count == 0)
 			{
@@ -355,7 +366,7 @@ namespace Markdig.Agg.Editing
 			var block = blocks[index];
 			if (IsCodeOrTable(block))
 			{
-				return RichTableCodeOperations.Delete(document, position);
+				return RichTableCodeOperations.Delete(document, position, out changed);
 			}
 
 			if (block.Kind == RichBlockKind.Raw && position.Offset == 0)
@@ -368,6 +379,7 @@ namespace Markdig.Agg.Editing
 			{
 				int next = NextStop(block.Inlines, position.Offset);
 				RemoveText(block, position.Offset, next);
+				changed = true;
 				return RichSelection.At(position);
 			}
 
@@ -390,6 +402,7 @@ namespace Markdig.Agg.Editing
 
 			AppendInlines(block, after);
 			RemoveBlockRange(document, index + 1, 1);
+			changed = true;
 			return RichSelection.At(position);
 		}
 

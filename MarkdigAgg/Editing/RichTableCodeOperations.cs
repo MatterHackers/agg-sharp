@@ -183,8 +183,15 @@ namespace Markdig.Agg.Editing
 		/// block nothing happens either, unless the block is empty: then it becomes an empty paragraph, the way a
 		/// novice expects to take back a code block they just made.
 		/// </summary>
-		public static RichSelection Backspace(RichDocument document, DocPosition position)
+		public static RichSelection Backspace(RichDocument document, DocPosition position) => Backspace(document, position, out _);
+
+		/// <summary>
+		/// <see cref="Backspace(RichDocument, DocPosition)"/>, saying whether it changed the document (false at a
+		/// cell's start), so the editor leaves no empty undo step.
+		/// </summary>
+		public static RichSelection Backspace(RichDocument document, DocPosition position, out bool changed)
 		{
+			changed = true;
 			var block = document.Blocks[position.BlockIndex];
 			if (block.Kind == RichBlockKind.CodeBlock)
 			{
@@ -206,14 +213,17 @@ namespace Markdig.Agg.Editing
 					block.CodeInfo = "";
 					block.CodeLanguage = "";
 					block.Dirty = true;
+					return RichSelection.At(position);
 				}
 
+				changed = false;
 				return RichSelection.At(position);
 			}
 
 			RequireTable(block);
 			if (position.Offset == 0)
 			{
+				changed = false;
 				return RichSelection.At(position);
 			}
 
@@ -227,12 +237,18 @@ namespace Markdig.Agg.Editing
 		/// Forward Delete with a collapsed caret: removes the next character or atom; at the end of a cell or a
 		/// code block nothing happens.
 		/// </summary>
-		public static RichSelection Delete(RichDocument document, DocPosition position)
+		public static RichSelection Delete(RichDocument document, DocPosition position) => Delete(document, position, out _);
+
+		/// <summary>
+		/// <see cref="Delete(RichDocument, DocPosition)"/>, saying whether it changed the document.
+		/// </summary>
+		public static RichSelection Delete(RichDocument document, DocPosition position, out bool changed)
 		{
 			var block = document.Blocks[position.BlockIndex];
 			if (block.Kind == RichBlockKind.CodeBlock)
 			{
-				if (position.Offset < block.CodeText.Length)
+				changed = position.Offset < block.CodeText.Length;
+				if (changed)
 				{
 					int next = position.Offset + StringInfo.GetNextTextElementLength(block.CodeText, position.Offset);
 					RemoveCode(block, position.Offset, next);
@@ -243,7 +259,8 @@ namespace Markdig.Agg.Editing
 
 			RequireTable(block);
 			var inlines = block.InlinesAt(position.Row, position.Column);
-			if (position.Offset < RichInlines.Length(inlines))
+			changed = position.Offset < RichInlines.Length(inlines);
+			if (changed)
 			{
 				RemoveInlines(block, inlines, position.Offset, RichEditOperations.NextStop(inlines, position.Offset));
 			}
@@ -255,8 +272,15 @@ namespace Markdig.Agg.Editing
 		/// Tab in a table: the caret goes to the end of the next cell in reading order. Tab in the last cell adds
 		/// a body row and goes to its first cell, as in a word processor, so a table grows by typing.
 		/// </summary>
-		public static RichSelection NextCell(RichDocument document, DocPosition position)
+		public static RichSelection NextCell(RichDocument document, DocPosition position) => NextCell(document, position, out _);
+
+		/// <summary>
+		/// <see cref="NextCell(RichDocument, DocPosition)"/>, saying whether it added a row (otherwise it only moved
+		/// the caret).
+		/// </summary>
+		public static RichSelection NextCell(RichDocument document, DocPosition position, out bool addedRow)
 		{
+			addedRow = false;
 			var block = RequireTable(document.Blocks[position.BlockIndex]);
 			int columns = block.TableRows[0].Count;
 			int row = position.Row;
@@ -269,6 +293,7 @@ namespace Markdig.Agg.Editing
 				{
 					block.TableRows.Add(NewRow(columns));
 					block.Dirty = true;
+					addedRow = true;
 				}
 			}
 
