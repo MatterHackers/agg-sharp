@@ -53,6 +53,10 @@ namespace Agg.Tests
 			// Before anything else, so every thread the run starts inherits it; see TestRunCulture.
 			MatterHackers.Agg.Tests.TestRunCulture.ApplyFromEnvironment();
 
+			// Test windows open behind the user's work instead of taking the keyboard from it. Here rather
+			// than left to AutomationRunner so windows opened outside a runner are covered too.
+			MatterHackers.Agg.UI.IPlatformWindow.ShowWindowsInBackground = true;
+
 			// A child launched by a native-abort test runs its probe and exits without starting the test
 			// platform; see NativeAbortProbe.
 			if (MatterHackers.Agg.Tests.NativeAbortProbe.TryRun(args, out int probeExitCode))

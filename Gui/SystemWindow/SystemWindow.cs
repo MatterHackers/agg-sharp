@@ -549,8 +549,17 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseUp(mouseEvent);
 		}
 
+		/// <summary>
+		/// Brings the application's window to the front of other applications' windows - unless
+		/// <see cref="IPlatformWindow.ShowWindowsInBackground"/> asks windows to stay out of the user's way.
+		/// </summary>
 		public override void BringToFront()
 		{
+			if (IPlatformWindow.ShowWindowsInBackground)
+			{
+				return;
+			}
+
 			if (this == AllOpenSystemWindows.First())
 			{
 				PlatformWindow.Activate();

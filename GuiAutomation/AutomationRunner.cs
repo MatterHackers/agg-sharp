@@ -2183,6 +2183,12 @@ namespace MatterHackers.GuiAutomation
 			SystemWindow.EnableAllowDrop = false;
 			using var desktopDeactivationIgnored = new DesktopDeactivationIgnored();
 
+			// The run's input is simulated, so its windows need not take the foreground from the person using
+			// the machine. Not restored afterwards: runs overlap (parallel tests), and one finishing must not
+			// let the next window another one opens jump over the user's work. A process that drives
+			// automation is a test process for the rest of its life.
+			IPlatformWindow.ShowWindowsInBackground = true;
+
 			try
 			{
 				LogClosePhase("CALLING ShowAsSystemWindow");

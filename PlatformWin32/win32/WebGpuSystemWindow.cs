@@ -136,7 +136,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			this.ClientSize = new Size((int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
-			this.WindowState = AggSystemWindow.Maximized ? FormWindowState.Maximized : FormWindowState.Normal;
+			this.ApplyRequestedWindowState(AggSystemWindow.Maximized);
 
 			this.IsInitialized = true;
 		}

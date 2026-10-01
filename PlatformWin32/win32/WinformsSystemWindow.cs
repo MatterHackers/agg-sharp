@@ -1157,7 +1157,8 @@ namespace MatterHackers.Agg.UI
 				if (this.IsInitialized)
 				{
 					// Push the current maximized state into the SystemWindow where it can be used or persisted by Agg applications
-					systemWindow.Maximized = this.WindowState == FormWindowState.Maximized;
+					systemWindow.Maximized = this.WindowState == FormWindowState.Maximized
+						|| this.Bounds == this.backgroundMaximizedBounds;
 				}
 
 				systemWindow.Invalidate();
@@ -1166,8 +1167,65 @@ namespace MatterHackers.Agg.UI
 			base.OnResize(e);
 		}
 
+		/// <summary>
+		/// Read by WinForms when it shows the form: true makes the show SW_SHOWNOACTIVATE, so a background
+		/// window (see <see cref="IPlatformWindow.ShowWindowsInBackground"/>) does not take the keyboard.
+		/// </summary>
+		protected override bool ShowWithoutActivation => IPlatformWindow.ShowWindowsInBackground;
+
+		protected override CreateParams CreateParams
+		{
+			get
+			{
+				var createParams = base.CreateParams;
+				createParams.ExStyle = BackgroundWindowPlacement.ExtendedStyle(createParams.ExStyle, IPlatformWindow.ShowWindowsInBackground);
+				return createParams;
+			}
+		}
+
+		/// <summary>The working area a maximize was turned into under ShowWindowsInBackground; null otherwise.</summary>
+		private Rectangle? backgroundMaximizedBounds;
+
+		/// <summary>
+		/// Applies the agg window's Maximized request to the form. Under
+		/// <see cref="IPlatformWindow.ShowWindowsInBackground"/> a maximize becomes a normal window covering the
+		/// working area - SW_SHOWMAXIMIZED always activates - and the agg window keeps reading Maximized until
+		/// the window is moved or sized off those bounds.
+		/// </summary>
+		protected void ApplyRequestedWindowState(bool maximized)
+		{
+			var requested = maximized ? FormWindowState.Maximized : FormWindowState.Normal;
+			if (IPlatformWindow.ShowWindowsInBackground)
+			{
+				// Setting WindowState on a visible form calls ShowWindow even when the state is unchanged, and
+				// SW_SHOWNORMAL activates - so a background window only ever assigns bounds.
+				if (maximized)
+				{
+					this.backgroundMaximizedBounds = Screen.FromControl(this).WorkingArea;
+					this.Bounds = this.backgroundMaximizedBounds.Value;
+				}
+
+				return;
+			}
+
+			this.WindowState = requested;
+		}
+
 		protected override void SetVisibleCore(bool value)
 		{
+			if (IPlatformWindow.ShowWindowsInBackground)
+			{
+				if (value && !this.Visible)
+				{
+					// Placed while still hidden - the show is about to create the handle anyway - so the window
+					// never draws a frame on top of the user's work before being tucked in under it.
+					BackgroundWindowPlacement.PlaceBehindForeground(this.Handle);
+				}
+
+				base.SetVisibleCore(value);
+				return;
+			}
+
 			// Force Activation/BringToFront behavior when Visibility enabled. This ensures Agg forms
 			// always come to front after ShowSystemWindow()
 			if (value)
@@ -1351,7 +1409,18 @@ namespace MatterHackers.Agg.UI
 				this.Top = mainBounds.Y + mainBounds.Height / 2 - (int)newItemBounds.Height / 2;
 			}
 
-			this.ShowDialog();
+			// ShowDialog() with no owner adopts the thread's active window, and a background window is never
+			// active - so name the main window, keeping the dialog above the window it belongs to.
+			if (IPlatformWindow.ShowWindowsInBackground
+				&& MainWindowsFormsWindow != null
+				&& MainWindowsFormsWindow != this)
+			{
+				this.ShowDialog(MainWindowsFormsWindow);
+			}
+			else
+			{
+				this.ShowDialog();
+			}
 		}
 
 		public void Invalidate(RectangleDouble rectToInvalidate)
@@ -1557,7 +1626,7 @@ namespace MatterHackers.Agg.UI
 				&& !SingleWindowMode)
 			{
 				DebugLogger.LogMessage("WinformsSystemWindow", "Window already shown, calling BringToFront");
-				this.BringToFront();
+				this.BringToFrontUnlessInBackground();
 				return;
 			}
 
@@ -1699,7 +1768,7 @@ namespace MatterHackers.Agg.UI
 					{
 						DebugLogger.LogMessage("WinformsSystemWindow", "Showing non-modal window");
 						this.Show();
-						this.BringToFront();
+						this.BringToFrontUnlessInBackground();
 					}
 				});
 			}
@@ -1718,6 +1787,18 @@ namespace MatterHackers.Agg.UI
 				systemWindow.Size = new Vector2(
 						this.ClientSize.Width,
 						this.ClientSize.Height);
+			}
+		}
+
+		/// <summary>
+		/// Control.BringToFront on a top-level form is SetWindowPos(HWND_TOP) without SWP_NOACTIVATE, so it
+		/// both raises and activates; a background window must do neither.
+		/// </summary>
+		private void BringToFrontUnlessInBackground()
+		{
+			if (!IPlatformWindow.ShowWindowsInBackground)
+			{
+				this.BringToFront();
 			}
 		}
 

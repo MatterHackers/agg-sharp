@@ -51,6 +51,20 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		public static bool ForwardPlatformDeactivation => EnablePlatformWindowInput && EnablePlatformWindowDeactivation;
 
+		/// <summary>
+		/// When true, windows open without activating: no keyboard focus is taken, nothing is raised over
+		/// the user's other windows, and a new window is placed behind whatever is in the foreground. The
+		/// window is still shown and still renders (it is never minimized, which would stop presenting).
+		/// </summary>
+		/// <remarks>
+		/// For test runs on a machine somebody is using: automation drives windows with simulated input, so
+		/// OS focus buys a test nothing, and every window popping over the user's work and taking the keyboard
+		/// makes the machine unusable for the length of the run. Off (the default) for applications, which
+		/// expect a window they show to come to the front. Once a process turns it on it stays on - see
+		/// AutomationRunner.ShowWindowAndExecuteTests.
+		/// </remarks>
+		public static bool ShowWindowsInBackground { get; set; }
+
 		string Caption { get; set; }
 
 		int TitleBarHeight { get; }
