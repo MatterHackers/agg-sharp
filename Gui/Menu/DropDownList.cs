@@ -185,7 +185,11 @@ namespace MatterHackers.Agg.UI
 
 		public Color HoverColor { get; set; }
 
-		public BorderDouble MenuItemsPadding
+		/// <summary>
+		/// The padding of each row added from now on, and the closed label's margin (its right side at least 30 to
+		/// clear the arrow). Virtual so a list that moves its closed label (FontSelector) can keep the two apart.
+		/// </summary>
+		public virtual BorderDouble MenuItemsPadding
 		{
 			get => mainControlText.Margin;
 			set
