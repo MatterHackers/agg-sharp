@@ -1,5 +1,5 @@
 /*
-Copyright(c) 2024, Lars Brubaker, John Lewin
+Copyright(c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -36,35 +36,58 @@ namespace Markdig.Renderers.Agg.Inlines
 	{
 		private char delimiter;
 
-		public EmphasisInlineX(char delimiter)
+		/// <param name="delimiter">The emphasis character: '*' or '_' for emphasis, '~' for strikethrough.</param>
+		/// <param name="delimiterCount">How many delimiters open the span: 1 is italic, 2 is bold (for '*' and '_').</param>
+		public EmphasisInlineX(char delimiter, int delimiterCount = 2)
 		{
 			this.HAnchor = HAnchor.Fit;
 			this.VAnchor = VAnchor.Fit;
 
 			this.delimiter = delimiter;
+			this.DelimiterCount = delimiterCount;
 		}
 
 		public char Delimiter => delimiter;
 
+		public int DelimiterCount { get; }
+
+		/// <summary>True when this span slants its text: a single '*' or '_'.</summary>
+		public bool IsItalic => (delimiter == '*' || delimiter == '_') && DelimiterCount == 1;
+
+		/// <summary>The span's HTML element, for copying a selection as rich text.</summary>
+		public string WrapHtml(string innerHtml) => delimiter == '~'
+			? $"<del>{innerHtml}</del>"
+			: IsItalic ? $"<em>{innerHtml}</em>" : $"<strong>{innerHtml}</strong>";
+
 		public override GuiWidget AddChild(GuiWidget childToAdd, int indexInChildrenList = -1)
 		{
-			if (childToAdd is TextWidget textWidget)
+			// Markdig nests '***x***' as one span inside another, and the inner span (or a link) arrives here
+			// already holding its words, so the style goes onto every word below the child, not just a direct one.
+			foreach (var textWidget in childToAdd.DescendantsAndSelf<TextWidget>())
 			{
-
 				switch (delimiter)
 				{
 					case '~':
 						textWidget.StrikeThrough = true;
 						break;
+
 					case '*':
+					case '_':
+						if (IsItalic)
+						{
+							textWidget.Italic = true;
+						}
+						else
+						{
+							textWidget.Bold = true;
+						}
+
+						break;
+
+					// '^' superscript, '+' inserted and '=' marked have no style of their own yet and stay bold
 					default:
 						textWidget.Bold = true;
 						break;
-
-					//	case '_': Italic();
-					//	case '^': Styles.SuperscriptStyleKey
-					//	case '+': Styles.InsertedStyleKey
-					//	case '=': Styles.MarkedStyleKey
 				}
 			}
 
@@ -80,42 +103,9 @@ namespace Markdig.Renderers.Agg.Inlines
 	{
 		protected override void Write(AggRenderer renderer, EmphasisInline obj)
 		{
-			//Span span = null;
-
-			//switch (obj.DelimiterChar)
-			//{
-			//	case '*':
-			//	case '_':
-			//		span = obj.IsDouble ? (Span)new Bold() : new Italic();
-			//		break;
-			//	case '~':
-			//		span = new Span();
-			//		span.SetResourceReference(FrameworkContentElement.StyleProperty, obj.IsDouble ? Styles.StrikeThroughStyleKey : Styles.SubscriptStyleKey);
-			//		break;
-			//	case '^':
-			//		span = new Span();
-			//		span.SetResourceReference(FrameworkContentElement.StyleProperty, Styles.SuperscriptStyleKey);
-			//		break;
-			//	case '+':
-			//		span = new Span();
-			//		span.SetResourceReference(FrameworkContentElement.StyleProperty, Styles.InsertedStyleKey);
-			//		break;
-			//	case '=':
-			//		span = new Span();
-			//		span.SetResourceReference(FrameworkContentElement.StyleProperty, Styles.MarkedStyleKey);
-			//		break;
-			//}
-
-			if (true) //span != null)
-			{
-				renderer.Push(new EmphasisInlineX(obj.DelimiterChar));
-				renderer.WriteChildren(obj);
-				renderer.Pop();
-			}
-			else
-			{
-				renderer.WriteChildren(obj);
-			}
+			renderer.Push(new EmphasisInlineX(obj.DelimiterChar, obj.DelimiterCount));
+			renderer.WriteChildren(obj);
+			renderer.Pop();
 		}
 	}
 }

@@ -212,7 +212,7 @@ namespace MatterHackers.Agg.Font
 		/// <see cref="SnapBaselinesToWholePixels"/>, which rounds each line's baseline), and everything that
 		/// changes an outline's own vertices (<see cref="StyledTypeFace.DoUnderline"/> adds geometry,
 		/// <see cref="StyledTypeFace.FlattenCurves"/> and <see cref="ResolutionScale"/> change how curves are
-		/// flattened), plus the <see cref="TextStyleSettings.Epoch"/> when the face follows those settings, since they
+		/// flattened, <see cref="StyledTypeFace.FauxItalic"/> shears them), plus the <see cref="TextStyleSettings.Epoch"/> when the face follows those settings, since they
 		/// reshape every glyph.
 		/// <para>
 		/// <b><see cref="Origin"/> is in it because <see cref="Vertices"/> bakes it into the positions</b>
@@ -244,6 +244,7 @@ namespace MatterHackers.Agg.Font
 					TypeFaceStyle.EmSizeInPixels,
 					TypeFaceStyle.DoUnderline,
 					TypeFaceStyle.FlattenCurves,
+					TypeFaceStyle.FauxItalic,
 					ResolutionScale,
 					Justification,
 					Baseline,
@@ -812,6 +813,7 @@ namespace MatterHackers.Agg.Font
 			private readonly double emSizeInPixels;
 			private readonly bool underline;
 			private readonly bool flattenCurves;
+			private readonly bool fauxItalic;
 			private readonly double resolutionScale;
 			private readonly Justification justification;
 			private readonly Baseline baseline;
@@ -826,6 +828,7 @@ namespace MatterHackers.Agg.Font
 				double emSizeInPixels,
 				bool underline,
 				bool flattenCurves,
+				bool fauxItalic,
 				double resolutionScale,
 				Justification justification,
 				Baseline baseline,
@@ -839,6 +842,7 @@ namespace MatterHackers.Agg.Font
 				this.emSizeInPixels = emSizeInPixels;
 				this.underline = underline;
 				this.flattenCurves = flattenCurves;
+				this.fauxItalic = fauxItalic;
 				this.resolutionScale = resolutionScale;
 				this.justification = justification;
 				this.baseline = baseline;
@@ -856,6 +860,7 @@ namespace MatterHackers.Agg.Font
 					&& BitConverter.DoubleToInt64Bits(this.emSizeInPixels) == BitConverter.DoubleToInt64Bits(other.emSizeInPixels)
 					&& this.underline == other.underline
 					&& this.flattenCurves == other.flattenCurves
+					&& this.fauxItalic == other.fauxItalic
 					&& BitConverter.DoubleToInt64Bits(this.resolutionScale) == BitConverter.DoubleToInt64Bits(other.resolutionScale)
 					&& this.justification == other.justification
 					&& this.baseline == other.baseline
@@ -879,6 +884,7 @@ namespace MatterHackers.Agg.Font
 				hash.Add(BitConverter.DoubleToInt64Bits(this.emSizeInPixels));
 				hash.Add(this.underline);
 				hash.Add(this.flattenCurves);
+				hash.Add(this.fauxItalic);
 				hash.Add(BitConverter.DoubleToInt64Bits(this.resolutionScale));
 				hash.Add((int)this.justification);
 				hash.Add((int)this.baseline);

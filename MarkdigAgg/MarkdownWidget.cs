@@ -1,5 +1,5 @@
 /*
-Copyright(c) 2025, Lars Brubaker, John Lewin
+Copyright(c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -761,9 +761,7 @@ namespace Markdig.Agg
 				return string.Empty;
 			}
 
-			return emphasisInline.Delimiter == '~'
-				? $"<del>{innerHtml}</del>"
-				: $"<strong>{innerHtml}</strong>";
+			return emphasisInline.WrapHtml(innerHtml);
 		}
 
 		private string RenderLink(TextLinkX textLink, int selectionStart, int selectionEnd, bool renderWholeNode)

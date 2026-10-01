@@ -235,8 +235,21 @@ namespace MatterHackers.Agg.Font
 		/// </summary>
 		public bool ApplyTextStyleSettings { get; set; }
 
+		/// <summary>
+		/// Slants this face's glyphs by <see cref="FauxItalicShear"/>. The fonts agg-sharp ships have no italic
+		/// face, so italic UI text (markdown <c>*emphasis*</c>) is the upright face sheared. Unlike
+		/// <see cref="TextStyleSettings.FauxItalic"/> it belongs to this face alone, not the whole process.
+		/// </summary>
+		public bool FauxItalic { get; set; }
+
+		/// <summary>The horizontal shift per unit of height under <see cref="FauxItalic"/> - the rich text editor's slant.</summary>
+		public const double FauxItalicShear = 0.2;
+
 		/// <summary>True when this face opts in and a setting is away from its default.</summary>
-		internal bool IsStyled => ApplyTextStyleSettings && !TextStyleSettings.GlyphStyleIsIdentity;
+		private bool AppliesTextStyleSettings => ApplyTextStyleSettings && !TextStyleSettings.GlyphStyleIsIdentity;
+
+		/// <summary>True when glyphs are not the font's plain outlines, so they take the styled path and skip the image cache.</summary>
+		internal bool IsStyled => FauxItalic || AppliesTextStyleSettings;
 
 		/// <summary>
 		/// <para>If true the font will have it's curves flattened to the current point size when retrieved.</para>
@@ -428,7 +441,7 @@ namespace MatterHackers.Agg.Font
 		{
 			TypeFace face = TypeFace.ResolveFace(codePoint);
 			double advance = face.GetAdvanceForCodePoint(codePoint) * EmScalingFor(face);
-			if (IsStyled)
+			if (AppliesTextStyleSettings)
 			{
 				// Interval piles a fixed spacing on top of the font's advance, as agg-gui's shape_text does. Width is
 				// deliberately not here: agg-gui scales the outline only and keeps the pen walk, so wide glyphs
@@ -441,7 +454,8 @@ namespace MatterHackers.Agg.Font
 
 		/// <summary>
 		/// A glyph under the <see cref="TextStyleSettings"/> glyph style: scaled to size and by Width, sheared by
-		/// a third of Faux Italic (agg-gui's <c>x += y * faux_italic / 3</c>), then offset by Faux Weight.
+		/// a third of Faux Italic (agg-gui's <c>x += y * faux_italic / 3</c>) plus this face's own
+		/// <see cref="FauxItalic"/>, then offset by Faux Weight.
 		/// </summary>
 		/// <remarks>
 		/// The weight offset is agg-gui's port of AGG's <c>truetype_lcd.cpp</c>: flatten, stretch Y by 100, run the
@@ -451,11 +465,14 @@ namespace MatterHackers.Agg.Font
 		/// </remarks>
 		private IVertexSource GetStyledGlyph(IVertexSource sourceGlyph, double emScaling, double resolutionScale)
 		{
-			double shear = TextStyleSettings.FauxItalic / 3;
-			var glyphTransform = new Affine(emScaling * TextStyleSettings.Width, 0, emScaling * shear, emScaling, 0, 0);
+			// A face can be here for its own FauxItalic alone, so the process-wide settings count only if it opts in.
+			bool applySettings = AppliesTextStyleSettings;
+			double shear = (applySettings ? TextStyleSettings.FauxItalic / 3 : 0) + (FauxItalic ? FauxItalicShear : 0);
+			double width = applySettings ? TextStyleSettings.Width : 1;
+			var glyphTransform = new Affine(emScaling * width, 0, emScaling * shear, emScaling, 0, 0);
 			IVertexSource characterGlyph = new VertexSourceApplyTransform(sourceGlyph, glyphTransform);
 
-			double weightInPixels = TextStyleSettings.FauxWeightInPixels(emSizeInPixels);
+			double weightInPixels = applySettings ? TextStyleSettings.FauxWeightInPixels(emSizeInPixels) : 0;
 			if (FlattenCurves || weightInPixels != 0)
 			{
 				characterGlyph = new FlattenCurves(characterGlyph)

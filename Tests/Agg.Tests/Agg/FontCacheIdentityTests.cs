@@ -132,5 +132,20 @@ namespace Agg.Tests.Agg
                 StyledTypeFaceImageCache.Clear();
             }
         }
+
+        /// <summary>
+        /// The GPU text mask and LCD mask caches key a run by its render identity, so an italic run must not share
+        /// one with the same text drawn upright - markdown's "the *the*" would draw both words the same.
+        /// </summary>
+        [Test]
+        public async Task FauxItalicIsPartOfTheRenderIdentity()
+        {
+            var upright = new TypeFacePrinter("the", new StyledTypeFace(LiberationSansFont.Instance, 12));
+            var slanted = new TypeFacePrinter("the", new StyledTypeFace(LiberationSansFont.Instance, 12) { FauxItalic = true });
+            var uprightAgain = new TypeFacePrinter("the", new StyledTypeFace(LiberationSansFont.Instance, 12));
+
+            await Assert.That(slanted.RenderIdentity).IsNotEqualTo(upright.RenderIdentity);
+            await Assert.That(uprightAgain.RenderIdentity).IsEqualTo(upright.RenderIdentity);
+        }
     }
 }

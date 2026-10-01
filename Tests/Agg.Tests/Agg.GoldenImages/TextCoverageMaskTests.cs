@@ -216,6 +216,28 @@ namespace MatterHackers.Agg.Tests.GoldenImages
 			}
 		}
 
+		/// <summary>The same words drawn upright and italic get their own masks, not the first one drawn.</summary>
+		[Test]
+		public async Task ItalicRunGetsItsOwnMask()
+		{
+			try
+			{
+				TextCoverageMaskCache.Clear();
+				var upright = new TypeFacePrinter("the", new StyledTypeFace(LiberationSansFont.Instance, 14));
+				var slanted = new TypeFacePrinter("the", new StyledTypeFace(LiberationSansFont.Instance, 14) { FauxItalic = true });
+
+				var uprightMask = CoverageMaskOf(upright);
+				var slantedMask = CoverageMaskOf(slanted);
+
+				await Assert.That(slantedMask).IsNotSameReferenceAs(uprightMask);
+				await Assert.That(slantedMask.Image.GetBuffer().SequenceEqual(uprightMask.Image.GetBuffer())).IsFalse();
+			}
+			finally
+			{
+				TextCoverageMaskCache.Clear();
+			}
+		}
+
 		private static TextCoverageMaskCache.CoverageMask CoverageMaskOf(TypeFacePrinter printer)
 			=> TextCoverageMaskCache.GetMask(((VertexSource.IVertexSourceRenderIdentity)printer).RenderIdentity, printer, Transform.Affine.NewIdentity());
 

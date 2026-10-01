@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,7 @@ using Markdig.Renderers.Agg;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
+using MatterHackers.Agg.VertexSource;
 using TUnit.Assertions;
 using TUnit.Core;
 
@@ -152,6 +153,52 @@ namespace Markdig.Agg.Tests
 				""");
 
 			await Assert.That(root.Descendants<HorizontalLine>().Any()).IsTrue();
+		}
+
+		[Test]
+		public async Task EmphasisRendersItalicBoldAndBoth()
+		{
+			var words = RenderWords("plain *slanted* **heavy** ***both*** _under_ __double__ ~~gone~~");
+
+			async Task AssertStyle(string word, bool italic, bool bold)
+			{
+				await Assert.That(words[word].Italic).IsEqualTo(italic);
+				await Assert.That(words[word].Bold).IsEqualTo(bold);
+				// The flag must reach the face that draws, whichever order the nested spans styled the word in.
+				await Assert.That(words[word].Printer.TypeFaceStyle.FauxItalic).IsEqualTo(italic);
+			}
+
+			await AssertStyle("plain", italic: false, bold: false);
+			await AssertStyle("slanted", italic: true, bold: false);
+			await AssertStyle("heavy", italic: false, bold: true);
+			await AssertStyle("both", italic: true, bold: true);
+			await AssertStyle("under", italic: true, bold: false);
+			await AssertStyle("double", italic: false, bold: true);
+			await AssertStyle("gone", italic: false, bold: false);
+			await Assert.That(words["gone"].StrikeThrough).IsTrue();
+		}
+
+		[Test]
+		public async Task ItalicWordsDrawSlantedGlyphs()
+		{
+			var words = RenderWords("plain *slanted*");
+
+			// An 'l' is a vertical stem, so a sheared one reaches further right at the same advance.
+			var uprightBounds = words["plain"].Printer.TypeFaceStyle.GetGlyphForCharacter('l').GetBounds();
+			var slantedBounds = words["slanted"].Printer.TypeFaceStyle.GetGlyphForCharacter('l').GetBounds();
+
+			await Assert.That(slantedBounds.Right).IsGreaterThan(uprightBounds.Right + 1);
+			await Assert.That(words["slanted"].Printer.TypeFaceStyle.GetAdvanceForCharacter('l'))
+				.IsEqualTo(words["plain"].Printer.TypeFaceStyle.GetAdvanceForCharacter('l'));
+		}
+
+		// Each word is its own text widget, between space widgets that would collide as keys.
+		private static System.Collections.Generic.Dictionary<string, TextWidget> RenderWords(string markdown)
+		{
+			return RenderMarkdown(markdown)
+				.Descendants<TextWidget>()
+				.Where(text => !string.IsNullOrWhiteSpace(text.Text))
+				.ToDictionary(text => text.Text);
 		}
 
 		private static GuiWidget RenderMarkdown(string markdown)

@@ -4,7 +4,7 @@
 //
 // C# port by: Lars Brubaker
 //                  larsbrubaker@gmail.com
-// Copyright (C) 2007
+// Copyright (C) 2007-2026, Lars Brubaker
 //
 // Permission to copy, use, modify, sell and distribute this software
 // is granted provided this copyright notice appears in all copies.
@@ -94,11 +94,38 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		/// <summary>A text widget is UI text, so its face follows the System window's <see cref="TextStyleSettings"/>.</summary>
-		private static StyledTypeFace UiFace(StyledTypeFace face)
+		/// <summary>
+		/// A text widget is UI text, so its face follows the System window's <see cref="TextStyleSettings"/>. Every
+		/// face the widget builds goes through here, so <see cref="Italic"/> survives a size or weight change.
+		/// </summary>
+		private StyledTypeFace UiFace(StyledTypeFace face)
 		{
 			face.ApplyTextStyleSettings = true;
+			face.FauxItalic = italic;
 			return face;
+		}
+
+		private bool italic;
+
+		/// <summary>
+		/// Gets or sets a value indicating whether to slant the text. The shipped fonts have no italic face, so this
+		/// shears the current one (<see cref="StyledTypeFace.FauxItalic"/>); it combines with <see cref="Bold"/>.
+		/// </summary>
+		public bool Italic
+		{
+			get => italic;
+			set
+			{
+				if (italic != value)
+				{
+					italic = value;
+					// A fresh face rather than flipping the current one, as PointSize does, so nothing still holding
+					// the old face sees it change. The shear leaves every advance as it was, so the bounds stand.
+					var current = Printer.TypeFaceStyle;
+					Printer.TypeFaceStyle = UiFace(new StyledTypeFace(current.TypeFace, current.EmSizeInPoints, current.DoUnderline, current.FlattenCurves));
+					this.Invalidate();
+				}
+			}
 		}
 
 		/// <summary>
