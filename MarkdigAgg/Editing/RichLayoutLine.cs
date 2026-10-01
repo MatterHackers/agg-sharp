@@ -96,8 +96,10 @@ namespace Markdig.Agg.Editing
 	/// A caret position in a block. <see cref="AtLineEnd"/> picks between the two places an offset can show where a
 	/// line wraps with no space (a word broken between characters, or a box pushed to the next line): false is the
 	/// start of the next line, true the end of the line before - where a click right of that line or End puts it.
+	/// In a table, <see cref="Row"/> and <see cref="Column"/> name the cell <see cref="Offset"/> counts through, as
+	/// in <see cref="DocPosition"/>; they are 0 in every other block.
 	/// </summary>
-	public readonly record struct RichCaret(int Offset, bool AtLineEnd = false);
+	public readonly record struct RichCaret(int Offset, bool AtLineEnd = false, int Row = 0, int Column = 0);
 
 	/// <summary>
 	/// A place on a line the caret can sit, with its x (block coordinates, clamped into the text column).

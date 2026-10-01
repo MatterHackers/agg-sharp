@@ -111,16 +111,20 @@ namespace Markdig.Agg.Editing
 			return width;
 		}
 
-		public static LayoutItem[] InlineItems(RichBlock block, RichLayoutStyle style, StyledTypeFace blockFace)
+		/// <summary>
+		/// The items of a list of inlines (a block's or a table cell's); <paramref name="runFace"/> picks each run's
+		/// face, since a heading or a header cell draws its runs bold.
+		/// </summary>
+		public static LayoutItem[] InlineItems(List<RichInline> inlines, Func<RichRun, StyledTypeFace> runFace, RichLayoutStyle style, StyledTypeFace blockFace)
 		{
 			var items = new List<LayoutItem>();
 			int offset = 0;
-			for (int inlineIndex = 0; inlineIndex < block.Inlines.Count; inlineIndex++)
+			for (int inlineIndex = 0; inlineIndex < inlines.Count; inlineIndex++)
 			{
-				switch (block.Inlines[inlineIndex])
+				switch (inlines[inlineIndex])
 				{
 					case RichRun run:
-						var face = style.RunFace(block, run);
+						var face = runFace(run);
 						for (int i = 0; i < run.Text.Length; i++)
 						{
 							items.Add(CharItem(run.Text, i, face, inlineIndex, offset++, code: false));

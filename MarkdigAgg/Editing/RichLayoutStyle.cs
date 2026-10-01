@@ -68,6 +68,16 @@ namespace Markdig.Agg.Editing
 
 		public Color LinkColor { get; set; }
 
+		/// <summary>
+		/// A table's grid lines: the text colour at the viewer's TableBorderAlpha (150).
+		/// </summary>
+		public Color TableGridColor => new Color(TextColor, 150);
+
+		/// <summary>
+		/// The shading of a table's striped body rows: the text colour at the viewer's ZebraStripeAlpha (12).
+		/// </summary>
+		public Color TableStripeColor => new Color(TextColor, 12);
+
 		public double BodyPointSize { get; set; } = 10;
 
 		public double CodePointSize { get; set; } = 10;
@@ -149,6 +159,8 @@ namespace Markdig.Agg.Editing
 			{
 				RichBlockKind.Heading => (12, 4),
 				RichBlockKind.ListItem => (0, 3),
+				// The viewer's AggTable sits 12 below whatever is above it.
+				RichBlockKind.Table => (12, 12),
 				_ => (0, 12),
 			};
 			return (before * Scale, after * Scale);
@@ -182,6 +194,47 @@ namespace Markdig.Agg.Editing
 				: run.Bold || heading ? AggContext.DefaultFontBold : AggContext.DefaultFont;
 			return Face(typeFace, points, run.Italic, run.LinkUrl != null);
 		}
+
+		/// <summary>
+		/// A table cell's unstyled face: body text, bold in the header row as the viewer's AggTableRow makes it.
+		/// </summary>
+		public StyledTypeFace TableCellFace(bool header)
+		{
+			return Face(header ? AggContext.DefaultFontBold : AggContext.DefaultFont, BodyPointSize, false, false);
+		}
+
+		/// <summary>
+		/// The face a run in a table cell is drawn in: <see cref="RunFace"/>'s body rules, with every header run bold.
+		/// </summary>
+		public StyledTypeFace TableRunFace(RichRun run, bool header)
+		{
+			TypeFace typeFace = run.Code
+				? CodeBlockX.GetMonoTypeFace()
+				: run.Bold || header ? AggContext.DefaultFontBold : AggContext.DefaultFont;
+			return Face(typeFace, BodyPointSize, run.Italic, run.LinkUrl != null);
+		}
+
+		/// <summary>
+		/// Space between a table cell's text and its left and right grid lines (AggTableColumn's 10 cell padding).
+		/// </summary>
+		public double TableCellPaddingX => 10 * Scale;
+
+		/// <summary>
+		/// Space between a table cell's text and its top and bottom grid lines (AggTableRow's 2 cell padding); each
+		/// line's own <see cref="LineGap"/> adds to it as in the viewer, whose rows hold text widgets with padding.
+		/// </summary>
+		public double TableCellPaddingY => 2 * Scale;
+
+		/// <summary>
+		/// The thickness of a table's grid lines (the viewer's 1 pixel cell borders and rules).
+		/// </summary>
+		public double TableGridLineWidth => 1 * Scale;
+
+		/// <summary>
+		/// The narrowest a table column's text gets when the table is squeezed to fit (a column whose text is
+		/// narrower keeps its own width), so a squeezed column still shows a few characters rather than one.
+		/// </summary>
+		public double TableMinColumnTextWidth => 40 * Scale;
 
 		private StyledTypeFace Face(TypeFace typeFace, double points, bool italic, bool underline)
 		{

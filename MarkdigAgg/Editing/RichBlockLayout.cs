@@ -42,7 +42,7 @@ namespace Markdig.Agg.Editing
 	/// offsetting it to the block's bottom and stacks blocks by adding <see cref="Height"/>s. Blocks lay out
 	/// independently, so an edit re-lays out only the block it touched.
 	/// </summary>
-	public sealed class RichBlockLayout
+	public sealed class RichBlockLayout : IRichBlockLayout
 	{
 		private int length;
 
@@ -96,8 +96,8 @@ namespace Markdig.Agg.Editing
 		{
 			if (block.Kind == RichBlockKind.Table)
 			{
-				// Seam: tables get their own grid layout (cells are laid out like paragraphs) in a later step.
-				throw new NotSupportedException("Table blocks are laid out by the table grid layout, not RichBlockLayout.");
+				// A table is a grid of cells, each laid out like a paragraph, with its own hit testing: RichTableLayout.
+				throw new NotSupportedException("Table blocks are laid out by RichTableLayout, not RichBlockLayout.");
 			}
 
 			var layout = new RichBlockLayout(block);
@@ -136,40 +136,21 @@ namespace Markdig.Agg.Editing
 			{
 				RichBlockKind.CodeBlock => RichLayoutItems.CodeItems(block.CodeText, blockFace),
 				RichBlockKind.Raw => RichLayoutItems.RawItems(block, available, style, blockFace),
-				_ => RichLayoutItems.InlineItems(block, style, blockFace),
+				_ => RichLayoutItems.InlineItems(block.Inlines, run => style.RunFace(block, run), style, blockFace),
 			};
 
 			layout.length = block.TextLength();
-			var lineStarts = RichLayoutItems.BreakLines(items, available, wrapAtSpaces: !code);
 
 			// Lines are stacked top-down first (y down from the block's top), then flipped once the height is known.
-			double y = before;
-			for (int i = 0; i < lineStarts.Count; i++)
-			{
-				int end = i + 1 < lineStarts.Count ? lineStarts[i + 1] : items.Length;
-				var line = BuildLine(block, items, lineStarts[i], end, i == lineStarts.Count - 1, layout.TextLeft, available, layout.length, blockFace);
-				line.Top = y;
-				line.Baseline = y + style.LineGap / 2 + line.Ascent;
-				y += line.Ascent + line.Descent + style.LineGap;
-				line.Bottom = y;
-				layout.Lines.Add(line);
-			}
+			var source = new LineSource(block.Inlines, code ? block.CodeText : null, block.Alignment, blockFace);
+			double y = StackLines(layout.Lines, items, source, before, layout.TextLeft, available, layout.length, !code, style.LineGap);
 
 			double linesTop = before;
 			double linesBottom = y;
 			layout.Height = y + after;
 
 			double Flip(double down) => layout.Height - down;
-			foreach (var line in layout.Lines)
-			{
-				line.Top = Flip(line.Top);
-				line.Bottom = Flip(line.Bottom);
-				line.Baseline = Flip(line.Baseline);
-				foreach (var fragment in line.Fragments)
-				{
-					fragment.Baseline = line.Baseline;
-				}
-			}
+			FlipLines(layout.Lines, layout.Height);
 
 			layout.MarkerBaseline = layout.Lines[0].Baseline;
 			if (block.Kind == RichBlockKind.Quote)
@@ -189,12 +170,65 @@ namespace Markdig.Agg.Editing
 		/// or last line when it is above or below them all), then the stop on it nearest its x. Right of a line that
 		/// wraps with no space this is the line's end (<see cref="RichCaret.AtLineEnd"/>).
 		/// </summary>
-		public RichCaret HitTest(Vector2 point)
+		public RichCaret HitTest(Vector2 point) => HitTestLines(Lines, point);
+
+		/// <summary>
+		/// What an inline-bearing text needs besides its items to become lines: the inlines a fragment's text comes
+		/// from (or the code text, non-null only for a code block), the alignment and the face every line is at
+		/// least as tall as. A table cell is one of these, so cells reuse the paragraph line building.
+		/// </summary>
+		internal readonly record struct LineSource(List<RichInline> Inlines, string CodeText, RichAlignment Alignment, StyledTypeFace BlockFace);
+
+		/// <summary>
+		/// Breaks <paramref name="items"/> into lines of <paramref name="available"/> width and appends them to
+		/// <paramref name="lines"/>, stacked top-down from <paramref name="top"/> (y down; flip them with
+		/// <see cref="FlipLines"/> once the container's height is known). Returns the y below the last line.
+		/// </summary>
+		internal static double StackLines(List<RichLayoutLine> lines, LayoutItem[] items, LineSource source, double top, double textLeft, double available, int length, bool wrapAtSpaces, double lineGap)
 		{
-			int lineIndex = Lines.Count - 1;
-			for (int i = 0; i < Lines.Count; i++)
+			var lineStarts = RichLayoutItems.BreakLines(items, available, wrapAtSpaces);
+			double y = top;
+			for (int i = 0; i < lineStarts.Count; i++)
 			{
-				if (point.Y >= Lines[i].Bottom)
+				int end = i + 1 < lineStarts.Count ? lineStarts[i + 1] : items.Length;
+				var line = BuildLine(source, items, lineStarts[i], end, i == lineStarts.Count - 1, textLeft, available, length);
+				line.Top = y;
+				line.Baseline = y + lineGap / 2 + line.Ascent;
+				y += line.Ascent + line.Descent + lineGap;
+				line.Bottom = y;
+				lines.Add(line);
+			}
+
+			return y;
+		}
+
+		/// <summary>
+		/// Turns lines stacked y-down (see <see cref="StackLines"/>) into y-up coordinates in a box
+		/// <paramref name="height"/> tall.
+		/// </summary>
+		internal static void FlipLines(List<RichLayoutLine> lines, double height)
+		{
+			foreach (var line in lines)
+			{
+				line.Top = height - line.Top;
+				line.Bottom = height - line.Bottom;
+				line.Baseline = height - line.Baseline;
+				foreach (var fragment in line.Fragments)
+				{
+					fragment.Baseline = line.Baseline;
+				}
+			}
+		}
+
+		/// <summary>
+		/// <see cref="HitTest"/> over any stack of lines (a block's, or one table cell's).
+		/// </summary>
+		internal static RichCaret HitTestLines(List<RichLayoutLine> lines, Vector2 point)
+		{
+			int lineIndex = lines.Count - 1;
+			for (int i = 0; i < lines.Count; i++)
+			{
+				if (point.Y >= lines[i].Bottom)
 				{
 					lineIndex = i;
 					break;
@@ -204,7 +238,7 @@ namespace Markdig.Agg.Editing
 			// A text atom too wide for one line is split over several, with no caret inside it: a click on any piece
 			// goes before or after the whole atom by which half of it was clicked. A line holding only a middle piece
 			// has no stop at all, so a click anywhere on it is taken to that piece.
-			var line = Lines[lineIndex];
+			var line = lines[lineIndex];
 			var piece = SplitAtomPieceAt(line, point.X, anywhere: line.CaretStops.Count == 0);
 			if (piece != null)
 			{
@@ -213,13 +247,13 @@ namespace Markdig.Agg.Editing
 				return new RichCaret(piece.Start + (secondHalf ? 1 : 0));
 			}
 
-			while (lineIndex > 0 && Lines[lineIndex].CaretStops.Count == 0)
+			while (lineIndex > 0 && lines[lineIndex].CaretStops.Count == 0)
 			{
 				lineIndex--;
 			}
 
-			var best = Lines[lineIndex].CaretStops[0];
-			foreach (var stop in Lines[lineIndex].CaretStops)
+			var best = lines[lineIndex].CaretStops[0];
+			foreach (var stop in lines[lineIndex].CaretStops)
 			{
 				if (Math.Abs(stop.X - point.X) < Math.Abs(best.X - point.X))
 				{
@@ -252,7 +286,12 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		public RectangleDouble CaretRect(int offset, bool atLineEnd = false, double caretWidth = 1)
 		{
-			var (line, stop) = FindStop(offset, atLineEnd);
+			var (line, stop) = FindStop(Lines, length, offset, atLineEnd);
+			return CaretBox(line, stop, caretWidth);
+		}
+
+		internal static RectangleDouble CaretBox(RichLayoutLine line, RichCaretStop stop, double caretWidth)
+		{
 			return new RectangleDouble(stop.X - caretWidth / 2, line.Baseline - line.Descent, stop.X + caretWidth / 2, line.Baseline + line.Ascent);
 		}
 
@@ -261,9 +300,13 @@ namespace Markdig.Agg.Editing
 		/// <summary>
 		/// The line that shows the caret at <paramref name="offset"/> (see <see cref="CaretRect(int, bool, double)"/>).
 		/// </summary>
-		public RichLayoutLine LineOf(int offset, bool atLineEnd = false) => FindStop(offset, atLineEnd).Line;
+		public RichLayoutLine LineOf(int offset, bool atLineEnd = false) => FindStop(Lines, length, offset, atLineEnd).Line;
 
-		private (RichLayoutLine Line, RichCaretStop Stop) FindStop(int offset, bool atLineEnd)
+		/// <summary>
+		/// The line and stop that show <paramref name="offset"/> among <paramref name="lines"/>, whose text is
+		/// <paramref name="length"/> offsets long.
+		/// </summary>
+		internal static (RichLayoutLine Line, RichCaretStop Stop) FindStop(List<RichLayoutLine> lines, int length, int offset, bool atLineEnd)
 		{
 			if (offset < 0 || offset > length)
 			{
@@ -272,7 +315,7 @@ namespace Markdig.Agg.Editing
 
 			(RichLayoutLine, RichCaretStop)? before = null;
 			(RichLayoutLine, RichCaretStop)? plain = null;
-			foreach (var line in Lines)
+			foreach (var line in lines)
 			{
 				foreach (var stop in line.CaretStops)
 				{
@@ -295,11 +338,12 @@ namespace Markdig.Agg.Editing
 				}
 			}
 
-			return plain ?? before ?? (Lines[0], Lines[0].CaretStops[0]);
+			return plain ?? before ?? (lines[0], lines[0].CaretStops[0]);
 		}
 
-		private static RichLayoutLine BuildLine(RichBlock block, LayoutItem[] items, int start, int end, bool isLast, double textLeft, double available, int length, StyledTypeFace blockFace)
+		private static RichLayoutLine BuildLine(LineSource source, LayoutItem[] items, int start, int end, bool isLast, double textLeft, double available, int length)
 		{
+			var blockFace = source.BlockFace;
 			var line = new RichLayoutLine
 			{
 				Start = start < items.Length ? items[start].Offset : length,
@@ -335,7 +379,7 @@ namespace Markdig.Agg.Editing
 			line.Ascent = ascent;
 			line.Descent = descent;
 			line.Width = relativeX[contentEnd - start];
-			double alignOffset = block.Alignment switch
+			double alignOffset = source.Alignment switch
 			{
 				RichAlignment.Center => Math.Max((available - line.Width) / 2, 0),
 				RichAlignment.Right => Math.Max(available - line.Width, 0),
@@ -369,12 +413,12 @@ namespace Markdig.Agg.Editing
 				line.CaretStops.Add(new RichCaretStop(new RichCaret(items[end].Offset, AtLineEnd: true), CaretX(end)));
 			}
 
-			AddFragments(block, items, start, end, length, line, i => line.Left + relativeX[i - start]);
+			AddFragments(source, items, start, end, length, line, i => line.Left + relativeX[i - start]);
 			return line;
 		}
 
 		// Consecutive characters of one inline become one fragment; each box and tab is its own; breaks draw nothing.
-		private static void AddFragments(RichBlock block, LayoutItem[] items, int start, int end, int length, RichLayoutLine line, Func<int, double> x)
+		private static void AddFragments(LineSource block, LayoutItem[] items, int start, int end, int length, RichLayoutLine line, Func<int, double> x)
 		{
 			int i = start;
 			while (i < end)
@@ -400,7 +444,7 @@ namespace Markdig.Agg.Editing
 
 				var atom = item.InlineIndex >= 0 ? block.Inlines[item.InlineIndex] as InlineAtom : null;
 				string source = item.Kind == LayoutItemKind.Box ? ""
-					: block.Kind == RichBlockKind.CodeBlock ? block.CodeText
+					: block.CodeText != null ? block.CodeText
 					: atom != null ? atom.RawMarkdown
 					: ((RichRun)block.Inlines[item.InlineIndex]).Text;
 				int offsetAfter = runEnd < items.Length ? items[runEnd].Offset : length;
