@@ -76,6 +76,13 @@ namespace Markdig.Agg.Editing
 		/// </summary>
 		public string LinkTitle { get; set; }
 
+		/// <summary>
+		/// The reference label as written when the link is a reference link ([text][label], [label][] or [label]),
+		/// or null for an inline link. When set, the writer emits [text][label] so the definition elsewhere in the
+		/// document stays the link's source of truth; LinkUrl is then only the resolved target, for clicking.
+		/// </summary>
+		public string LinkLabel { get; set; }
+
 		public override int Length => Text.Length;
 
 		/// <summary>
@@ -88,7 +95,8 @@ namespace Markdig.Agg.Editing
 				&& Code == other.Code
 				&& Strike == other.Strike
 				&& LinkUrl == other.LinkUrl
-				&& LinkTitle == other.LinkTitle;
+				&& LinkTitle == other.LinkTitle
+				&& LinkLabel == other.LinkLabel;
 		}
 
 		/// <summary>

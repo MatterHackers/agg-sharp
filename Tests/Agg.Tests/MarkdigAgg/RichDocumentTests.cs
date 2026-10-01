@@ -138,6 +138,19 @@ namespace Markdig.Agg.Tests
 		}
 
 		[Test]
+		public async Task RunsWithDifferentLinkLabelsAreDifferentStyles()
+		{
+			var inline = new RichRun("a") { LinkUrl = "u" };
+			var reference = new RichRun("b") { LinkUrl = "u", LinkLabel = "ref" };
+			var otherReference = new RichRun("c") { LinkUrl = "u", LinkLabel = "other" };
+
+			await Assert.That(inline.HasSameStyle(reference)).IsFalse();
+			await Assert.That(reference.HasSameStyle(otherReference)).IsFalse();
+			await Assert.That(reference.HasSameStyle(reference.WithText("d"))).IsTrue();
+			await Assert.That(((RichRun)reference.Clone()).LinkLabel).IsEqualTo("ref");
+		}
+
+		[Test]
 		public async Task LocateAndOffsetOfThrowOutOfRange()
 		{
 			var inlines = MixedInlines();
