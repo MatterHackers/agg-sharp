@@ -517,15 +517,17 @@ namespace g3
 
 
 		/*
-         * Below here are standard marching-cubes tables. 
+         * Below here are standard marching-cubes tables. They are public for grid-direct
+         * extractors (PolygonMesh.Sdf.GridMarchingCubes); do not mutate them - every
+         * MarchingCubes in the process reads the same arrays.
          */
 
 
-		static readonly int[,] edge_indices = new int[,] {
+		public static readonly int[,] edge_indices = new int[,] {
 			{0,1}, {1,2}, {2,3}, {3,0}, {4,5}, {5,6}, {6,7}, {7,4}, {0,4}, {1,5}, {2,6}, {3,7}
 		};
 
-		static readonly int[] edgeTable = new int[256] {
+		public static readonly int[] edgeTable = new int[256] {
 			0x0  , 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c,
 			0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
 			0x190, 0x99 , 0x393, 0x29a, 0x596, 0x49f, 0x795, 0x69c,
@@ -560,7 +562,7 @@ namespace g3
 			0x70c, 0x605, 0x50f, 0x406, 0x30a, 0x203, 0x109, 0x0   };
 
 
-		static readonly int[,] triTable = new int[256, 16]
+		public static readonly int[,] triTable = new int[256, 16]
 			{{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 			{0, 8, 3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
 			{0, 1, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
