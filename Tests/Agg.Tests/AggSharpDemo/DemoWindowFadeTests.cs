@@ -251,6 +251,9 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		{
 			var (canvas, host, _) = CreateHost();
 			DemoSpec spec = GuiDemoSpecs.DefaultOpen.First();
+
+			// on top, so no other window covers the point - the wheel goes to the topmost window only
+			host.Raise(spec);
 			WindowWidget window = host.GetWindow(spec);
 			RectangleDouble bounds = window.BoundsRelativeToParent;
 			int windowWheels = 0;

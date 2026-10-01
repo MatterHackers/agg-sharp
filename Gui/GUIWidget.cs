@@ -4271,13 +4271,21 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Routes the wheel to the topmost child under the pointer, then raises <see cref="MouseWheel"/> here. A
+		/// widget consumes the wheel by zeroing <see cref="MouseEventArgs.WheelDelta"/> (and WheelDeltaX); what it
+		/// leaves bubbles up to its ancestors.
+		/// </summary>
 		public virtual void OnMouseWheel(MouseEventArgs mouseEvent)
 		{
 			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 			{
 				foreach (var child in Children.Reverse())
 				{
-					if (child.Visible & child.Enabled)
+					// Only the topmost hit child gets the wheel - see the break below. Non-selectable children are
+					// click-through overlays (a scroll view's edge fade, a label) and are passed over exactly as a
+					// mouse down passes over them, so they cannot hide what is beneath them from the wheel.
+					if (child.Visible && child.Enabled && child.Selectable)
 					{
 						double childX = mouseEvent.X;
 						double childY = mouseEvent.Y;
@@ -4293,6 +4301,11 @@ namespace MatterHackers.Agg.UI
 							// copy of the event or a widget that ate the sideways scroll would see it acted on
 							// again by an ancestor.
 							mouseEvent.WheelDeltaX = childMouseEvent.WheelDeltaX;
+
+							// The siblings below are covered at this point: whatever the child left unconsumed goes
+							// up to this widget, never sideways to them - or a window over a scroll view would
+							// scroll the view behind it.
+							break;
 						}
 					}
 				}
