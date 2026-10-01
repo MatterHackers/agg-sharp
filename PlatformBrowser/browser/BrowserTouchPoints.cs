@@ -78,7 +78,7 @@ namespace MatterHackers.Agg.Platform.Browser
 
 			window.Enqueue(BrowserInputEvent.Mouse(
 				BrowserInputEventKind.MouseMove,
-				new MouseEventArgs(MouseButtons.Left, 0, this.Positions, 0, null),
+				new MouseEventArgs(MouseButtons.Left, 0, this.Positions, 0, null) { PointerType = PointerType.Touch },
 				window.modifierState.DownStateKeys));
 		}
 

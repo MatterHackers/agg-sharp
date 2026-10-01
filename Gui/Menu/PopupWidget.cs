@@ -274,6 +274,7 @@ namespace MatterHackers.Agg.UI
 
 				scrollPositionAtMouseUp = scrollingWindow.ScrollPosition;
 				if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured
+					&& !mouseEvent.Cancelled
 					&& AllowClickingItems()
 					&& clickIsInsideScrollArea
 					&& !specialChildHasFocus

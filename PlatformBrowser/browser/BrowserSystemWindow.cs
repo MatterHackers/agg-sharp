@@ -628,6 +628,7 @@ namespace MatterHackers.Agg.Platform.Browser
 		/// <param name="buttons">The event's <c>buttons</c> mask, which is where a drag's held button comes
 		/// from.</param>
 		/// <param name="detail">The event's <c>detail</c> - the click count the browser itself timed.</param>
+		/// <param name="pointerType">The event's <c>pointerType</c>; see <see cref="MouseEventArgs.PointerType"/>.</param>
 		public void EnqueuePointerEvent(
 			string type,
 			double offsetX,
@@ -638,7 +639,8 @@ namespace MatterHackers.Agg.Platform.Browser
 			bool ctrlKey,
 			bool shiftKey,
 			bool altKey,
-			bool metaKey)
+			bool metaKey,
+			string pointerType = "mouse")
 		{
 			if (!this.ShouldAcceptInput())
 			{
@@ -670,6 +672,8 @@ namespace MatterHackers.Agg.Platform.Browser
 				offsetY,
 				this.backing.DevicePixelRatio,
 				this.backing.PixelHeight);
+			mouseEvent.PointerType = BrowserPointer.TranslatePointerType(pointerType);
+			mouseEvent.Cancelled = type == "pointercancel";
 
 			bool insideView = OutOfViewMouseCapture.IsInsideBounds(
 				new Vector2(mouseEvent.X, mouseEvent.Y), this.SurfaceBounds);

@@ -4005,7 +4005,8 @@ namespace MatterHackers.Agg.UI
 					{
 						MouseUpCaptured?.Invoke(this, mouseEvent);
 
-						if (mouseUpOnWidget)
+						// a cancelled up ends the drag but is no click; see MouseEventArgs.Cancelled
+						if (mouseUpOnWidget && !mouseEvent.Cancelled)
 						{
 							OnClick(mouseEvent);
 						}

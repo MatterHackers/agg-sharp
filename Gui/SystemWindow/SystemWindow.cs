@@ -485,13 +485,42 @@ namespace MatterHackers.Agg.UI
 
 		private Vector2 lastMousePosition;
 
+		private TouchPressDeferral touchPresses;
+
+		/// <summary>Holds a finger's press back until it is known to be a tap, a pan or a drag; see
+		/// <see cref="TouchPressDeferral"/>. Only events that say they are touch go through it.</summary>
+		private TouchPressDeferral TouchPresses => touchPresses ??= new TouchPressDeferral(
+			this, e => this.DeliverMouseDown(e), e => this.DeliverMouseMove(e), e => this.DeliverMouseUp(e));
+
 		public override void OnMouseDown(MouseEventArgs mouseEvent)
+		{
+			if (mouseEvent.PointerType == PointerType.Touch)
+			{
+				TouchPresses.Down(mouseEvent);
+				return;
+			}
+
+			DeliverMouseDown(mouseEvent);
+		}
+
+		private void DeliverMouseDown(MouseEventArgs mouseEvent)
 		{
 			lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 			base.OnMouseDown(mouseEvent);
 		}
 
 		public override void OnMouseMove(MouseEventArgs mouseEvent)
+		{
+			if (mouseEvent.PointerType == PointerType.Touch)
+			{
+				TouchPresses.Move(mouseEvent);
+				return;
+			}
+
+			DeliverMouseMove(mouseEvent);
+		}
+
+		private void DeliverMouseMove(MouseEventArgs mouseEvent)
 		{
 			// Mouse input can only arrive after construction is complete, so this is a safe
 			// activation point. Covers windows that receive events without ever going through
@@ -544,6 +573,17 @@ namespace MatterHackers.Agg.UI
 		}
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
+		{
+			if (mouseEvent.PointerType == PointerType.Touch)
+			{
+				TouchPresses.Up(mouseEvent);
+				return;
+			}
+
+			DeliverMouseUp(mouseEvent);
+		}
+
+		private void DeliverMouseUp(MouseEventArgs mouseEvent)
 		{
 			lastMousePosition = new Vector2(mouseEvent.X, mouseEvent.Y);
 			base.OnMouseUp(mouseEvent);

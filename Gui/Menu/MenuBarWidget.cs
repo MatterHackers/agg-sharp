@@ -248,6 +248,7 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseUp(mouseEvent);
 
 			if (!activating
+				|| mouseEvent.Cancelled
 				|| overATitle
 				|| openPopup?.HasBeenClosed != false)
 			{

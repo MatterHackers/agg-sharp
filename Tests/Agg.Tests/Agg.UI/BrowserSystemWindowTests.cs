@@ -169,6 +169,51 @@ namespace MatterHackers.Agg.UI.Tests
 
 		[Test]
 		[Timeout(30_000)]
+		public async Task AFingersPointerEventSaysItIsTouch()
+		{
+			// A finger has no hover, so widgets read its drags differently (a ScrollableWidget pans under one); the
+			// DOM's pointerType is the only place that is known.
+			var frameLoop = new FakeFrameLoop();
+			var platformWindow = new BrowserSystemWindow(new FakeWindowInterop(), frameLoop);
+			var systemWindow = new SystemWindow(100, 100);
+			var delivered = new System.Collections.Generic.List<MouseEventArgs>();
+			systemWindow.MouseDown += (s, e) => delivered.Add(e);
+			MouseEventArgs lastUp = null;
+			systemWindow.MouseUp += (s, e) => lastUp = e;
+
+			try
+			{
+				platformWindow.ShowSystemWindow(systemWindow);
+				platformWindow.EnqueuePointerEvent(
+					"pointerdown", 10, 10, button: 0, buttons: 1, detail: 1,
+					ctrlKey: false, shiftKey: false, altKey: false, metaKey: false, pointerType: "touch");
+				platformWindow.EnqueuePointerEvent(
+					"pointerup", 10, 10, button: 0, buttons: 0, detail: 1,
+					ctrlKey: false, shiftKey: false, altKey: false, metaKey: false, pointerType: "touch");
+				Pointer(platformWindow, "pointerup", cssX: 10, cssY: 10, button: 0, buttons: 0);
+				Pointer(platformWindow, "pointerdown", cssX: 10, cssY: 10, button: 0, buttons: 1);
+				frameLoop.Tick();
+
+				// a mouse, the default, still says mouse
+				await Assert.That(delivered.Count).IsEqualTo(2);
+				await Assert.That(delivered[0].PointerType).IsEqualTo(PointerType.Touch);
+				await Assert.That(delivered[1].PointerType).IsEqualTo(PointerType.Mouse);
+				await Assert.That(lastUp.Cancelled).IsFalse();
+
+				// the browser taking the pointer away ends the drag as a cancelled up, which clicks nothing
+				Pointer(platformWindow, "pointercancel", cssX: 10, cssY: 10, button: -1, buttons: 0);
+				frameLoop.Tick();
+				await Assert.That(lastUp.Cancelled).IsTrue();
+			}
+			finally
+			{
+				platformWindow.CloseSystemWindow(systemWindow);
+				UiThread.ResetForTests();
+			}
+		}
+
+		[Test]
+		[Timeout(30_000)]
 		public async Task ClosingTheWindowStopsTheLoopAndReleasesTheCanvas()
 		{
 			var interop = new FakeWindowInterop();

@@ -298,7 +298,8 @@ namespace MatterHackers.Agg.UI
 				}
 				else
 				{
-					if (FirstWidgetUnderMouse)
+					// a tap off the field hides the keyboard; a cancelled up (a drag, a pinch) was no tap
+					if (FirstWidgetUnderMouse && !mouseEvent.Cancelled)
 					{
 						UiThread.RunOnIdle(() =>
 						{

@@ -119,7 +119,8 @@ namespace MatterHackers.Agg.Platform.Browser
 							ctrlKey,
 							shiftKey,
 							altKey,
-							metaKey);
+							metaKey,
+							inputEvent.GetPropertyAsString("pointerType"));
 						break;
 				}
 			}
