@@ -189,11 +189,12 @@ namespace Markdig.Agg.Editing
 		/// Makes one undoable edit, as the keyboard does: <paramref name="edit"/> mutates the document it is given
 		/// (with the current selection) and returns the new selection and whether anything changed; the editor
 		/// records it, places the selection, re-lays out and raises <see cref="DocumentChanged"/>.
-		/// <paramref name="text"/> is the typed text for <see cref="RichEditKind.Typing"/>.
+		/// <paramref name="text"/> is the typed text for <see cref="RichEditKind.Typing"/>; <paramref name="relayoutAll"/> lays
+		/// out every block, for an edit whose ops may reshape blocks anywhere (a paste joining a list).
 		/// </summary>
-		public void ApplyEdit(RichEditKind kind, Func<RichDocument, RichSelection, (RichSelection Selection, bool Changed)> edit, string text = null)
+		public void ApplyEdit(RichEditKind kind, Func<RichDocument, RichSelection, (RichSelection Selection, bool Changed)> edit, string text = null, bool relayoutAll = false)
 		{
-			keyboard.Apply(kind, edit, text);
+			keyboard.Apply(kind, edit, text, relayoutAll);
 		}
 
 		/// <summary>
@@ -214,6 +215,19 @@ namespace Markdig.Agg.Editing
 		internal bool CaretShowing => caretBlink.Showing;
 
 		internal int LaidOutBlockCount => view.LaidOutCount;
+
+		/// <summary>
+		/// Raised by Cmd/Ctrl+V before the editor reads the clipboard's text; a host that pastes something itself
+		/// (an image it saves) sets Handled.
+		/// </summary>
+		public event EventHandler<System.ComponentModel.HandledEventArgs> PasteRequested;
+
+		internal bool RaisePasteRequested()
+		{
+			var args = new System.ComponentModel.HandledEventArgs();
+			PasteRequested?.Invoke(this, args);
+			return args.Handled;
+		}
 
 		internal void RequestLink() => LinkRequested?.Invoke(this, EventArgs.Empty);
 

@@ -46,6 +46,7 @@ namespace Markdig.Agg.Editing
 	internal sealed class RichEditorKeyboard
 	{
 		private readonly RichMarkdownEditWidget editor;
+		private readonly RichEditorClipboard clipboard;
 
 		// The x Up/Down aim for, kept while they repeat so the caret comes back to its column after a short line.
 		// It belongs to the caret it was measured for; any other caret (a click, an edit) measures afresh.
@@ -58,6 +59,7 @@ namespace Markdig.Agg.Editing
 		public RichEditorKeyboard(RichMarkdownEditWidget editor)
 		{
 			this.editor = editor;
+			clipboard = new RichEditorClipboard(editor, this);
 		}
 
 		private bool Mac => editor.UseMacKeyBindings;
@@ -240,6 +242,18 @@ namespace Markdig.Agg.Editing
 
 				case Keys.A when command:
 					editor.SetSelection(new RichSelection(DocumentStart().Position, DocumentEnd().Position), caretAtLineEnd: false);
+					return true;
+
+				case Keys.C when command:
+					clipboard.Copy();
+					return true;
+
+				case Keys.X when command:
+					clipboard.Cut();
+					return true;
+
+				case Keys.V when command:
+					clipboard.Paste();
 					return true;
 
 				case Keys.B when command:

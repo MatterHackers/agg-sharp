@@ -65,12 +65,20 @@ namespace Markdig.Agg.Editing
 		{
 		}
 
-		public static RichDocument Parse(string markdown)
+		public static RichDocument Parse(string markdown) => Parse(markdown, softBreaksAreHard: false);
+
+		/// <summary>
+		/// <see cref="Parse(string)"/>, optionally keeping each soft line break as a hard break - how pasted plain
+		/// text keeps its lines, where markdown would join them into one.
+		/// </summary>
+		internal static RichDocument Parse(string markdown, bool softBreaksAreHard)
 		{
-			var parser = new RichMarkdownParser();
+			var parser = new RichMarkdownParser { softBreaksAreHard = softBreaksAreHard };
 			parser.Run(markdown ?? "");
 			return parser.document;
 		}
+
+		private bool softBreaksAreHard;
 
 		private void Run(string markdown)
 		{
@@ -613,6 +621,10 @@ namespace Markdig.Agg.Editing
 
 					case LineBreakInline lineBreak when lineBreak.IsHard:
 						inlines.Add(Atom(style, InlineAtomKind.HardBreak, HardBreakSource(lineBreak)));
+						break;
+
+					case LineBreakInline when softBreaksAreHard:
+						inlines.Add(Atom(style, InlineAtomKind.HardBreak, "\\\n"));
 						break;
 
 					case LineBreakInline:
