@@ -37,6 +37,22 @@ using MatterHackers.PolygonMesh.Processors;
 namespace MatterHackers.PolygonMesh.Sdf
 {
 	/// <summary>
+	/// Computes the unsigned narrow-band distance grid for <see cref="MeshSdfGrid"/> somewhere other
+	/// than g3's CPU flood - a GPU driver (agg's WebGpuRender GpuMeshSdf) plugs in here. Primitive
+	/// arrays only, so PolygonMesh takes no dependency on the renderer that implements it.
+	/// </summary>
+	/// <param name="triangles">Nine floats per triangle, its corners relative to the grid origin.</param>
+	/// <param name="ni">Samples along x; x is the fastest-varying index of the result.</param>
+	/// <param name="nj">Samples along y.</param>
+	/// <param name="nk">Samples along z.</param>
+	/// <param name="cellSize">Sample spacing; sample (i, j, k) sits at (i, j, k) * cellSize.</param>
+	/// <param name="band">Samples nearer than this to a triangle get the exact distance ...</param>
+	/// <param name="cap">... the rest get this value.</param>
+	/// <returns>ni * nj * nk unsigned distances, index i + ni * (j + nj * k).</returns>
+	public delegate float[] DistanceGridBuilder(float[] triangles, int ni, int nj, int nk, float cellSize, float band, float cap);
+
+
+	/// <summary>
 	/// A signed distance field of a solid, sampled once on a grid, from which the offset surface at
 	/// any radius up to <see cref="MaxRadius"/> can be pulled by marching cubes - the preview a
 	/// Dilate / Erode radius drag shows before the exact kernel result replaces it.
@@ -64,6 +80,8 @@ namespace MatterHackers.PolygonMesh.Sdf
 		private Vector3d gridOrigin;
 		private double cellSize;
 		private int gridBuilds;
+		private int orientRepairs;
+		private readonly DistanceGridBuilder distanceBuilder;
 
 		/// <param name="solid">The part; its shells are oriented as Dilate and Erode read them.</param>
 		/// <param name="maxRadius">
@@ -73,7 +91,9 @@ namespace MatterHackers.PolygonMesh.Sdf
 		/// </param>
 		/// <param name="resolution">Voxels along the grid's longest axis, padding included;
 		/// clamped to <see cref="MaxResolution"/>.</param>
-		public MeshSdfGrid(Mesh solid, double maxRadius, int resolution = 128)
+		/// <param name="distanceBuilder">Computes the unsigned band distances instead of g3's CPU
+		/// flood (null = the flood); the sign is still the crossing vote here.</param>
+		public MeshSdfGrid(Mesh solid, double maxRadius, int resolution = 128, DistanceGridBuilder distanceBuilder = null)
 		{
 			ArgumentNullException.ThrowIfNull(solid);
 			if (!(maxRadius > 0))
@@ -89,6 +109,7 @@ namespace MatterHackers.PolygonMesh.Sdf
 			source = solid;
 			MaxRadius = maxRadius;
 			Resolution = Math.Min(resolution, MaxResolution);
+			this.distanceBuilder = distanceBuilder;
 		}
 
 		/// <summary>Gets how many times the distance field has been computed; one per instance.</summary>
@@ -102,6 +123,10 @@ namespace MatterHackers.PolygonMesh.Sdf
 
 		/// <summary>Gets the voxel edge length, available once the field is built.</summary>
 		public double CellSize => cellSize;
+
+		/// <summary>Gets how many builds sent the part through the kernel's shell orientation
+		/// rather than taking it as is; for tests.</summary>
+		internal int OrientRepairs => orientRepairs;
 
 		/// <summary>Gets the voxels the band flood processed in the last build, finished or
 		/// cancelled - the build's dominant work, counted rather than timed.</summary>
@@ -159,8 +184,11 @@ namespace MatterHackers.PolygonMesh.Sdf
 			Mesh oriented = source;
 			try
 			{
-				if (OrientShells)
+				// A closed, consistently wound part with no inverted shell (most parts) comes back
+				// from the kernel unchanged, so skip its import and read-back (~200 ms at 172k).
+				if (OrientShells && MinkowskiShellOrientation.MeshMayNeedRepair(source))
 				{
+					Interlocked.Increment(ref orientRepairs);
 					oriented = MinkowskiProcessing.OrientShellsAsSolid(source, cancellationToken);
 				}
 			}
@@ -180,27 +208,76 @@ namespace MatterHackers.PolygonMesh.Sdf
 			// between exact samples - is also the padding each side, the reach of the largest
 			// Dilate. This cell size makes the padded longest axis Resolution voxels.
 			cellSize = (longest + (2 * MaxRadius)) / (Resolution - 4);
-			var spatial = new DMeshAABBTree3(dmesh, autoBuild: true);
-			var distances = new MeshSignedDistanceGrid(dmesh, cellSize, spatial)
+			DenseGrid3f field;
+			if (distanceBuilder != null)
 			{
-				ComputeMode = MeshSignedDistanceGrid.ComputeModes.NarrowBand_SpatialFloodFill,
-				NarrowBandMaxDistance = MaxRadius + (2 * cellSize),
-				PadWidth = MaxRadius + (2 * cellSize),
-				ComputeSigns = false,
-				CancelF = () => cancellationToken.IsCancellationRequested,
-				FloodProgress = FloodProgress,
-			};
-			distances.Compute();
-			FloodWork = distances.FloodVoxelsProcessed;
-			cancellationToken.ThrowIfCancellationRequested();
+				field = BuildWithInjectedDistances(dmesh, bounds, cancellationToken);
+			}
+			else
+			{
+				var spatial = new DMeshAABBTree3(dmesh, autoBuild: true);
+				var distances = new MeshSignedDistanceGrid(dmesh, cellSize, spatial)
+				{
+					ComputeMode = MeshSignedDistanceGrid.ComputeModes.NarrowBand_SpatialFloodFill,
+					NarrowBandMaxDistance = MaxRadius + (2 * cellSize),
+					PadWidth = MaxRadius + (2 * cellSize),
+					ComputeSigns = false,
+					CancelF = () => cancellationToken.IsCancellationRequested,
+					FloodProgress = FloodProgress,
+				};
+				distances.Compute();
+				FloodWork = distances.FloodVoxelsProcessed;
+				cancellationToken.ThrowIfCancellationRequested();
 
-			var field = distances.Grid;
-			var origin = distances.GridOrigin;
-			gridOrigin = new Vector3d(origin.x, origin.y, origin.z);
+				field = distances.Grid;
+				var origin = distances.GridOrigin;
+				gridOrigin = new Vector3d(origin.x, origin.y, origin.z);
+			}
+
 			ApplyCrossingSigns(dmesh, field, gridOrigin, cellSize, cancellationToken);
 
 			grid = field;
 			Interlocked.Increment(ref gridBuilds);
+		}
+
+		/// <summary>
+		/// The same grid layout g3's <see cref="MeshSignedDistanceGrid.Compute"/> lays out with
+		/// PadWidth set (float origin, float cell size, the same truncating counts), so the injected
+		/// distances land on exactly the samples the CPU flood would have written.
+		/// </summary>
+		private DenseGrid3f BuildWithInjectedDistances(DMesh3 dmesh, AxisAlignedBox3d bounds, CancellationToken cancellationToken)
+		{
+			float dx = (float)cellSize;
+			float pad = (float)(MaxRadius + (2 * cellSize));
+			Vector3f origin = (Vector3f)bounds.Min - (pad * Vector3f.One);
+			Vector3f max = (Vector3f)bounds.Max + (pad * Vector3f.One);
+			int ni = (int)((max.x - origin.x) / dx) + 1;
+			int nj = (int)((max.y - origin.y) / dx) + 1;
+			int nk = (int)((max.z - origin.z) / dx) + 1;
+			gridOrigin = new Vector3d(origin.x, origin.y, origin.z);
+
+			var triangles = new float[dmesh.TriangleCount * 9];
+			int t = 0;
+			foreach (int tid in dmesh.TriangleIndices())
+			{
+				Vector3d p0 = Vector3d.Zero, p1 = Vector3d.Zero, p2 = Vector3d.Zero;
+				dmesh.GetTriVertices(tid, ref p0, ref p1, ref p2);
+				foreach (var p in new[] { p0, p1, p2 })
+				{
+					triangles[t++] = (float)(p.x - gridOrigin.x);
+					triangles[t++] = (float)(p.y - gridOrigin.y);
+					triangles[t++] = (float)(p.z - gridOrigin.z);
+				}
+			}
+
+			cancellationToken.ThrowIfCancellationRequested();
+
+			// g3's upper bound for samples the band never reached.
+			float cap = (ni + nj + nk) * dx;
+			float[] distances = distanceBuilder(triangles, ni, nj, nk, dx, (float)(MaxRadius + (2 * cellSize)), cap);
+			var field = new DenseGrid3f(ni, nj, nk, 0);
+			Array.Copy(distances, field.Buffer, field.size);
+			return field;
 		}
 
 		/// <summary>

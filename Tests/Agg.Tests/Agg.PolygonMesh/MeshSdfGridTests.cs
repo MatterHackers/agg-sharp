@@ -83,6 +83,28 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test]
+		public async Task OnlyAPartThatMayBeInvertedGoesThroughTheKernelOrientation()
+		{
+			// A closed, right-way-out shell is taken as is; inside out, or holding an inward-wound
+			// cavity, it takes the kernel's repair - MinkowskiShellOrientation.MayHaveInvertedShell's rule.
+			var right = new MeshSdfGrid(PlatonicSolids.CreateCube(Side, Side, Side), Radius, 32);
+			right.Build();
+			var insideOutCube = PlatonicSolids.CreateCube(Side, Side, Side);
+			insideOutCube.ReverseFaces();
+			var insideOut = new MeshSdfGrid(insideOutCube, Radius, 32);
+			insideOut.Build();
+			var withCavity = PlatonicSolids.CreateCube(Side, Side, Side);
+			var cavity = PlatonicSolids.CreateCube(8, 8, 8);
+			cavity.ReverseFaces();
+			withCavity.CopyAllFaces(cavity, Matrix4X4.Identity);
+
+			await Assert.That(right.OrientRepairs).IsEqualTo(0);
+			await Assert.That(insideOut.OrientRepairs).IsEqualTo(1);
+			await Assert.That(MinkowskiShellOrientation.MeshMayNeedRepair(withCavity)).IsTrue();
+			await Assert.That(WrongSignVoxels(insideOut)).IsEqualTo(0);
+		}
+
+		[Test]
 		public async Task FieldIsComputedOnceForEveryStep()
 		{
 			var sdf = new MeshSdfGrid(PlatonicSolids.CreateCube(Side, Side, Side), Radius, 48);

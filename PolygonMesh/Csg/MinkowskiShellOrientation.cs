@@ -28,7 +28,9 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
+using MatterHackers.VectorMath;
 using RustCancelToken = ManifoldSharp.CancelToken;
 using RustManifold = ManifoldSharp.Manifold;
 using RustStatus = ManifoldSharp.Error;
@@ -156,6 +158,92 @@ namespace MatterHackers.PolygonMesh.Csg
 			for (int t = 0; t < triangles; t++)
 			{
 				if (parent[t] == t && !(volume[t] > 0))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		/// <summary>
+		/// <see cref="MayHaveInvertedShell"/>'s rule read straight off an agg mesh, before any import:
+		/// false only when the mesh is closed and consistently wound (every directed edge met exactly
+		/// once, and its reverse exactly once) and every edge-connected shell encloses a positive
+		/// volume. Such a mesh imports with nothing to join or rewind and the repair is a no-op, so a
+		/// caller may use it as is and skip the import and read-back. O(triangles).
+		/// </summary>
+		internal static bool MeshMayNeedRepair(Mesh mesh)
+		{
+			var faces = mesh.Faces;
+			int count = faces.Count;
+			if (count == 0)
+			{
+				return true;
+			}
+
+			long vertexCount = mesh.Vertices.Count;
+			var edgeFace = new Dictionary<long, int>(count * 3);
+			for (int f = 0; f < count; f++)
+			{
+				var face = faces[f];
+				if (!edgeFace.TryAdd((face.v0 * vertexCount) + face.v1, f)
+					|| !edgeFace.TryAdd((face.v1 * vertexCount) + face.v2, f)
+					|| !edgeFace.TryAdd((face.v2 * vertexCount) + face.v0, f))
+				{
+					// A directed edge used twice: a backward patch or a non-manifold edge.
+					return true;
+				}
+			}
+
+			var parent = new int[count];
+			for (int f = 0; f < count; f++)
+			{
+				parent[f] = f;
+			}
+
+			int Find(int f)
+			{
+				while (parent[f] != f)
+				{
+					parent[f] = parent[parent[f]];
+					f = parent[f];
+				}
+
+				return f;
+			}
+
+			foreach (var (key, f) in edgeFace)
+			{
+				long from = key / vertexCount, to = key % vertexCount;
+				if (!edgeFace.TryGetValue((to * vertexCount) + from, out int other))
+				{
+					// An unpaired edge: open, or a split seam the import would join.
+					return true;
+				}
+
+				int a = Find(f), b = Find(other);
+				if (a != b)
+				{
+					parent[a] = b;
+				}
+			}
+
+			var volume = new double[count];
+			var vertices = mesh.Vertices;
+			for (int f = 0; f < count; f++)
+			{
+				var face = faces[f];
+				Vector3Float p0 = vertices[face.v0], p1 = vertices[face.v1], p2 = vertices[face.v2];
+				double x0 = p0.X, y0 = p0.Y, z0 = p0.Z, x1 = p1.X, y1 = p1.Y, z1 = p1.Z, x2 = p2.X, y2 = p2.Y, z2 = p2.Z;
+				volume[Find(f)] += (x0 * ((y1 * z2) - (z1 * y2)))
+					- (y0 * ((x1 * z2) - (z1 * x2)))
+					+ (z0 * ((x1 * y2) - (y1 * x2)));
+			}
+
+			for (int f = 0; f < count; f++)
+			{
+				if (parent[f] == f && !(volume[f] > 0))
 				{
 					return true;
 				}
