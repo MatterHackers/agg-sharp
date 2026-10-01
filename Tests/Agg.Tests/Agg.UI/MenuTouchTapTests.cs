@@ -29,6 +29,7 @@ using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -76,7 +77,7 @@ namespace MatterHackers.Agg.UI.Tests
 			harness.Tap(harness.CenterOf("Report Menu Item"));
 			PumpIdle();
 
-			await Assert.That(harness.Actions).IsEquivalentTo(new[] { "Report" });
+			await Assert.That(harness.Actions).IsEquivalentTo(new[] { "Report" }, CollectionOrdering.Matching);
 			await Assert.That(harness.OpenMenus.Count).IsEqualTo(0)
 				.Because("choosing a row closes the whole chain");
 			await Assert.That(harness.Bar.OpenMenuIndex).IsNull();
@@ -102,7 +103,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 			harness.Tap(harness.CenterOf("Report Menu Item"));
 			PumpIdle();
-			await Assert.That(harness.Actions).IsEquivalentTo(new[] { "Report" });
+			await Assert.That(harness.Actions).IsEquivalentTo(new[] { "Report" }, CollectionOrdering.Matching);
 		}
 
 		[Test]
@@ -163,7 +164,7 @@ namespace MatterHackers.Agg.UI.Tests
 			harness.MouseClick(harness.CenterOf("Report Menu Item"));
 			PumpIdle();
 
-			await Assert.That(harness.Actions).IsEquivalentTo(new[] { "Report" });
+			await Assert.That(harness.Actions).IsEquivalentTo(new[] { "Report" }, CollectionOrdering.Matching);
 			await Assert.That(harness.OpenMenus.Count).IsEqualTo(0);
 		}
 

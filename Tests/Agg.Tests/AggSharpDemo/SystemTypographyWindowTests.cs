@@ -192,6 +192,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 		/// <summary>The point size field copies its text colour when built, so a theme change has to recolour it.</summary>
 		[Test]
+		[NotInParallel(SharedStateKeys.ThemeConfigCurrent)] // new DemoTheme() writes ThemeConfig.Current
 		public async Task ThemeChangeRecoloursThePointSizeField()
 		{
 			var demoTheme = new DemoTheme(ThemePreference.Light);

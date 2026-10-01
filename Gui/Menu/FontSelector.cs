@@ -201,8 +201,8 @@ namespace MatterHackers.Agg.UI
 		/// <remarks>
 		/// The label is padded to the face's whole ascent and descent (<see cref="ShowInFace"/>) because a widget's
 		/// children are clipped to their bounds; its vertical margins then give back what the padding took, keeping
-		/// label plus margins at the UI font's height. A face too tall to fit even with no margin is drawn smaller
-		/// until it does, rather than clipped.
+		/// label plus margins at the UI font's height. A face too tall to fit inside the border with no other margin is
+		/// drawn smaller until it does, rather than clipped or overdrawn by the border.
 		/// </remarks>
 		private void ShowClosedLabelInFace(TypeFace typeFace)
 		{
@@ -211,10 +211,15 @@ namespace MatterHackers.Agg.UI
 			double points = this.closedLabelStyle.EmSizeInPoints;
 			ShowInFace(label, typeFace, points);
 			double height = label.LocalBounds.Height;
-			if (height > this.closedLabelHeight)
+
+			// The field is the theme's FieldDesignHeight (MinimumSize) or, when that is lower - the demo's theme sets
+			// none - just the label plus its margins. The border is drawn inside the field, over those margins, so a
+			// fitted face has to keep clear of it.
+			double available = Math.Max(this.closedLabelHeight, this.MinimumSize.Y) - this.DeviceBorder.Height;
+			if (height > available)
 			{
 				// Everything in the label's height scales with its size; the small factor absorbs rounding.
-				ShowInFace(label, typeFace, points * this.closedLabelHeight / height * .999);
+				ShowInFace(label, typeFace, points * available / height * .999);
 				height = label.LocalBounds.Height;
 			}
 

@@ -28,6 +28,7 @@ using System.Threading.Tasks;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
+using MatterHackers.Agg.Tests;
 using MatterHackers.AggSharpDemo.GuiDemo;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
@@ -40,8 +41,30 @@ namespace MatterHackers.Agg.UI.Tests
 	/// closed field alike - falls back to the UI font for a face that cannot draw its own name, and sizes rows to the
 	/// face's full ascent and descent so a tall face is not clipped.
 	/// </summary>
+	/// <remarks>
+	/// <see cref="DropDownList"/> reads <see cref="ThemeConfig.Current"/> for its field height, and how much room a tall
+	/// face gets depends on it. So these tests take its key (a <c>new DemoTheme()</c> in a parallel test would resize the
+	/// field between two of their layouts) and start each test on the library's default theme rather than whichever theme
+	/// the last test left current.
+	/// </remarks>
+	[NotInParallel(SharedStateKeys.ThemeConfigCurrent)]
 	public class FontSelectorTests
 	{
+		private ThemeConfig themeBefore;
+
+		[Before(HookType.Test)]
+		public void UseTheDefaultTheme()
+		{
+			this.themeBefore = ThemeConfig.Current;
+			ThemeConfig.Current = ThemeConfig.DefaultTheme();
+		}
+
+		[After(HookType.Test)]
+		public void RestoreTheTheme()
+		{
+			ThemeConfig.Current = this.themeBefore;
+		}
+
 		private static TextWidget RowText(MenuItem item) => item.Descendants<TextWidget>().First();
 
 		private static TypeFace FaceOf(TextWidget text) => text.Printer.TypeFaceStyle.TypeFace;
@@ -140,6 +163,23 @@ namespace MatterHackers.Agg.UI.Tests
 		/// </summary>
 		[Test]
 		public async Task TheClosedFieldKeepsItsHeightAndHoldsATallFacesInk()
+		{
+			await AssertTheClosedFieldKeepsItsHeightAndHoldsATallFacesInk();
+		}
+
+		/// <summary>
+		/// The demo's theme sets no field height a 12 point label does not already fill, so the field is only as tall as
+		/// the label and its margins, and the border is drawn over those margins: a fitted face must stay clear of it.
+		/// </summary>
+		[Test]
+		public async Task UnderTheDemoThemeATallFacesInkStaysInsideTheBorder()
+		{
+			// Writes ThemeConfig.Current, which RestoreTheTheme puts back.
+			new DemoTheme(ThemePreference.Light);
+			await AssertTheClosedFieldKeepsItsHeightAndHoldsATallFacesInk();
+		}
+
+		private static async Task AssertTheClosedFieldKeepsItsHeightAndHoldsATallFacesInk()
 		{
 			var selector = new FontSelector("Font", Color.Black) { HAnchor = HAnchor.Stretch };
 			selector.AddFont("Liberation Sans", LiberationSansFont.Instance);
