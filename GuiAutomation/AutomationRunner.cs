@@ -772,8 +772,9 @@ namespace MatterHackers.GuiAutomation
 			if (getResults != null
 				&& getResults.Count > 0)
 			{
-				// When multiple widgets share the same name, prefer the one with the
-				// largest clipped visible area — it is most likely the interactive one.
+				// When multiple widgets share the same name, prefer one a press can reach (see PointerReach), then
+				// the one with the largest clipped visible area — it is most likely the interactive one.
+				getResults = PointerReach.PreferReachable(getResults);
 				var best = getResults[0];
 				if (getResults.Count > 1)
 				{
