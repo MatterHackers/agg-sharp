@@ -50,6 +50,22 @@ namespace MatterHackers.PolygonMesh.Sdf
 	/// spans, reused by each worker thread - so a step allocates no grid-sized array.
 	/// Uses g3's tables and corner order, so the winding matches g3's (outward for a field
 	/// negative inside).
+	///
+	/// Ambiguous faces: a cell face whose corners alternate inside / outside can be crossed by its
+	/// two contour segments either way, and the 256-case table picks by case number, which cut a
+	/// thin ridge running diagonally across the grid (an eroded gear tooth's tip) into floating
+	/// one-voxel shells. A cell with such a face is built here from its face segments instead of
+	/// the table: every face's segments are chosen by the asymptotic decider - the inside corners
+	/// join when the face's bilinear saddle is inside - and chained into loops through the cell.
+	/// The choice reads only the shared face's four values, in a form that is deterministic and
+	/// symmetric in corner order (the products round, but identically in both cells), so both cells sharing the face draw the same segments, in opposite
+	/// directions, and the mesh stays closed and manifold. Faces with no ambiguity have only one
+	/// possible segment, which is also the table's, so table cells and loop cells meet cleanly.
+	/// A loop of three or four crossings is fanned (a four-loop's diagonal joins crossings on no
+	/// common face, so no other cell can draw it); a longer loop gets a centre vertex, since a
+	/// fan diagonal could lie in a face and be drawn by the neighbour too.
+	/// The cell-interior ambiguity (whether two loops in one cell join through a tunnel) is not
+	/// resolved: loops are never joined. That can only lose a sub-cell tunnel, never tear the mesh.
 	/// </remarks>
 	internal static class GridMarchingCubes
 	{
@@ -58,6 +74,59 @@ namespace MatterHackers.PolygonMesh.Sdf
 		{
 			{ 0, 0, 0 }, { 1, 0, 0 }, { 1, 0, 1 }, { 0, 0, 1 }, { 0, 1, 0 }, { 1, 1, 0 }, { 1, 1, 1 }, { 0, 1, 1 },
 		};
+
+		// Each face's corners counter-clockwise seen from outside the cell.
+		private static readonly int[,] FaceCorners =
+		{
+			{ 0, 1, 2, 3 }, { 4, 7, 6, 5 }, { 0, 3, 7, 4 }, { 1, 5, 6, 2 }, { 0, 4, 5, 1 }, { 3, 2, 6, 7 },
+		};
+
+		// FaceEdges[face, i]: the cell edge from FaceCorners[face, i] to the next corner.
+		private static readonly int[,] FaceEdges = BuildFaceEdges();
+
+		// Cases with at least one face whose corners alternate inside / outside.
+		private static readonly bool[] HasAmbiguousFace = BuildAmbiguousCases();
+
+		private static int[,] BuildFaceEdges()
+		{
+			var faceEdges = new int[6, 4];
+			for (int face = 0; face < 6; face++)
+			{
+				for (int i = 0; i < 4; i++)
+				{
+					int a = FaceCorners[face, i], b = FaceCorners[face, (i + 1) % 4];
+					for (int e = 0; e < 12; e++)
+					{
+						int ea = MarchingCubes.edge_indices[e, 0], eb = MarchingCubes.edge_indices[e, 1];
+						if ((ea == a && eb == b) || (ea == b && eb == a))
+						{
+							faceEdges[face, i] = e;
+						}
+					}
+				}
+			}
+
+			return faceEdges;
+		}
+
+		private static bool[] BuildAmbiguousCases()
+		{
+			var ambiguous = new bool[256];
+			for (int cubeIndex = 0; cubeIndex < 256; cubeIndex++)
+			{
+				for (int face = 0; face < 6; face++)
+				{
+					bool s0 = (cubeIndex & (1 << FaceCorners[face, 0])) != 0, s1 = (cubeIndex & (1 << FaceCorners[face, 1])) != 0;
+					bool s2 = (cubeIndex & (1 << FaceCorners[face, 2])) != 0, s3 = (cubeIndex & (1 << FaceCorners[face, 3])) != 0;
+					if (s0 == s2 && s1 == s3 && s0 != s1)
+					{
+						ambiguous[cubeIndex] = true;
+					}
+				}
+			}
+
+			return ambiguous;
+		}
 
 		public static Mesh Extract(DenseGrid3f grid, Vector3d origin, double cellSize, double iso, CancellationToken cancellationToken)
 		{
@@ -154,6 +223,7 @@ namespace MatterHackers.PolygonMesh.Sdf
 			// never cleared: a cell only reads the keys of edges that cross, and those were just
 			// written from this slab's two slices.
 			var slabTriangles = new List<int>[nk];
+			var slabCentres = new List<double>[nk];
 			Parallel.For(
 				0,
 				nk - 1,
@@ -173,6 +243,7 @@ namespace MatterHackers.PolygonMesh.Sdf
 					}
 
 					var triangles = new List<int>();
+					var centres = new List<double>();
 					for (int j = 0; j < nj - 1; j++)
 					{
 						for (int i = 0; i < ni - 1; i++)
@@ -194,6 +265,12 @@ namespace MatterHackers.PolygonMesh.Sdf
 							}
 
 							int key = inSlice * 3;
+							if (HasAmbiguousFace[cubeIndex])
+							{
+								AddCellLoops(node, key, cubeIndex, edgeVertex, triangles, centres);
+								continue;
+							}
+
 							for (int t = 0; MarchingCubes.triTable[cubeIndex, t] != -1; t += 3)
 							{
 								triangles.Add(edgeVertex[key + edgeOffset[MarchingCubes.triTable[cubeIndex, t]]]);
@@ -204,17 +281,155 @@ namespace MatterHackers.PolygonMesh.Sdf
 					}
 
 					slabTriangles[k] = triangles;
+					slabCentres[k] = centres;
 					return edgeVertex;
 				},
 				_ => { });
 
-			var faces = new List<int>();
+			// Centre vertices were numbered per slab as -(n + 1); they go after the edge vertices.
+			int centreCount = 0;
 			for (int k = 0; k < nk - 1; k++)
 			{
-				faces.AddRange(slabTriangles[k]);
+				centreCount += slabCentres[k].Count / 3;
+			}
+
+			if (centreCount > 0)
+			{
+				Array.Resize(ref vertices, vertices.Length + (centreCount * 3));
+			}
+
+			var faces = new List<int>();
+			int nextCentre = vertexCount;
+			for (int k = 0; k < nk - 1; k++)
+			{
+				int first = nextCentre;
+				slabCentres[k].CopyTo(vertices, first * 3);
+				nextCentre += slabCentres[k].Count / 3;
+				foreach (int index in slabTriangles[k])
+				{
+					faces.Add(index >= 0 ? index : first - index - 1);
+				}
 			}
 
 			return new Mesh(vertices, faces.ToArray());
+
+			// A cell with an ambiguous face: its contour loops chained from per-face segments.
+			void AddCellLoops(int node, int key, int cubeIndex, int[] edgeVertex, List<int> triangles, List<double> centres)
+			{
+				Span<int> next = stackalloc int[12];
+				next.Fill(-1);
+				for (int face = 0; face < 6; face++)
+				{
+					// Seen from outside, going round the face: an exit edge runs inside -> outside,
+					// an entry edge outside -> inside. A segment runs from an exit to an entry.
+					int crossings = 0;
+					for (int i = 0; i < 4; i++)
+					{
+						bool here = (cubeIndex & (1 << FaceCorners[face, i])) != 0;
+						bool there = (cubeIndex & (1 << FaceCorners[face, (i + 1) % 4])) != 0;
+						if (here != there)
+						{
+							crossings++;
+						}
+					}
+
+					if (crossings == 0)
+					{
+						continue;
+					}
+
+					bool join = false;
+					if (crossings == 4)
+					{
+						// Asymptotic decider: the bilinear saddle (ac - bd) / (a + c - b - d) is inside
+						// (negative) when the inside corners connect. a and c share a sign, b and d
+						// the other, so the denominator has a's sign and only ac against bd is compared.
+						// The products round, but a*c and b*d are the same doubles whichever corner
+						// starts the face or which way round it goes, so the test is deterministic and
+						// symmetric: both cells sharing the face reach the same answer.
+						double a = values[node + cornerOffset[FaceCorners[face, 0]]] - (double)isoF;
+						double b = values[node + cornerOffset[FaceCorners[face, 1]]] - (double)isoF;
+						double c = values[node + cornerOffset[FaceCorners[face, 2]]] - (double)isoF;
+						double d = values[node + cornerOffset[FaceCorners[face, 3]]] - (double)isoF;
+						double ac = a * c, bd = b * d;
+						join = a < 0 ? ac > bd : ac < bd;
+					}
+
+					for (int i = 0; i < 4; i++)
+					{
+						bool here = (cubeIndex & (1 << FaceCorners[face, i])) != 0;
+						bool there = (cubeIndex & (1 << FaceCorners[face, (i + 1) % 4])) != 0;
+						if (!here || there)
+						{
+							continue;
+						}
+
+						// An exit. Separated inside corners: the entry just before it closes its
+						// corner off. Joined: the next entry round the face.
+						int step = join ? 1 : 3;
+						int entry = (i + step) % 4;
+						while (((cubeIndex & (1 << FaceCorners[face, entry])) != 0) == ((cubeIndex & (1 << FaceCorners[face, (entry + 1) % 4])) != 0))
+						{
+							entry = (entry + step) % 4;
+						}
+
+						next[FaceEdges[face, i]] = FaceEdges[face, entry];
+					}
+				}
+
+				Span<int> loop = stackalloc int[12];
+				int visited = 0;
+				for (int start = 0; start < 12; start++)
+				{
+					if (next[start] < 0 || (visited & (1 << start)) != 0)
+					{
+						continue;
+					}
+
+					int count = 0;
+					for (int e = start; (visited & (1 << e)) == 0; e = next[e])
+					{
+						visited |= 1 << e;
+						loop[count++] = edgeVertex[key + edgeOffset[e]];
+					}
+
+					if (count <= 4)
+					{
+						for (int n = 1; n + 1 < count; n++)
+						{
+							AddTriangle(loop[0], loop[n], loop[n + 1]);
+						}
+					}
+					else
+					{
+						double x = 0, y = 0, z = 0;
+						for (int n = 0; n < count; n++)
+						{
+							x += vertices[loop[n] * 3];
+							y += vertices[(loop[n] * 3) + 1];
+							z += vertices[(loop[n] * 3) + 2];
+						}
+
+						centres.Add(x / count);
+						centres.Add(y / count);
+						centres.Add(z / count);
+						int centre = -(centres.Count / 3);
+						for (int n = 0; n < count; n++)
+						{
+							AddTriangle(centre, loop[n], loop[(n + 1) % count]);
+						}
+					}
+				}
+
+				// Loops run with the inside on their left seen from outside each face, which is
+				// clockwise seen from the outside of the surface: wind the other way, as g3 does.
+				void AddTriangle(int v0, int v1, int v2)
+				{
+					triangles.Add(v0);
+					triangles.Add(v2);
+					triangles.Add(v1);
+				}
+			}
 		}
 	}
 }

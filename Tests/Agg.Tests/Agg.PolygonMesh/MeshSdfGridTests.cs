@@ -32,7 +32,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.PolygonMesh.Csg;
+using MatterHackers.PolygonMesh.Processors;
 using MatterHackers.PolygonMesh.Sdf;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
@@ -204,6 +206,172 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
+		/// A 12-tooth gear eroded by 1.0479 mm: each tooth's eroded core is a wedge that tapers to
+		/// a point about 13.93 mm out, and the true distance along each tooth's centre line falls
+		/// steadily from the root to that point, so the eroded gear is one connected ring. On this
+		/// grid the four diagonal teeth (45, 135, 225, 315 degrees) end in a single inside voxel that
+		/// touches the rest of the wedge only across a cube edge (a face-diagonal), and marching cubes'
+		/// ambiguous-face choice cuts it off as a 0.25 mm floating shell - four stray islands.
+		/// </summary>
+		[Test]
+		public async Task ErodedGearToothTipsStayJoinedToTheBody()
+		{
+			var outline = new VertexStorage();
+			const int teeth = 12;
+			const double tipRadius = 15, rootRadius = 12.5;
+			double[] fraction = { 0.0, 0.25, 0.4, 0.6, 0.75 };
+			double[] radius = { rootRadius, rootRadius, tipRadius, tipRadius, rootRadius };
+			for (int tooth = 0; tooth < teeth; tooth++)
+			{
+				for (int k = 0; k < fraction.Length; k++)
+				{
+					double angle = (tooth + fraction[k]) * Math.PI * 2 / teeth;
+					double x = radius[k] * Math.Cos(angle), y = radius[k] * Math.Sin(angle);
+					if (tooth == 0 && k == 0)
+					{
+						outline.MoveTo(x, y);
+					}
+					else
+					{
+						outline.LineTo(x, y);
+					}
+				}
+			}
+
+			outline.ClosePolygon();
+			outline.MoveTo(2.5, 0);
+			for (int i = 1; i < 32; i++)
+			{
+				double angle = -i * Math.PI * 2 / 32;
+				outline.LineTo(2.5 * Math.Cos(angle), 2.5 * Math.Sin(angle));
+			}
+
+			outline.ClosePolygon();
+			const double depth = 1.0479;
+			var sdf = new MeshSdfGrid(outline.Extrude(8), depth, 130);
+
+			var eroded = sdf.Extract(-depth);
+			await ClosedVolume(eroded);
+			await Assert.That(ShellCount(eroded)).IsEqualTo(1);
+			await Assert.That(EulerCharacteristic(eroded)).IsEqualTo(0);
+		}
+
+		/// <summary>
+		/// A torus (curved, so many cells see alternating face corners) and an L bracket offset
+		/// both ways come out closed, manifold, one shell, and of the part's own topology.
+		/// </summary>
+		[Test]
+		public async Task OffsetsOfTorusAndBracketKeepTheirTopology()
+		{
+			var bracket = new VertexStorage();
+			bracket.MoveTo(0, 0);
+			bracket.LineTo(40, 0);
+			bracket.LineTo(40, 4);
+			bracket.LineTo(4, 4);
+			bracket.LineTo(4, 30);
+			bracket.LineTo(0, 30);
+			bracket.ClosePolygon();
+
+			foreach (var (part, euler) in new[] { (Torus(10, 3, 64, 32), 0), (bracket.Extrude(20), 2) })
+			{
+				var sdf = new MeshSdfGrid(part, 1.5, 96);
+				foreach (double iso in new[] { 1.5, 0.7, -0.7, -1.5 })
+				{
+					var offset = sdf.Extract(iso);
+					await ClosedVolume(offset);
+					await Assert.That(ShellCount(offset)).IsEqualTo(1);
+					await Assert.That(EulerCharacteristic(offset)).IsEqualTo(euler);
+				}
+			}
+		}
+
+		/// <summary>A closed torus about Z, outward wound.</summary>
+		private static Mesh Torus(double majorRadius, double minorRadius, int around, int across)
+		{
+			var vertices = new List<double>();
+			var faces = new List<int>();
+			for (int i = 0; i < around; i++)
+			{
+				double u = i * Math.PI * 2 / around;
+				for (int j = 0; j < across; j++)
+				{
+					double v = j * Math.PI * 2 / across;
+					double ring = majorRadius + (minorRadius * Math.Cos(v));
+					vertices.Add(ring * Math.Cos(u));
+					vertices.Add(ring * Math.Sin(u));
+					vertices.Add(minorRadius * Math.Sin(v));
+				}
+			}
+
+			for (int i = 0; i < around; i++)
+			{
+				for (int j = 0; j < across; j++)
+				{
+					int a = (i * across) + j, b = (((i + 1) % around) * across) + j;
+					int c = (((i + 1) % around) * across) + ((j + 1) % across), d = (i * across) + ((j + 1) % across);
+					faces.AddRange(new[] { a, b, c, a, c, d });
+				}
+			}
+
+			var torus = new Mesh(vertices.ToArray(), faces.ToArray());
+			if (SignedVolume(torus) < 0)
+			{
+				torus.ReverseFaces();
+			}
+
+			return torus;
+		}
+
+		/// <summary>V - E + F of the mesh, counting each undirected edge once.</summary>
+		private static int EulerCharacteristic(Mesh mesh)
+		{
+			var edges = new HashSet<(int, int)>();
+			foreach (var face in mesh.Faces)
+			{
+				foreach (var (a, b) in new[] { (face.v0, face.v1), (face.v1, face.v2), (face.v2, face.v0) })
+				{
+					edges.Add(a < b ? (a, b) : (b, a));
+				}
+			}
+
+			return mesh.Vertices.Count - edges.Count + mesh.Faces.Count;
+		}
+
+		/// <summary>The number of edge-connected pieces in the mesh.</summary>
+		private static int ShellCount(Mesh mesh)
+		{
+			var parent = new int[mesh.Vertices.Count];
+			for (int i = 0; i < parent.Length; i++)
+			{
+				parent[i] = i;
+			}
+
+			int Find(int v)
+			{
+				while (parent[v] != v)
+				{
+					v = parent[v] = parent[parent[v]];
+				}
+
+				return v;
+			}
+
+			foreach (var face in mesh.Faces)
+			{
+				parent[Find(face.v0)] = Find(face.v1);
+				parent[Find(face.v1)] = Find(face.v2);
+			}
+
+			var roots = new HashSet<int>();
+			foreach (var face in mesh.Faces)
+			{
+				roots.Add(Find(face.v0));
+			}
+
+			return roots.Count;
+		}
+
+		/// <summary>
 		/// The mesh's signed volume, after asserting it is a closed, consistently wound surface:
 		/// every directed edge appears once and its reverse once.
 		/// </summary>
@@ -228,6 +396,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			}
 
 			await Assert.That(bad).IsEqualTo(0);
+			await Assert.That(mesh.IsManifold()).IsTrue();
 			return SignedVolume(mesh);
 		}
 
