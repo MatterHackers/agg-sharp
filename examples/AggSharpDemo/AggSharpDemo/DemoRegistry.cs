@@ -128,6 +128,7 @@ namespace MatterHackers.AggSharpDemo
 				new PolymorphicRendererDemo(),
 				new RasterTextDemo(),
 				new GraphTestDemo(),
+				new TrueTypeTestDemo(),
 			};
 		}
 	}

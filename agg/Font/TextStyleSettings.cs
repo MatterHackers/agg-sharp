@@ -64,10 +64,10 @@ namespace MatterHackers.Agg.Font
 		private static double fauxItalic;
 
 		/// <summary>
-		/// Written by every setter, read on every glyph and advance: true while all four glyph-shaping settings
-		/// are at their defaults, so the common case pays one volatile read.
+		/// Written by every setter, read on every glyph and advance: the four glyph-shaping settings as one value, so
+		/// a glyph reads a consistent style - and the common, all-default case - with one volatile read.
 		/// </summary>
-		private static volatile bool glyphStyleIsIdentity = true;
+		private static volatile GlyphStyle glyphStyle = GlyphStyle.Identity;
 
 		/// <summary>Starts at 1 so a consumer storing 0 for "never checked" sees a mismatch, as <c>LcdRenderSettings.Epoch</c> does.</summary>
 		private static long epoch = 1;
@@ -116,19 +116,8 @@ namespace MatterHackers.Agg.Font
 		/// </summary>
 		public static long Epoch => Interlocked.Read(ref epoch);
 
-		/// <summary>Whether Width, Interval, Faux Weight and Faux Italic are all at their defaults.</summary>
-		internal static bool GlyphStyleIsIdentity => glyphStyleIsIdentity;
-
-		/// <summary>Contour offset, in pixels, that Faux Weight asks of a glyph at <paramref name="emSizeInPixels"/>; 0 in the dead zone.</summary>
-		/// <remarks>
-		/// agg-gui's <c>-faux_weight * size / 15</c>: the sign is flipped because a negative contour width grows
-		/// an outline, and the divisor is its reference demo's slider-to-pixels conversion.
-		/// </remarks>
-		internal static double FauxWeightInPixels(double emSizeInPixels)
-		{
-			double weight = FauxWeight;
-			return Math.Abs(weight) < .05 ? 0 : -weight * emSizeInPixels / 15;
-		}
+		/// <summary>Width, Interval, Faux Weight and Faux Italic as they stand now, as one <see cref="Font.GlyphStyle"/>.</summary>
+		public static GlyphStyle GlyphStyle => glyphStyle;
 
 		/// <summary>
 		/// Bumps <see cref="Epoch"/> for a text setting that lives elsewhere but, like these, changes the pixels of
@@ -161,7 +150,7 @@ namespace MatterHackers.Agg.Font
 				}
 
 				field = value;
-				glyphStyleIsIdentity = width == 1 && interval == 0 && fauxWeight == 0 && fauxItalic == 0;
+				glyphStyle = new GlyphStyle(width, interval, fauxWeight, fauxItalic);
 			}
 
 			Interlocked.Increment(ref epoch);

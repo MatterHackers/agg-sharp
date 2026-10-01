@@ -26,9 +26,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!-- The trans_curve demos' stand-in for C++'s Times New Roman (Liberation Serif is metric-compatible). -->
+		<!-- The trans_curve demos' stand-in for C++'s Times New Roman (Liberation Serif is metric-compatible), and
+		     truetype_test's serif. -->
 		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationSerif-Regular.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationSerif-Regular.ttf" />
 		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationSerif-Italic.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationSerif-Italic.ttf" />
+		<!-- truetype_test's sans and monospace faces, beside the serif above (GPL-2 with the font exception,
+		     liberation-fonts-ttf-1.07.0/License.txt). -->
+		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationSans-Regular.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationSans-Regular.ttf" />
+		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationSans-Italic.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationSans-Italic.ttf" />
+		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationMono-Regular.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationMono-Regular.ttf" />
+		<EmbeddedResource Include="..\..\..\liberation-fonts-ttf-1.07.0\LiberationMono-Italic.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.LiberationMono-Italic.ttf" />
 		<!-- The GUI demo's default face, agg-gui's Nunito (SIL OFL 1.1, Fonts/Nunito-LICENSE-OFL.txt). -->
 		<EmbeddedResource Include="Fonts\Nunito-Regular.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.Nunito-Regular.ttf" />
 		<EmbeddedResource Include="Fonts\Nunito-Bold.ttf" LogicalName="MatterHackers.AggSharpDemo.Fonts.Nunito-Bold.ttf" />

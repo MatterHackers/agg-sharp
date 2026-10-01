@@ -579,8 +579,13 @@ namespace MatterHackers.Agg.Font
 		/// How far this face's kerning moves <paramref name="right"/> when it follows <paramref name="left"/>, in font
 		/// units (negative pulls the pair together): the GPOS "kern" feature's change to the left glyph's advance, as
 		/// a shaper (resvg's rustybuzz) applies it. Zero for a face without GPOS (SVG fonts) and for unkerned pairs.
+		/// Multiply by the em size in pixels over <see cref="UnitsPerEm"/> for pixels. Thread-safe.
 		/// </summary>
-		internal int GetKerningForCodePoints(int left, int right)
+		/// <remarks>
+		/// <see cref="StyledTypeFace"/> and <see cref="TypeFacePrinter"/> do not apply it - their advances are the
+		/// font's own - so text laid out by hand (SVG text, a typography demo) adds it between the pair itself.
+		/// </remarks>
+		public int GetKerningForCodePoints(int left, int right)
 		{
 			if (_ofTypeface?.GPOSTable == null)
 			{

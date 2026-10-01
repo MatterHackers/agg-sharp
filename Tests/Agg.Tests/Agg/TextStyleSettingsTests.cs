@@ -24,6 +24,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Font;
@@ -31,6 +32,7 @@ using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.AggSharpDemo.Demos;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
@@ -177,6 +179,86 @@ namespace Agg.Tests.Agg
 			}
 		}
 
+		/// <summary>
+		/// The same on a face loaded from a TrueType file: its outer contours wind counter-clockwise, the opposite of
+		/// the SVG font above, and the contour offset that thickens one thins the other unless the sign follows the
+		/// glyph's winding.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		public async Task FauxWeightThickensAndThinsTheInkOfATrueTypeFace()
+		{
+			try
+			{
+				TypeFace face = LoadDemoFont("LiberationSerif-Regular.ttf");
+				long regular = Ink(Render("Hmo", face));
+				TextStyleSettings.FauxWeight = .8;
+				long heavy = Ink(Render("Hmo", face));
+				TextStyleSettings.FauxWeight = -.8;
+				long light = Ink(Render("Hmo", face));
+
+				await Assert.That(heavy).IsGreaterThan(regular * 11 / 10);
+				await Assert.That(light).IsLessThan(regular * 9 / 10);
+			}
+			finally
+			{
+				TextStyleSettings.Reset();
+			}
+		}
+
+		/// <summary>
+		/// An underlined glyph gets heavier too, underline included, on an SVG face and a TrueType one. On a small
+		/// glyph such as '.' the underline's area outweighs the glyph's, so a winding read off glyph-plus-underline
+		/// - with the underline wound against the glyph - picked the sign that thins.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		public async Task FauxWeightThickensUnderlinedGlyphs()
+		{
+			foreach (TypeFace face in new[] { LiberationSansFont.Instance, LoadDemoFont("LiberationSerif-Regular.ttf") })
+			{
+				foreach (string text in new[] { ".", "Hmo" })
+				{
+					long regular = Ink(Render(new TypeFacePrinter(text, new StyledTypeFace(face, 18, underline: true))));
+					var weighted = new StyledTypeFace(face, 18, underline: true) { Style = new GlyphStyle(fauxWeight: .8) };
+					long heavy = Ink(Render(new TypeFacePrinter(text, weighted)));
+
+					await Assert.That(heavy).IsGreaterThan(regular * 11 / 10).Because($"'{text}' underlined in the {(face == LiberationSansFont.Instance ? "SVG" : "TrueType")} face");
+				}
+			}
+		}
+
+		/// <summary>
+		/// A face given its own <see cref="StyledTypeFace.Style"/> is shaped by it whatever the process-wide settings
+		/// say, and its text runs name the style by value.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		public async Task AFacesOwnStyleShapesItAlone()
+		{
+			try
+			{
+				long regular = Ink(Render(new TypeFacePrinter("Hmo", new StyledTypeFace(LiberationSansFont.Instance, 18))));
+				var own = new StyledTypeFace(LiberationSansFont.Instance, 18) { Style = new GlyphStyle(fauxWeight: .8) };
+				long heavy = Ink(Render(new TypeFacePrinter("Hmo", own)));
+				TextStyleSettings.FauxWeight = -.8;
+				long stillHeavy = Ink(Render(new TypeFacePrinter("Hmo", own)));
+
+				await Assert.That(heavy).IsGreaterThan(regular * 11 / 10);
+				await Assert.That(stillHeavy).IsEqualTo(heavy);
+
+				var same = new StyledTypeFace(LiberationSansFont.Instance, 18) { Style = new GlyphStyle(fauxWeight: .8) };
+				var lighter = new StyledTypeFace(LiberationSansFont.Instance, 18) { Style = new GlyphStyle(fauxWeight: .4) };
+				object identity = new TypeFacePrinter("H", own).RenderIdentity;
+				await Assert.That(new TypeFacePrinter("H", same).RenderIdentity).IsEqualTo(identity);
+				await Assert.That(new TypeFacePrinter("H", lighter).RenderIdentity).IsNotEqualTo(identity);
+			}
+			finally
+			{
+				TextStyleSettings.Reset();
+			}
+		}
+
 		/// <summary>A third of Faux Italic shears the outline, so the top of an upright stem leans right by that much of its height.</summary>
 		[Test]
 		[NotInParallel]
@@ -267,10 +349,20 @@ namespace Agg.Tests.Agg
 		}
 
 		/// <summary>The text drawn as UI text is, through a face that opts in to the settings.</summary>
-		private static ImageBuffer Render(string text)
+		private static ImageBuffer Render(string text, TypeFace face = null)
 		{
-			var style = new StyledTypeFace(LiberationSansFont.Instance, 18) { ApplyTextStyleSettings = true };
+			var style = new StyledTypeFace(face ?? LiberationSansFont.Instance, 18) { ApplyTextStyleSettings = true };
 			return Render(new TypeFacePrinter(text, style));
+		}
+
+		/// <summary>A TrueType face the AggSharpDemo assembly embeds.</summary>
+		private static TypeFace LoadDemoFont(string file)
+		{
+			using Stream stream = typeof(TrueTypeTestDemo).Assembly.GetManifestResourceStream("MatterHackers.AggSharpDemo.Fonts." + file)
+				?? throw new FileNotFoundException($"AggSharpDemo.csproj does not embed the font '{file}'.");
+			var face = new TypeFace();
+			face.LoadTTF(stream);
+			return face;
 		}
 
 		private static ImageBuffer Render(TypeFacePrinter printer)
