@@ -103,6 +103,13 @@ namespace MatterHackers.PolygonMesh.Sdf
 		/// <summary>Gets the voxel edge length, available once the field is built.</summary>
 		public double CellSize => cellSize;
 
+		/// <summary>Gets the voxels the band flood processed in the last build, finished or
+		/// cancelled - the build's dominant work, counted rather than timed.</summary>
+		internal long FloodWork { get; private set; }
+
+		/// <summary>Test seam: called with the flood's running work count.</summary>
+		internal Action<long> FloodProgress { get; set; }
+
 		/// <summary>Gets the sampled field (negative inside), for tests; null until built.</summary>
 		internal DenseGrid3f Field => grid;
 
@@ -166,8 +173,10 @@ namespace MatterHackers.PolygonMesh.Sdf
 				PadWidth = MaxRadius + (2 * cellSize),
 				ComputeSigns = false,
 				CancelF = () => cancellationToken.IsCancellationRequested,
+				FloodProgress = FloodProgress,
 			};
 			distances.Compute();
+			FloodWork = distances.FloodVoxelsProcessed;
 			cancellationToken.ThrowIfCancellationRequested();
 
 			var field = distances.Grid;

@@ -55,6 +55,12 @@ namespace g3
 
 		public InsideModes InsideMode = InsideModes.ParityCount;
 
+		// Called with the running count each time the band flood takes a voxel off its queue;
+		// a test seam for cancelling at a known amount of work.
+		public Action<long> FloodProgress;
+
+		private long floodVoxelsProcessed;
+
 		// If non-negative, the padding around the mesh bounds on each side (before ExpandBounds),
 		// replacing the default of twice the band. A caller that only needs the field out to the
 		// band - an offset preview - pads by the band alone.
@@ -116,6 +122,12 @@ namespace g3
 			CrossingCount = 0,
 			ParityCount = 1
 		}
+
+		/// <summary>
+		/// Voxels the band flood (NarrowBand_SpatialFloodFill) has taken off its queue and
+		/// processed so far.
+		/// </summary>
+		public long FloodVoxelsProcessed => Interlocked.Read(ref floodVoxelsProcessed);
 
 		public DenseGrid3i ClosestTriGrid
 		{
@@ -988,14 +1000,19 @@ namespace g3
 				next_Q.Clear();
 				gParallel.ForEach(Q, (cur_linear_index) =>
 				{
-					// A pass over a fine grid's band is itself long, so poll within it too.
-					if (cur_linear_index % 64 == 0 && CancelF())
+					// A pass over a fine grid's band is itself long, so poll within it too: every
+					// 64th voxel processed, counted across all workers. Counting after the abort
+					// check makes the count the work actually done.
+					if (Volatile.Read(ref abort))
 					{
-						abort = true;
+						return;
 					}
 
-					if (abort)
+					long processed = Interlocked.Increment(ref floodVoxelsProcessed);
+					FloodProgress?.Invoke(processed);
+					if (processed % 64 == 0 && CancelF())
 					{
+						Volatile.Write(ref abort, true);
 						return;
 					}
 

@@ -173,18 +173,34 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		[Test]
 		public async Task CancelledBuildStopsPromptly()
 		{
-			// A 256 grid around an 8k-triangle ball: a full build takes seconds (26 s in Debug),
-			// nearly all of it g3's band flood, which now polls within each pass.
+			// A 256 grid around an 8k-triangle ball: the band flood processes millions of voxels
+			// in passes of a few hundred thousand, so a cancel at 20000 lands mid-pass.
+			const long CancelAt = 20000;
 			var ball = MinkowskiProcessing.SphereMesh(10, 128);
 			var sdf = new MeshSdfGrid(ball, 5, MeshSdfGrid.MaxResolution);
 			using var cancel = new CancellationTokenSource();
-			// Late enough to land in the flood, past the seed loop's own check.
-			cancel.CancelAfter(1000);
-			var clock = Stopwatch.StartNew();
+			sdf.FloodProgress = processed =>
+			{
+				if (processed == CancelAt)
+				{
+					cancel.Cancel();
+				}
+			};
 
+			var clock = Stopwatch.StartNew();
 			await Assert.That(() => sdf.Build(cancel.Token)).Throws<OperationCanceledException>();
-			await Assert.That(clock.Elapsed.TotalSeconds).IsLessThan(3.0);
+
+			// Work, not time. The flood counts a voxel only after reading the abort flag, and
+			// polls the token at every 64th count: so after the cancel at CancelAt, the next
+			// multiple of 64 (at most 64 counts later) sets the flag, and past that each worker
+			// thread can add at most the one voxel it counted between its flag read and the
+			// write landing. Workers are pool threads, so the pool's size bounds them.
+			long workers = Math.Max(ThreadPool.ThreadCount, Environment.ProcessorCount);
+			await Assert.That(sdf.FloodWork - CancelAt).IsLessThanOrEqualTo(64 + workers);
 			await Assert.That(sdf.GridBuilds).IsEqualTo(0);
+
+			// A hang guard only: a full build is seconds, a stuck one never ends.
+			await Assert.That(clock.Elapsed.TotalSeconds).IsLessThan(60.0);
 		}
 
 		/// <summary>
