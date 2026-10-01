@@ -8,6 +8,8 @@
 
 **YAGNI does not license deleting public API** - agg-sharp is a *library* consumed by many applications, not all of them in this repo or in MatterCAD. There is no way to enumerate every project that imports it, so "no references found here" is not evidence a widget or public type is dead. Never delete a public widget/class just because a search in this repo (or one sibling repo) turns up zero call sites. If a public type has latent defects, fix the defects. Removal requires an explicit decision from Lars, not an audit result. (ConsoleWidget was deleted this way and had to be restored — SiteValidator was using it.)
 
+**Push back** - When a request looks like a poor decision, contradicts your recommendation, or would undo or break something built earlier, say so before doing it: what it breaks or why it is worse, and what you recommend instead. A past decision or your recommendation stands until Lars explicitly overrides it. Never silently comply, and never silently substitute your own choice.
+
 **Quality through iterations** - Start fast and simple, then improve to meet actual needs. Code that doesn't matter can be quick and dirty. But code that matters *really* matters—treat it with respect and improve it meticulously.
 
 ## Test-First Bug Fixing (Critical Practice)
