@@ -382,6 +382,29 @@ namespace MatterHackers.Agg.UI.Tests
 				.Because("copying other pixels in must not leave the old icon's coverage behind");
 		}
 
+		/// <summary>
+		/// WhiteToAlpha only lowers alpha, so the icon's coverage still describes its pixels - the draw-time
+		/// a_now / a_orig ratio treats what it cleared as faded out.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		public async Task WhiteToAlphaKeepsTheSubpixelEdges()
+		{
+			await WithLcd(true, async () =>
+			{
+				ImageBuffer icon = LoadSvgIcon(Corner, invert: false);
+				ImageBuffer cleared = icon.WhiteToAlpha();
+				(ImageBuffer tinted, _) = icon.WhiteToAlpha_GreyToColor(Color.Black);
+
+				await Assert.That(cleared.LcdCoverage).IsSameReferenceAs(icon.LcdCoverage);
+				await Assert.That(tinted.LcdCoverage).IsSameReferenceAs(icon.LcdCoverage);
+
+				ImageBuffer canvas = Opaque(Color.White);
+				canvas.NewGraphics2D().Render(cleared, 8, 8);
+				await Assert.That(CountChromaPixels(canvas)).IsGreaterThan(0);
+			});
+		}
+
 		private static async Task WithLcd(bool enabled, Func<Task> test)
 		{
 			bool wasEnabled = LcdRenderSettings.Enabled;

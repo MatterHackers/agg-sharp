@@ -29,44 +29,33 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.IO;
-using MatterHackers.Agg.Image;
-using MatterHackers.Agg.Platform;
-using MatterHackers.Agg.VertexSource;
-using MatterHackers.ImageProcessing;
 
-namespace MatterHackers.Agg.UI
+namespace MatterHackers.Agg.Platform
 {
 	/// <summary>
-	/// The check mark a <see cref="PopupMenu.CheckboxMenuItem"/> shows. MatterCAD ships Icons/fa-check_16 (as
-	/// an .svg, preferred for its LCD edges, or a .png) and keeps that look; an app without it (the agg-sharp
-	/// demos) gets the same size mark drawn as a stroke, where the icon load would otherwise throw in debug builds.
+	/// Conveniences over <see cref="IStaticData"/> built only on its members, so every provider - including
+	/// ones outside this repo - gets them without implementing anything new.
 	/// </summary>
-	internal static class MenuCheckMark
+	public static class StaticDataExtensions
 	{
-		private const string IconName = "fa-check_16.png";
-
-		/// <summary>A 16 x 16 (logical) check in <paramref name="color"/> at the current device scale.</summary>
-		public static ImageBuffer Create(Color color)
+		/// <summary>
+		/// The icon name to load for <paramref name="iconName"/>: the .svg of the same base name when the app
+		/// ships one in Icons, otherwise <paramref name="iconName"/> unchanged.
+		/// </summary>
+		/// <remarks>
+		/// agg-sharp's widgets name their icons as PNGs because that is what every app used to ship. An SVG
+		/// icon draws with LCD subpixel edges, which a PNG cannot, so an app that has converted an icon gets
+		/// the SVG while an app that still ships only the PNG keeps working.
+		/// </remarks>
+		public static string PreferSvgIcon(this IStaticData staticData, string iconName)
 		{
-			string iconName = StaticData.Instance.PreferSvgIcon(IconName);
-			if (StaticData.Instance.FileExists(Path.Combine("Icons", iconName)))
+			if (Path.GetExtension(iconName).Equals(".svg", StringComparison.OrdinalIgnoreCase))
 			{
-				return StaticData.Instance.LoadIcon(iconName, 16, 16).GrayToColor(color);
+				return iconName;
 			}
 
-			double scale = GuiWidget.DeviceScale;
-			var size = (int)Math.Round(16 * scale);
-			var image = new ImageBuffer(size, size);
-			image.SetRecieveBlender(new BlenderPreMultBGRA());
-
-			// agg-gui's check: a short down stroke into a long up stroke (y is up in agg)
-			var check = new VertexStorage();
-			check.MoveTo(3 * scale, 8 * scale);
-			check.LineTo(6.5 * scale, 4.5 * scale);
-			check.LineTo(13 * scale, 12 * scale);
-			image.NewGraphics2D().Render(new Stroke(check, 2 * scale), color);
-
-			return image;
+			string svgName = Path.ChangeExtension(iconName, ".svg");
+			return staticData.FileExists(Path.Combine("Icons", svgName)) ? svgName : iconName;
 		}
 	}
 }

@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2015, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@ namespace MatterHackers.Agg.ImageProcessing
 	{
 		public static bool MaxRGB32(byte[] buffer, int offset, int threshold)
 		{
-			if (buffer[offset + 0] > threshold || buffer[offset + 0] > threshold || buffer[offset + 0] > threshold)
+			if (buffer[offset + 0] > threshold || buffer[offset + 1] > threshold || buffer[offset + 2] > threshold)
 			{
 				return true;
 			}

@@ -294,11 +294,12 @@ namespace MatterHackers.Agg.UI
                 VAnchor = VAnchor.Fit | VAnchor.Center,
             };
 
-            // mh.png is MatterCAD's icon and ships in its StaticData, not agg-sharp's; any other app has none, and
-            // loading a missing icon throws in a debug build. Such an app gets a title bar without the icon.
-            if (StaticData.Instance.FileExists(System.IO.Path.Combine("Icons", "mh.png")))
+            // mh (.svg or .png) is MatterCAD's icon and ships in its StaticData, not agg-sharp's; any other app has
+            // none, and loading a missing icon throws in a debug build. Such an app gets a title bar without the icon.
+            string appIconName = StaticData.Instance.PreferSvgIcon("mh.png");
+            if (StaticData.Instance.FileExists(System.IO.Path.Combine("Icons", appIconName)))
             {
-                titleBarRow.AddChild(new ImageWidget(StaticData.Instance.LoadIcon("mh.png", 16, 16).GrayToColor(theme.TextColor))
+                titleBarRow.AddChild(new ImageWidget(StaticData.Instance.LoadIcon(appIconName, 16, 16).GrayToColor(theme.TextColor))
                 {
                     Margin = new BorderDouble(4, 0, 6, 0),
                     VAnchor = VAnchor.Center

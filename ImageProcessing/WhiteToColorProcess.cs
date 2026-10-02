@@ -104,6 +104,10 @@ namespace MatterHackers.ImageProcessing
 
             ConvertWhiteToAlpha(destImage, sourceImage);
 
+            // Alpha only ever goes down and the geometry is unchanged, so an SVG icon's LCD coverage still
+            // lines up; the composite's a_now / a_orig ratio fades out what was cleared.
+            destImage.LcdCoverage = sourceImage.LcdCoverage;
+
             return destImage;
         }
 

@@ -1,5 +1,5 @@
 /*
-Copyright(c) 2024, Lars Brubaker, John Lewin
+Copyright(c) 2026, Lars Brubaker, John Lewin
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -42,7 +42,7 @@ namespace Markdig.Renderers.Agg.Inlines
 	{
 		// Lazy so the StaticData I/O happens at first construction rather than at type initialization
 		private static readonly Lazy<ImageBuffer> icon = new Lazy<ImageBuffer>(
-			() => StaticData.Instance.LoadIcon("internet.png", 16, 16));
+			() => StaticData.Instance.LoadIcon(StaticData.Instance.PreferSvgIcon("internet.png"), 16, 16));
 
 		private string resolvedImageUrl;
 

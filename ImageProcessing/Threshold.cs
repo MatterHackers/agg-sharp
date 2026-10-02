@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2015, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -38,7 +38,7 @@ namespace MatterHackers.Agg.ImageProcessing
 
 		public static bool MaxRGB32(byte[] buffer, int offset, int threshold)
 		{
-			if (buffer[offset + 0] > threshold || buffer[offset + 0] > threshold || buffer[offset + 0] > threshold)
+			if (buffer[offset + 0] > threshold || buffer[offset + 1] > threshold || buffer[offset + 2] > threshold)
 			{
 				return true;
 			}
@@ -46,9 +46,21 @@ namespace MatterHackers.Agg.ImageProcessing
 			return false;
 		}
 
+		/// <summary>The byte at <paramref name="offset"/> - a whole pixel of an 8 bit image - is over the threshold.</summary>
+		public static bool Gray8(byte[] buffer, int offset, int threshold)
+		{
+			return buffer[offset] > threshold;
+		}
+
+		/// <summary>
+		/// Turns every pixel over <paramref name="threshold"/> white and the rest clear: any colour channel of a
+		/// 32 bit image, the one gray byte of an 8 bit one.
+		/// </summary>
 		public static void DoThreshold(this ImageBuffer sourceImageAndDest, int threshold)
 		{
-			DoThreshold(sourceImageAndDest, sourceImageAndDest, threshold, MaxRGB32);
+			// MaxRGB32 reads three bytes, which on an 8 bit image are this pixel and its two neighbours
+			TestThreshold test = sourceImageAndDest.BitDepth == 8 ? Gray8 : MaxRGB32;
+			DoThreshold(sourceImageAndDest, sourceImageAndDest, threshold, test);
 		}
 
 		public static void DoThreshold(ImageBuffer sourceImageAndDest, int threshold, TestThreshold testFunction)

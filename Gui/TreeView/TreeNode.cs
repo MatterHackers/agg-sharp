@@ -850,8 +850,8 @@ namespace MatterHackers.Agg.UI
             {
                 if (arrowRight == null)
                 {
-                    arrowRight = StaticData.Instance.LoadIcon("fa-angle-right_12.png", 12, 12).GrayToColor(theme.TextColor);
-                    arrowDown = StaticData.Instance.LoadIcon("fa-angle-down_12.png", 12, 12).GrayToColor(theme.TextColor);
+                    arrowRight = StaticData.Instance.LoadIcon(StaticData.Instance.PreferSvgIcon("fa-angle-right_12.png"), 12, 12).GrayToColor(theme.TextColor);
+                    arrowDown = StaticData.Instance.LoadIcon(StaticData.Instance.PreferSvgIcon("fa-angle-down_12.png"), 12, 12).GrayToColor(theme.TextColor);
 
                     // Catch up on any expansion-state changes made before load
                     this.EnsureExpansionState();
