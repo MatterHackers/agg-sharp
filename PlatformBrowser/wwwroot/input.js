@@ -226,7 +226,10 @@ function packBlurEvent() {
  *
  * tabIndex is what makes a canvas able to hold keyboard focus at all; touch-action none stops a touch drag
  * scrolling the page out from under a gesture agg is tracking; user-select none stops a double click
- * selecting the page's text; outline none hides the focus ring the app draws itself.
+ * selecting the page's text (the -webkit- copy is for older WebKit, which ignores the unprefixed property);
+ * outline none hides the focus ring the app draws itself. A transparent -webkit-tap-highlight-color stops mobile
+ * Chrome flashing its blue tap highlight on every tap, which covers the whole app because the app is one canvas;
+ * -webkit-touch-callout none stops a long press popping the browser's save-image menu over the canvas.
  */
 export function bindCanvas(selector) {
 	const canvas = resolveCanvas(selector);
@@ -237,7 +240,10 @@ export function bindCanvas(selector) {
 
 	canvas.style.touchAction = 'none';
 	canvas.style.userSelect = 'none';
+	canvas.style.webkitUserSelect = 'none';
 	canvas.style.outline = 'none';
+	canvas.style.webkitTapHighlightColor = 'transparent';
+	canvas.style.webkitTouchCallout = 'none';
 
 	const m = measureCanvas(canvas, null);
 	return [m.devicePixelWidth, m.devicePixelHeight, m.cssWidth, m.cssHeight, m.devicePixelRatio];
