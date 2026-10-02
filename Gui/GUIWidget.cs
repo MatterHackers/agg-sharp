@@ -3799,6 +3799,10 @@ namespace MatterHackers.Agg.UI
 						UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 						OnMouseEnterBounds(mouseEvent);
 					}
+					else
+					{
+						ReapplyCursorIfChanged();
+					}
 
 					UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 				}
@@ -3894,6 +3898,10 @@ namespace MatterHackers.Agg.UI
 						{
 							UnderMouseState = UI.UnderMouseState.FirstUnderMouse;
 							OnMouseEnter(mouseEvent);
+						}
+						else
+						{
+							ReapplyCursorIfChanged();
 						}
 					}
 				}
@@ -4123,12 +4131,35 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
+		/// The cursor this widget last pushed to the window, so a mouse move only calls the platform when the
+		/// cursor actually changed (mac's SetCursor hops to the main thread).
+		/// </summary>
+		private Cursors? lastAppliedCursor;
+
+		/// <summary>
+		/// A widget's <see cref="Cursor"/> can depend on where the mouse is inside it (a resize bar along one
+		/// edge, a close button on a tab), but <see cref="OnMouseEnter"/> only fires when the widget becomes the
+		/// first under the mouse. Moves that stay over this widget call this so such a change reaches the window
+		/// instead of sticking until the mouse leaves and comes back.
+		/// </summary>
+		private void ReapplyCursorIfChanged()
+		{
+			var cursor = Cursor;
+			if (cursor != lastAppliedCursor)
+			{
+				lastAppliedCursor = cursor;
+				SetCursor(cursor);
+			}
+		}
+
+		/// <summary>
 		/// The mouse has entered the bounds of this widget and is also not over a child widget.
 		/// </summary>
 		/// <param name="mouseEvent">The mouse event that triggered this event</param>
 		public virtual void OnMouseEnter(MouseEventArgs mouseEvent)
 		{
-			SetCursor(Cursor);
+			lastAppliedCursor = Cursor;
+			SetCursor(lastAppliedCursor.Value);
 
 			try
 			{
