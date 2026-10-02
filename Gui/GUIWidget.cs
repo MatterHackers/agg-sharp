@@ -593,10 +593,29 @@ namespace MatterHackers.Agg.UI
 			MarginChanged?.Invoke(this, null);
 		}
 
+		private Cursors cursor;
+
 		/// <summary>
 		/// Gets or sets the cursor that will be used when the mouse is over this control
 		/// </summary>
-		public virtual Cursors Cursor { get; set; }
+		public virtual Cursors Cursor
+		{
+			get => cursor;
+			set
+			{
+				cursor = value;
+
+				// A cursor set while this widget is the one showing its cursor - code starting a picking mode
+				// while the mouse rests here, or a move handler that sets it after base.OnMouseMove - must reach
+				// the window now; otherwise it waits for the next mouse move, or never comes if the mouse stops.
+				// Being first under the mouse covers a captured drag too, as long as the mouse is within this
+				// widget. ReapplyCursorIfChanged reads the virtual getter, so getter overrides still win.
+				if (FirstWidgetUnderMouse)
+				{
+					ReapplyCursorIfChanged();
+				}
+			}
+		}
 
 		[Conditional("DEBUG")]
 		public static void BreakInDebugger(string description = "")

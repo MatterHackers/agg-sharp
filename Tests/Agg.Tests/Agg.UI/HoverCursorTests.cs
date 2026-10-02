@@ -86,6 +86,24 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
+		/// <summary>
+		/// Sets its own Cursor after base.OnMouseMove has run, the shape of a widget that decides its cursor
+		/// from state its move handler computes last.
+		/// </summary>
+		private class SetAfterMoveWidget : GuiWidget
+		{
+			public SetAfterMoveWidget(double width, double height)
+				: base(width, height)
+			{
+			}
+
+			public override void OnMouseMove(MouseEventArgs mouseEvent)
+			{
+				base.OnMouseMove(mouseEvent);
+				Cursor = mouseEvent.Position.X < 10 ? Cursors.VSplit : Cursors.Default;
+			}
+		}
+
 		private static MouseEventArgs Move(double x, double y) => new MouseEventArgs(MouseButtons.None, 0, x, y, 0);
 
 		private static MouseEventArgs Press(double x, double y) => new MouseEventArgs(MouseButtons.Left, 1, x, y, 0);
@@ -131,6 +149,57 @@ namespace MatterHackers.Agg.UI.Tests
 			root.OnMouseMove(Move(5, 50));
 			await Assert.That(root.Applied.Count).IsEqualTo(countAfterPress + 1);
 			await Assert.That(root.Applied[^1]).IsEqualTo(Cursors.VSplit);
+		}
+
+		[Test]
+		public async Task CursorSetByCodeWhileTheMouseRestsOverTheWidgetReachesTheWindow()
+		{
+			var root = new CursorRecorder(200, 200);
+			var panel = new GuiWidget(100, 100);
+			root.AddChild(panel);
+
+			root.OnMouseMove(Move(50, 50));
+			var countAfterEnter = root.Applied.Count;
+
+			// a picking mode starts while the mouse sits still over the panel
+			panel.Cursor = Cursors.Cross;
+			await Assert.That(root.Applied.Count).IsEqualTo(countAfterEnter + 1);
+			await Assert.That(root.Applied[^1]).IsEqualTo(Cursors.Cross);
+
+			// setting the same cursor again does not call the platform
+			panel.Cursor = Cursors.Cross;
+			await Assert.That(root.Applied.Count).IsEqualTo(countAfterEnter + 1);
+		}
+
+		[Test]
+		public async Task CursorSetAfterBaseMouseMoveReachesTheWindowOnThatMove()
+		{
+			var root = new CursorRecorder(200, 200);
+			var panel = new SetAfterMoveWidget(100, 100);
+			root.AddChild(panel);
+
+			root.OnMouseMove(Move(50, 50));
+			root.OnMouseMove(Move(5, 50));
+			await Assert.That(root.Applied[^1]).IsEqualTo(Cursors.VSplit);
+
+			root.OnMouseMove(Move(50, 50));
+			await Assert.That(root.Applied[^1]).IsEqualTo(Cursors.Default);
+		}
+
+		[Test]
+		public async Task CursorSetOnAWidgetTheMouseIsNotOverDoesNotReachTheWindow()
+		{
+			var root = new CursorRecorder(200, 200);
+			var hovered = new GuiWidget(50, 50);
+			var other = new GuiWidget(50, 50) { Position = new VectorMath.Vector2(100, 100) };
+			root.AddChild(hovered);
+			root.AddChild(other);
+
+			root.OnMouseMove(Move(10, 10));
+			var countAfterEnter = root.Applied.Count;
+
+			other.Cursor = Cursors.Hand;
+			await Assert.That(root.Applied.Count).IsEqualTo(countAfterEnter);
 		}
 	}
 }
