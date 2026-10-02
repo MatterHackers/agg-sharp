@@ -80,7 +80,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "gamma_correction";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Rendering";
 
 		public override string Description => "Thin ellipses blended through a gamma-correcting pixel format. Change the thickness, contrast and gamma, or drag to resize the ellipses.";
 

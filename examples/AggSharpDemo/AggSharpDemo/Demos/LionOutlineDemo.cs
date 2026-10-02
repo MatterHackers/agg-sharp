@@ -76,7 +76,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "lion_outline";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Shapes";
 
 		public override string Description => "The lion's outlines drawn with AGG's fast anti-aliased line algorithm, or with the scanline rasterizer to compare. Left-drag to rotate and scale, right-drag to skew.";
 

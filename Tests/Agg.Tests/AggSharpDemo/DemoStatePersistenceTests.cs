@@ -176,6 +176,37 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		}
 
 		[Test]
+		public async Task The3DAnimationSsaaStartsOffSurvivesARelaunchAndResetsToOff()
+		{
+			DemoSpec threeD = Spec("3D Animation");
+			// Linear factor 1 is agg-gui's "Off" segment.
+			const int off = 1;
+
+			var store = new MemoryStore();
+			GuiDemoShell first = LaidOutShell(store);
+			first.Windows.SetOpen(threeD, true);
+			await Assert.That(first.ThreeDAnimation.SsaaFactor).IsEqualTo(off).Because("agg-gui starts the cube without AA");
+			await Assert.That(first.ThreeDAnimation.Status.Text).StartsWith("Off");
+			first.ThreeDAnimation.SsaaButtons[2].InvokeClick();
+			first.Close();
+
+			// Restored even though the window is built only when it is opened after the restore.
+			GuiDemoShell second = LaidOutShell(store);
+			await Assert.That(DemoState.Parse(store.Load()).ThreeDSsaaFactor).IsEqualTo(3);
+			second.Windows.SetOpen(threeD, true);
+			await Assert.That(second.ThreeDAnimation.SsaaFactor).IsEqualTo(3);
+
+			second.ResetAllState();
+			await Assert.That(second.ThreeDAnimation.SsaaFactor).IsEqualTo(off);
+			second.Close();
+
+			GuiDemoShell third = LaidOutShell(store);
+			third.Windows.SetOpen(threeD, true);
+			await Assert.That(third.ThreeDAnimation.SsaaFactor).IsEqualTo(off).Because("the reset is what is saved");
+			third.Close();
+		}
+
+		[Test]
 		public async Task ChangesSaveOnceAfterTheDelay()
 		{
 			var store = new MemoryStore();

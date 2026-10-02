@@ -46,38 +46,237 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 	public class AggSharpDemoAppTests
 	{
 		[Test]
-		public async Task SidebarSectionHeadersSitInsideThePaddingAndMargin()
+		public async Task TheTabStripAcrossTheTopHasBothTabsAndOpensOnTheAggDemosLion()
 		{
-			var page = new GuiWidget(1000, 700);
-			var app = new AggSharpDemoApp(AggSharpDemoApp.GuiDemoName);
-			page.AddChild(app);
-			page.PerformLayout();
+			AggSharpDemoApp app = LaidOutApp(1000, 700);
 
-			var sidebarList = ((ScrollableWidget)app.Children.First()).ScrollArea.Children.First();
-			var headers = sidebarList.Children.OfType<TextWidget>().ToList();
-			await Assert.That(headers.Count).IsEqualTo(2);
-			foreach (TextWidget header in headers)
+			await Assert.That(app.Tabs.Tabs.Select(t => t.Text)).IsEquivalentTo(
+				new[] { AggSharpDemoApp.AggDemosLabel, AggSharpDemoApp.AggSharpDemosLabel }, TUnit.Assertions.Enums.CollectionOrdering.Matching);
+			foreach (GuiWidget tab in app.Tabs.Tabs)
 			{
-				// The sidebar list's 8 px padding plus the header's 2 px left margin, from the list's drawn left edge
-				// (a padded flow's left edge sits one padding left of its origin).
-				await Assert.That(header.Position.X + header.LocalBounds.Left - sidebarList.LocalBounds.Left).IsEqualTo(10)
-					.Because($"'{header.Text}' should sit 10 px in");
+				RectangleDouble bounds = BoundsIn(app, tab);
+				await Assert.That(bounds.Top).IsEqualTo(app.LocalBounds.Top).Because($"'{tab.Text}' should sit along the top");
 			}
+
+			await Assert.That(BoundsIn(app, app.Tabs.Tabs[0]).Left).IsEqualTo(app.LocalBounds.Left);
+			await Assert.That(BoundsIn(app, app.Tabs.Tabs[1]).Right).IsEqualTo(app.LocalBounds.Right);
+
+			// The first visit opens on AGG drawing, as the site always has.
+			await Assert.That(app.SelectedTab).IsEqualTo(AggSharpDemoApp.AggDemosTab);
+			await Assert.That(app.AggDemosPage.SelectedDemo.Name).IsEqualTo(DemoRegistry.DefaultDemoName);
+			await Assert.That(app.GuiDemoShell).IsNull().Because("only one mode is shown at a time");
+		}
+
+		[Test]
+		public async Task SwitchingTabsSwapsTheBarAndTheContentAndTheBarStaysOnTheRight()
+		{
+			AggSharpDemoApp app = LaidOutApp(1000, 700);
+
+			AggDemosPage aggPage = app.AggDemosPage;
+			await AssertBarOnTheRight(app, aggPage.Sidebar, aggPage.Content);
+
+			app.Tabs.Tabs[1].OnMouseDown(new MouseEventArgs(MouseButtons.Left, 1, 5, 5, 0));
+			app.PerformLayout();
+			await Assert.That(app.SelectedTab).IsEqualTo(AggSharpDemoApp.AggSharpDemosTab);
+			await Assert.That(app.AggDemosPage).IsNull().Because("the AGG page should be gone");
+			await Assert.That(aggPage.HasBeenClosed).IsTrue();
+			GuiDemoShell shell = app.GuiDemoShell;
+			await Assert.That(shell).IsNotNull();
+			await AssertBarOnTheRight(app, shell.Sidebar, shell.Canvas);
+
+			app.SelectTab(AggSharpDemoApp.AggDemosTab);
+			app.PerformLayout();
+			await Assert.That(app.GuiDemoShell).IsNull();
+			await Assert.That(shell.HasBeenClosed).IsTrue();
+			await AssertBarOnTheRight(app, app.AggDemosPage.Sidebar, app.AggDemosPage.Content);
+		}
+
+		[Test]
+		public async Task BothBarsAreTheSameComponent()
+		{
+			AggSharpDemoApp app = LaidOutApp(1000, 700);
+			AggDemoSidebar aggBar = app.AggDemosPage.Sidebar;
+			RectangleDouble aggBounds = BoundsIn(app, aggBar);
+			double aggRowHeight = aggBar.Descendants<SidebarRow>().First().Height;
+			Color aggFill = aggBar.BackgroundColor;
+			await Assert.That(aggBar.Search).IsNotNull();
+
+			app.SelectTab(AggSharpDemoApp.AggSharpDemosTab);
+			app.PerformLayout();
+			DemoSidebar guiBar = app.GuiDemoShell.Sidebar;
+			RectangleDouble guiBounds = BoundsIn(app, guiBar);
+
+			await Assert.That(aggBounds.Width).IsEqualTo(guiBounds.Width);
+			await Assert.That(aggBounds.Right).IsEqualTo(guiBounds.Right);
+			await Assert.That(aggRowHeight).IsEqualTo(guiBar.Descendants<SidebarRow>().First().Height);
+			await Assert.That(aggFill).IsEqualTo(guiBar.BackgroundColor);
+			await Assert.That(guiBar.Search).IsNotNull();
+		}
+
+		[Test]
+		public async Task SelectingAnAggDemoInTheBarShowsItOnTheLeft()
+		{
+			AggSharpDemoApp app = LaidOutApp(1000, 700);
+			AggDemosPage page = app.AggDemosPage;
+
+			page.Sidebar.RowOf("gradients").InvokeClick();
+			app.PerformLayout();
+
+			AggDemoView view = page.Content.Descendants<AggDemoView>().Single();
+			await Assert.That(view.Demo.Name).IsEqualTo("gradients");
+			await Assert.That(page.SelectedDemo.Name).IsEqualTo("gradients");
+			await Assert.That(BoundsIn(app, view).Right).IsLessThanOrEqualTo(BoundsIn(app, page.Sidebar).Left);
+			await Assert.That(page.Sidebar.RowOf("gradients").IsOn).IsTrue();
+			await Assert.That(page.Sidebar.RowOf("lion").IsOn).IsFalse();
+		}
+
+		[Test]
+		public async Task TheAggDemosAreGroupedAndAlphabeticalInTheBarAndTheMenu()
+		{
+			AggSharpDemoApp app = LaidOutApp(1000, 700);
+			AggDemosPage page = app.AggDemosPage;
+			var allNames = DemoRegistry.CreateAggDemos().Select(d => d.Name).OrderBy(n => n).ToList();
+
+			// Every demo is in one of the listed groups.
+			await Assert.That(DemoRegistry.CreateAggDemos().All(d => DemoRegistry.Groups.Contains(d.Category))).IsTrue();
+
+			// The bar: group headers in Groups order, each followed by its demos alphabetically.
+			var barGroups = page.Sidebar.Descendants<SidebarGroupHeader>().Select(h => h.Name.Substring("AGG Sidebar Group ".Length)).ToList();
+			await Assert.That(barGroups).IsEquivalentTo(DemoRegistry.Groups, TUnit.Assertions.Enums.CollectionOrdering.Matching);
+			var barNames = page.Sidebar.Descendants<SidebarRow>().Select(r => r.Text).ToList();
+			await Assert.That(barNames.OrderBy(n => n).ToList()).IsEquivalentTo(allNames, TUnit.Assertions.Enums.CollectionOrdering.Matching);
+
+			// The menu: the same groups, the same order within each.
+			var groups = page.TopBar.Menus[0].SubMenuItems();
+			await Assert.That(groups.Select(g => g.Text)).IsEquivalentTo(DemoRegistry.Groups, TUnit.Assertions.Enums.CollectionOrdering.Matching);
+			var menuNames = groups.SelectMany(g => g.SubMenuItems().Select(i => i.Text)).ToList();
+			await Assert.That(menuNames).IsEquivalentTo(barNames, TUnit.Assertions.Enums.CollectionOrdering.Matching);
+			foreach (var group in groups)
+			{
+				var names = group.SubMenuItems().Select(i => i.Text).ToList();
+				var sorted = names.OrderBy(n => n.ToLowerInvariant(), StringComparer.Ordinal).ToList();
+				await Assert.That(names).IsEquivalentTo(sorted, TUnit.Assertions.Enums.CollectionOrdering.Matching).Because($"'{group.Text}' should be alphabetical");
+			}
+		}
+
+		[Test]
+		public async Task ANarrowWindowHidesTheAggBarAndTheDemosMenuPicksTheDemo()
+		{
+			AggSharpDemoApp app = LaidOutApp(600, 700);
+			AggDemosPage page = app.AggDemosPage;
+
+			await Assert.That(page.IsNarrow).IsTrue();
+			await Assert.That(page.Sidebar.Visible).IsFalse().Because("a narrow window has no room for a permanent bar");
+			await Assert.That(page.TopBar.SidebarDrawerButton.Visible).IsTrue();
+			await Assert.That(BoundsIn(app, page.Content).Width).IsEqualTo(app.Width);
+
+			var circles = page.TopBar.Menus[0].SubMenuItems()
+				.Single(g => g.AutomationName == "demos.Shapes")
+				.SubMenuItems()
+				.Single(i => i.AutomationName == "agg.circles");
+			circles.Action();
+
+			await Assert.That(page.SelectedDemo.Name).IsEqualTo("circles");
+			await Assert.That(page.Content.Descendants<AggDemoView>().Single().Demo.Name).IsEqualTo("circles");
+
+			// The drawer still opens the bar, and picking from it closes it again so the demo shows.
+			page.TopBar.SidebarDrawerButton.InvokeClick();
+			await Assert.That(page.Sidebar.Visible).IsTrue();
+			page.Sidebar.RowOf("lion").InvokeClick();
+			await Assert.That(page.Sidebar.Visible).IsFalse();
+			await Assert.That(page.SelectedDemo.Name).IsEqualTo("lion");
+		}
+
+		[Test]
+		public async Task ResizingAcrossTheBreakpointDocksAndHidesTheAggBar()
+		{
+			AggSharpDemoApp app = LaidOutApp(600, 700);
+			GuiWidget window = app.Parent;
+			AggDemosPage page = app.AggDemosPage;
+
+			async Task AssertNarrow(string when)
+			{
+				await Assert.That(window.Width).IsEqualTo(600).Because($"{when}: the window should really be narrow");
+				await Assert.That(page.Sidebar.Visible).IsFalse().Because($"{when}: the bar should be hidden");
+				await Assert.That(page.TopBar.SidebarDrawerButton.Visible).IsTrue().Because($"{when}: the drawer button should show");
+			}
+
+			async Task AssertWide(string when)
+			{
+				await Assert.That(page.Sidebar.Visible).IsTrue().Because($"{when}: the bar should be back");
+				await Assert.That(page.TopBar.SidebarDrawerButton.Visible).IsFalse().Because($"{when}: the drawer button should hide");
+				await AssertBarOnTheRight(app, page.Sidebar, page.Content);
+			}
+
+			await AssertNarrow("narrow at start");
+
+			window.Width = 1000;
+			window.PerformLayout();
+			await AssertWide("widened");
+
+			window.Width = 600;
+			window.PerformLayout();
+			await AssertNarrow("narrowed again");
+
+			// And the reverse: starting wide.
+			app = LaidOutApp(1000, 700);
+			window = app.Parent;
+
+			// GuiWidget(width, height) makes its size the minimum; a window can shrink below where it opened.
+			window.MinimumSize = MatterHackers.VectorMath.Vector2.Zero;
+			page = app.AggDemosPage;
+			await AssertWide("wide at start");
+
+			window.Width = 600;
+			window.PerformLayout();
+			await AssertNarrow("narrowed");
+
+			window.Width = 1000;
+			window.PerformLayout();
+			await AssertWide("widened again");
+		}
+
+		[Test]
+		public async Task TheSelectedTabAndAggDemoSurviveARelaunch()
+		{
+			var store = new MemoryStore();
+			AggSharpDemoApp first = LaidOutApp(1000, 700, store);
+			first.AggDemosPage.Sidebar.RowOf("gradients").InvokeClick();
+			first.SelectTab(AggSharpDemoApp.AggSharpDemosTab);
+
+			// The GUI demo page saves its own state into the same store; that must not drop the app's choices.
+			first.GuiDemoShell.Persistence.SaveNow();
+			first.Close();
+
+			DemoState saved = DemoState.Parse(store.Json);
+			await Assert.That(saved.AppTab).IsEqualTo(AggSharpDemoApp.AggSharpDemosTab);
+			await Assert.That(saved.AggDemo).IsEqualTo("gradients");
+
+			AggSharpDemoApp second = LaidOutApp(1000, 700, store);
+			await Assert.That(second.SelectedTab).IsEqualTo(AggSharpDemoApp.AggSharpDemosTab);
+			await Assert.That(second.GuiDemoShell).IsNotNull();
+
+			second.SelectTab(AggSharpDemoApp.AggDemosTab);
+			await Assert.That(second.AggDemosPage.SelectedDemo.Name).IsEqualTo("gradients");
+			second.Close();
+
+			// A head asking for a demo by name still gets it, whatever was saved.
+			AggSharpDemoApp third = LaidOutApp(1000, 700, store, "circles");
+			await Assert.That(third.SelectedTab).IsEqualTo(AggSharpDemoApp.AggDemosTab);
+			await Assert.That(third.AggDemosPage.SelectedDemo.Name).IsEqualTo("circles");
+			third.Close();
 		}
 
 		[Test]
 		public async Task SidebarScrollsSoTheLastDemoIsReachableInAShortWindow()
 		{
 			// Short enough that the AGG demo list overflows it, as it does in a normal window now.
-			var page = new GuiWidget(1000, 300);
-			var app = new AggSharpDemoApp(AggSharpDemoApp.GuiDemoName);
-			page.AddChild(app);
-			page.PerformLayout();
+			AggSharpDemoApp app = LaidOutApp(1000, 300);
 
-			var scroll = app.Children.First() as ScrollableWidget;
+			var scroll = (ScrollableWidget)app.AggDemosPage.Sidebar.FindDescendant("AGG Sidebar Scroll");
 			await Assert.That(scroll).IsNotNull().Because("the sidebar should scroll when it overflows");
 
-			var lastEntry = scroll.Descendants<ThemedTextButton>().Last();
+			var lastEntry = scroll.Descendants<SidebarRow>().Last();
 			var before = lastEntry.TransformToParentSpace(scroll, lastEntry.LocalBounds);
 			await Assert.That(before.Bottom).IsLessThan(scroll.LocalBounds.Bottom)
 				.Because("the list should overflow a 300 px window, or this test proves nothing");
@@ -92,30 +291,29 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		[Test]
 		public async Task ChromeAndSidebarSearchFollowTheDemoTheme()
 		{
-			var page = new GuiWidget(1000, 700);
-			var app = new AggSharpDemoApp(AggSharpDemoApp.GuiDemoName);
-			page.AddChild(app);
-			page.PerformLayout();
+			AggSharpDemoApp app = LaidOutApp(1000, 700);
+			AggDemosPage page = app.AggDemosPage;
 
-			var sidebar = app.Children.First();
-			var pageArea = app.Children.Last();
-			var search = (ThemedTextEditWidget)app.FindDescendant("Sidebar Search");
-			var selectedEntry = (ThemedTextButton)app.FindDescendant(AggSharpDemoApp.EntryName(AggSharpDemoApp.GuiDemoName));
-			var otherEntry = (ThemedTextButton)app.FindDescendant(AggSharpDemoApp.EntryName("lion"));
+			var sidebar = page.Sidebar;
+			var search = page.Sidebar.Search;
+			var selectedEntry = page.Sidebar.RowOf("lion");
+			var otherEntry = page.Sidebar.RowOf("gradients");
 
 			foreach (ThemePreference preference in new[] { ThemePreference.Light, ThemePreference.Dark })
 			{
 				app.DemoTheme.SetPreference(preference);
 				DemoPalette palette = preference == ThemePreference.Dark ? DemoPalette.Dark : DemoPalette.Light;
 
+				await Assert.That(app.Tabs.BarColor).IsEqualTo(palette.TopBarBackground).Because($"{preference} tab strip");
+				await Assert.That(app.Tabs.AccentColor).IsEqualTo(DemoTheme.ColorOf(app.DemoTheme.Accent)).Because($"{preference} selected tab");
 				await Assert.That(sidebar.BackgroundColor).IsEqualTo(palette.PanelFill).Because($"{preference} sidebar");
-				await Assert.That(pageArea.BackgroundColor).IsEqualTo(palette.BackgroundColor).Because($"{preference} page area");
+				await Assert.That(page.Content.BackgroundColor).IsEqualTo(palette.BackgroundColor).Because($"{preference} page area");
 				await Assert.That(search.BackgroundColor).IsEqualTo(palette.WidgetBackground).Because($"{preference} search fill");
 				await Assert.That(search.BorderColor).IsEqualTo(palette.WidgetStroke).Because($"{preference} search border");
 				await Assert.That(search.ActualTextEditWidget.TextColor).IsEqualTo(palette.TextColor).Because($"{preference} search text");
 				await Assert.That(search.NoContentFieldDescription.TextColor).IsEqualTo(palette.TextDim).Because($"{preference} search hint");
 
-				// the open page's row is lit with the accent; the others sit on the panel in the palette's text
+				// the open demo's row is lit with the accent; the others sit on the panel in the palette's text
 				await Assert.That(selectedEntry.BackgroundColor).IsEqualTo(DemoTheme.ColorOf(app.DemoTheme.Accent)).Because($"{preference} selected row fill");
 				await Assert.That(selectedEntry.TextColor).IsEqualTo(Color.White).Because($"{preference} selected row text");
 				await Assert.That(otherEntry.BackgroundColor).IsEqualTo(Color.Transparent).Because($"{preference} row fill");
@@ -126,33 +324,28 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(DemoPalette.Dark.PanelFill).IsNotEqualTo(DemoPalette.Light.PanelFill)
 				.Because("the palettes must differ, or this test proves nothing");
 
-			// selecting another page moves the accent to its row
+			// selecting another demo moves the accent to its row
 			otherEntry.InvokeClick();
 			await Assert.That(otherEntry.BackgroundColor).IsEqualTo(DemoTheme.ColorOf(app.DemoTheme.Accent));
 			await Assert.That(selectedEntry.BackgroundColor).IsEqualTo(Color.Transparent);
 		}
 
 		[Test]
-		public async Task RebuildingTheGuiDemoPageDoesNotLeaveThemeSubscribersBehind()
+		public async Task SwitchingTabsDoesNotLeaveThemeSubscribersBehind()
 		{
-			var page = new GuiWidget(1000, 700);
-			var app = new AggSharpDemoApp(AggSharpDemoApp.GuiDemoName);
-			page.AddChild(app);
-			page.PerformLayout();
-			var guiDemoEntry = app.FindDescendant(AggSharpDemoApp.EntryName(AggSharpDemoApp.GuiDemoName));
-			var lionEntry = app.FindDescendant(AggSharpDemoApp.EntryName("lion"));
+			AggSharpDemoApp app = LaidOutApp(1000, 700, initialDemo: AggSharpDemoApp.GuiDemoName);
 
 			// one full round first, so the count is taken with a page up and every lazily built part in place
 			ExerciseWindows(app);
-			lionEntry.InvokeClick();
-			guiDemoEntry.InvokeClick();
+			app.SelectTab(AggSharpDemoApp.AggDemosTab);
+			app.SelectTab(AggSharpDemoApp.AggSharpDemosTab);
 			int subscribers = ThemeChangedSubscriberCount(app.DemoTheme);
 
 			for (int i = 0; i < 3; i++)
 			{
 				ExerciseWindows(app);
-				lionEntry.InvokeClick();
-				guiDemoEntry.InvokeClick();
+				app.SelectTab(AggSharpDemoApp.AggDemosTab);
+				app.SelectTab(AggSharpDemoApp.AggSharpDemosTab);
 			}
 
 			await Assert.That(ThemeChangedSubscriberCount(app.DemoTheme)).IsEqualTo(subscribers);
@@ -192,10 +385,9 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 				GuiDemoShell after = app.Descendants<GuiDemoShell>().Single();
 				await Assert.That(after).IsNotSameReferenceAs(before).Because("the page should be rebuilt at the new scale");
-
-				var guiDemoEntry = (ThemedTextButton)app.FindDescendant(AggSharpDemoApp.EntryName(AggSharpDemoApp.GuiDemoName));
-				await Assert.That(guiDemoEntry.BackgroundColor).IsEqualTo(DemoTheme.ColorOf(app.DemoTheme.Accent))
-					.Because("the GUI demo should still be the selected page");
+				await Assert.That(app.SelectedTab).IsEqualTo(AggSharpDemoApp.AggSharpDemosTab)
+					.Because("the agg-sharp Demos tab should still be the selected one");
+				await Assert.That(app.Tabs.SelectedIndex).IsEqualTo(1);
 
 				await Assert.That(after.Windows.IsOpen(opened)).IsTrue().Because($"'{opened.Title}' was open before the rebuild");
 				await Assert.That(after.Windows.IsOpen(closed)).IsFalse().Because($"'{closed.Title}' was closed before the rebuild");
@@ -207,6 +399,30 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 				GuiWidget.DeviceScale = savedDeviceScale;
 				UiThread.ResetForTests();
 			}
+		}
+
+		private static AggSharpDemoApp LaidOutApp(double width, double height, IDemoStateStore store = null, string initialDemo = null)
+		{
+			var page = new GuiWidget(width, height);
+			var app = new AggSharpDemoApp(initialDemo, store);
+			page.AddChild(app);
+			page.PerformLayout();
+			return app;
+		}
+
+		private static RectangleDouble BoundsIn(GuiWidget ancestor, GuiWidget widget) => widget.TransformToParentSpace(ancestor, widget.LocalBounds);
+
+		/// <summary>The selection bar is flush with the app's right edge, under the tab strip, and the content fills
+		/// the width to its left.</summary>
+		private static async Task AssertBarOnTheRight(AggSharpDemoApp app, GuiWidget bar, GuiWidget content)
+		{
+			RectangleDouble barBounds = BoundsIn(app, bar);
+			RectangleDouble contentBounds = BoundsIn(app, content);
+			await Assert.That(bar.Visible).IsTrue();
+			await Assert.That(barBounds.Right).IsEqualTo(app.LocalBounds.Right).Because($"{bar.Name} should be docked on the right");
+			await Assert.That(barBounds.Top).IsLessThan(app.LocalBounds.Top).Because($"{bar.Name} should sit below the tab strip");
+			await Assert.That(contentBounds.Right).IsLessThanOrEqualTo(barBounds.Left).Because($"{content.Name} should be left of the bar");
+			await Assert.That(contentBounds.Left).IsEqualTo(app.LocalBounds.Left).Because($"{content.Name} should fill the area to the bar's left");
 		}
 
 		/// <summary>Builds every demo window and leaves all but one of them kept by the host but not shown.</summary>
@@ -232,13 +448,13 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 		private class MemoryStore : IDemoStateStore
 		{
-			private string json;
+			public string Json { get; private set; }
 
-			public string Load() => this.json;
+			public string Load() => this.Json;
 
-			public void Save(string json) => this.json = json;
+			public void Save(string json) => this.Json = json;
 
-			public void Clear() => this.json = null;
+			public void Clear() => this.Json = null;
 		}
 	}
 }

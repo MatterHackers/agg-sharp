@@ -71,7 +71,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "bspline";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Paths & Strokes";
 
 		public override string Description => "A B-spline through six points. Drag a point, an edge or the whole shape; space flips it.";
 

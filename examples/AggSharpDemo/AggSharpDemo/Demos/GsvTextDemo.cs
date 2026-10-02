@@ -85,7 +85,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "gsv_text";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Text";
 
 		public override string Description => "AGG's built-in vector font, stroked. Drag the sliders to change the text size and stroke width.";
 

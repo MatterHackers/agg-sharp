@@ -87,7 +87,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "rasterizer_compound";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Rendering";
 
 		public override string Description => "Four shapes drawn as layers by one compound rasterizer, where each pixel's coverage goes to the top layer first. Change the stroke width and each layer's alpha, or invert the layer order.";
 

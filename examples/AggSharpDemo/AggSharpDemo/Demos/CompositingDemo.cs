@@ -108,7 +108,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "compositing";
 
-		public override string Category => "Compositing";
+		public override string Category => "Masks & Clipping";
 
 		public override string Description => "A picture and a circle with a rounded rectangle combined over them by the SVG compositing operators, in float color. Pick an operator; the sliders set the source and destination alpha.";
 

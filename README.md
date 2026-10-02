@@ -28,15 +28,20 @@ If you find it useful, here are a few ways to help keep development going:
 [![agg-sharp GUI Demo in the browser: Widget Gallery, Lion, 3D Animation and Dancing Strings windows in the dark theme](docs/readme_hero.png)](https://larsbrubaker.github.io/agg-sharp/)
 
 The demo is one C# app, the same code the native mac head runs, compiled to wasm and drawn with
-WebGPU. Every pixel is agg-sharp's; there is no HTML chrome. It has two sections:
+WebGPU. Every pixel is agg-sharp's; there is no HTML chrome. Two tabs across the top switch between
+its two sections. Both have the same layout: a menu bar, the content on the left, and the list to pick
+from on the right. In a narrow window (a phone) that list folds away behind a button, and you pick
+from the Demos menu instead.
 
 - **AGG Demos** — 62 of agg-rust's ports of the classic AGG examples (lion, gouraud, perspective,
-  alpha_gradient, image_filters, ...), including their in-canvas controls. Each one is drawn on the GPU,
-  and its software render is byte-identical to C++ AGG 2.4; a per-demo toggle shows that
-  software reference for comparison.
-- **GUI Demo** — parity with [agg-gui](https://github.com/larsbrubaker/agg-gui)'s demo app: floating,
-  snapping windows, a sidebar, menus, themes, and windows for widgets, layout, graphics, interaction and
-  tests. It remembers its windows and settings across visits.
+  alpha_gradient, image_filters, ...), including their in-canvas controls, grouped by what they show and
+  listed alphabetically. Each one is drawn on the GPU, and its software render is byte-identical to
+  C++ AGG 2.4; a per-demo toggle shows that software reference for comparison.
+- **agg-sharp Demos** — parity with [agg-gui](https://github.com/larsbrubaker/agg-gui)'s demo app:
+  floating, snapping windows, menus, themes, and windows for widgets, layout, graphics, interaction and
+  tests.
+
+The site remembers the open tab, the AGG demo, and the agg-sharp windows and settings across visits.
 
 Any demo can be linked directly by name, for example
 [#gouraud](https://larsbrubaker.github.io/agg-sharp/#gouraud) or

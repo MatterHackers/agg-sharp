@@ -144,7 +144,7 @@ namespace MatterHackers.Agg.UI
 		// --- Unattended smoke runs -------------------------------------------------------------------
 		// Read once, from the environment, because the point is to drive an *unmodified* demo: no demo has
 		// to know it is being smoke tested, and with the variables unset none of this does anything.
-		private static readonly int SmokeFrameTarget = ParseSmokeFrames();
+		private static readonly int SmokeFrameTarget = WinformsSmokeRun.ParseFrames();
 		private static readonly string SmokeScreenshotPath = Environment.GetEnvironmentVariable("AGG_SMOKE_SCREENSHOT");
 
 		private bool smokeRunFinished;
@@ -559,10 +559,15 @@ namespace MatterHackers.Agg.UI
 
 			ReleaseIdleTimer();
 
-			if (IsMainWindow)
+			// Null the latch so the next window becomes main - but only while it is still this window's.
+			// ResetFirstWindowFlag hands the latch on between automation runs while an earlier main window
+			// may still be up, and that window's close must not take the latch from its successor.
+			lock (StaticInitLock)
 			{
-				// Ensure that when the MainWindow is closed, we null the field so we can recreate the MainWindow
-				MainWindowsFormsWindow = null;
+				if (MainWindowsFormsWindow == this)
+				{
+					MainWindowsFormsWindow = null;
+				}
 			}
 
 			// Remove the input handlers the sink wired onto the hooked control in its constructor
@@ -1048,7 +1053,7 @@ namespace MatterHackers.Agg.UI
 
 			// Armed before the close, not after: a close that throws or blocks is exactly the case the
 			// watchdog exists for.
-			StartSmokeExitWatchdog();
+			WinformsSmokeRun.StartExitWatchdog();
 
 			try
 			{
@@ -1091,44 +1096,6 @@ namespace MatterHackers.Agg.UI
 				SingleWindowMode,
 				this.WindowProvider,
 				this.AggSystemWindow);
-		}
-
-		/// <summary>
-		/// Guarantees a smoke run terminates. Closing the window ends the message loop, but a teardown that
-		/// throws part way (leaving the platform window up) or a demo that left a foreground thread running
-		/// would keep the process alive forever, and an unattended run that never returns is
-		/// indistinguishable from a hang in the renderer.
-		/// </summary>
-		/// <remarks>
-		/// Firing is itself a failure and is reported as one. It used to exit with whatever code the run had
-		/// earned, so a shutdown bug that only the watchdog caught scrolled past as a green run - which is
-		/// exactly how a teardown exception in ListBox.RemoveChild went unnoticed.
-		/// </remarks>
-		private static void StartSmokeExitWatchdog()
-		{
-			var watchdog = new System.Threading.Timer(
-				_ =>
-				{
-					Console.Error.WriteLine("AGG_SMOKE: the process did not exit on its own after closing; forcing exit.");
-					Console.WriteLine("AGG_SMOKE FAILED: the exit watchdog had to force the process down.");
-					Environment.Exit(Environment.ExitCode != 0 ? Environment.ExitCode : 1);
-				},
-				null,
-				TimeSpan.FromSeconds(5),
-				System.Threading.Timeout.InfiniteTimeSpan);
-
-			// Nothing else holds this; keeping the reference alive is the only thing standing between the
-			// timer and the collector.
-			smokeExitWatchdog = watchdog;
-		}
-
-		private static System.Threading.Timer smokeExitWatchdog;
-
-		private static int ParseSmokeFrames()
-		{
-			return int.TryParse(Environment.GetEnvironmentVariable("AGG_SMOKE_FRAMES"), out int frames) && frames > 0
-				? frames
-				: 0;
 		}
 
 		protected override void OnPaintBackground(PaintEventArgs e)
@@ -1356,8 +1323,13 @@ namespace MatterHackers.Agg.UI
 		{
 			this.ClientSize = new Size((int)AggSystemWindow.Width, (int)AggSystemWindow.Height);
 
+			// Read the latch once: it is process-wide, and the main window can close (or ResetFirstWindowFlag
+			// clear it) on another thread at any point - including between this window's construction, when
+			// another window held it, and now. With no main window left there is no parent to center on.
+			WinformsSystemWindow mainWindow = MainWindowsFormsWindow;
+
 			// Center the window if specified on the SystemWindow
-			if (MainWindowsFormsWindow != this && AggSystemWindow.CenterInParent)
+			if (mainWindow != null && mainWindow != this && AggSystemWindow.CenterInParent)
 			{
 				// TitleBarHeight is 0 until the Win32 handle exists (it is computed in
 				// OnHandleCreated). The window is about to be shown, so forcing handle
@@ -1368,7 +1340,7 @@ namespace MatterHackers.Agg.UI
 					_ = this.Handle;
 				}
 
-				Rectangle desktopBounds = MainWindowsFormsWindow.DesktopBounds;
+				Rectangle desktopBounds = mainWindow.DesktopBounds;
 				RectangleDouble newItemBounds = AggSystemWindow.LocalBounds;
 
 				this.Left = desktopBounds.X + desktopBounds.Width / 2 - (int)newItemBounds.Width / 2;
@@ -1384,10 +1356,11 @@ namespace MatterHackers.Agg.UI
 				this.DesktopPosition = AggSystemWindow.InitialDesktopPosition;
 			}
 
-			if (MainWindowsFormsWindow != this
+			if (mainWindow != null
+				&& mainWindow != this
 				&& AggSystemWindow.AlwaysOnTopOfMain)
 			{
-				Show(MainWindowsFormsWindow);
+				Show(mainWindow);
 			}
 			else
 			{
@@ -1400,9 +1373,12 @@ namespace MatterHackers.Agg.UI
 			// Release the onidle guard so that the onidle pump continues processing while we block at ShowDialog below
 			Task.Run(() => this.ReleaseOnIdleGuard());
 
-			if (MainWindowsFormsWindow != this && AggSystemWindow.CenterInParent)
+			// Read once, as Show() does: the main window can close on another thread at any point.
+			WinformsSystemWindow mainWindow = MainWindowsFormsWindow;
+
+			if (mainWindow != null && mainWindow != this && AggSystemWindow.CenterInParent)
 			{
-				Rectangle mainBounds = MainWindowsFormsWindow.DesktopBounds;
+				Rectangle mainBounds = mainWindow.DesktopBounds;
 				RectangleDouble newItemBounds = AggSystemWindow.LocalBounds;
 
 				this.Left = mainBounds.X + mainBounds.Width / 2 - (int)newItemBounds.Width / 2;
@@ -1412,10 +1388,10 @@ namespace MatterHackers.Agg.UI
 			// ShowDialog() with no owner adopts the thread's active window, and a background window is never
 			// active - so name the main window, keeping the dialog above the window it belongs to.
 			if (IPlatformWindow.ShowWindowsInBackground
-				&& MainWindowsFormsWindow != null
-				&& MainWindowsFormsWindow != this)
+				&& mainWindow != null
+				&& mainWindow != this)
 			{
-				this.ShowDialog(MainWindowsFormsWindow);
+				this.ShowDialog(mainWindow);
 			}
 			else
 			{

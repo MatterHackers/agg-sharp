@@ -70,7 +70,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "flash_rasterizer";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Rendering";
 
 		public override string Description => "A Flash shape filled in one pass by the compound rasterizer. Space: next shape; +/-: zoom; arrows: rotate.";
 

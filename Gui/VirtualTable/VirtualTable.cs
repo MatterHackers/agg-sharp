@@ -377,7 +377,7 @@ namespace MatterHackers.Agg.UI
 			bool wasDragging = this.columnDrag != null || this.thumbDrag != null;
 			this.columnDrag = null;
 			this.thumbDrag = null;
-			if (!wasDragging && mouseEvent.Button == MouseButtons.Left && this.PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
+			if (!wasDragging && !mouseEvent.Cancelled && mouseEvent.Button == MouseButtons.Left && this.PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 			{
 				double s = this.Scale;
 				double headerBottom = this.Height - this.HeaderHeight * s;

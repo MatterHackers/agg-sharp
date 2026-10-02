@@ -41,8 +41,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 	/// <summary>
 	/// The GUI demo's backend panel on the left of the canvas (View > Backend Panel), after agg-gui's
 	/// demo-ui/src/backend_panel.rs: the renderer and platform, the live screen size, the run mode with the
-	/// frame-time sparkline and mean CPU time, the SSAA factor for the 3D background, the Inspector toggle,
-	/// the open windows, and "Reset all state".
+	/// frame-time sparkline and mean CPU time, the Inspector toggle, the open windows, and "Reset all state".
+	/// The 3D Animation window's SSAA has no control here: as in agg-gui (windows.rs's SsaaRow), its own window's
+	/// selector is the only one.
 	/// </summary>
 	/// <remarks>
 	/// The panel only holds these settings and raises events; <see cref="GuiDemoShell"/> acts on them (redraws
@@ -52,9 +53,6 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 	{
 		/// <summary>backend_panel.rs's panel width.</summary>
 		public const double PanelWidth = 240;
-
-		/// <summary>The SSAA factors offered, in segment order.</summary>
-		public static readonly IReadOnlyList<int> SsaaFactors = new[] { 1, 2, 3, 4 };
 
 		private const string ReactiveDescription = "Only running UI code when there are animations or input.";
 
@@ -128,17 +126,6 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			this.AddChild(this.sparkline);
 			this.AddSeparator(8, 8);
 
-			this.AddLabel("3D background SSAA", 9, new BorderDouble(12, 2, 12, 2));
-			this.SsaaControl = new SegmentedControl(SsaaFactors.Select(f => f + "x"), theme, SsaaFactors.ToList().IndexOf(DefaultSsaaFactor))
-			{
-				Name = "Backend SSAA",
-				HAnchor = HAnchor.Left,
-				Margin = new BorderDouble(12, 4),
-			};
-			this.SsaaControl.SelectedIndexChanged += (s, e) => this.SetSsaaFactor(SsaaFactors[this.SsaaControl.SelectedIndex]);
-			this.AddChild(this.SsaaControl);
-			this.AddSeparator(8, 8);
-
 			this.AddLabel("agg-sharp windows:", 9, new BorderDouble(12, 2, 12, 0));
 
 			// backend_panel.rs's System and Inspector pills (gear, search): the System one follows the System
@@ -185,14 +172,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			demoTheme.ThemeChanged += this.DemoTheme_ThemeChanged;
 		}
 
-		/// <summary>The SSAA factor until the user picks another.</summary>
-		public const int DefaultSsaaFactor = 1;
-
 		/// <summary>Raised after <see cref="RunMode"/> changed.</summary>
 		public event EventHandler RunModeChanged;
-
-		/// <summary>Raised after <see cref="SsaaFactor"/> changed; the 3D Animation window re-renders at the new factor.</summary>
-		public event EventHandler SsaaFactorChanged;
 
 		/// <summary>Raised after <see cref="InspectorEnabled"/> changed.</summary>
 		public event EventHandler InspectorToggled;
@@ -205,14 +186,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		public DemoRunMode RunMode { get; private set; } = DemoRunMode.Reactive;
 
-		/// <summary>How many times the 3D background's width and height it renders at before downsampling.</summary>
-		public int SsaaFactor { get; private set; } = DefaultSsaaFactor;
-
 		public bool InspectorEnabled { get; private set; }
 
 		public SegmentedControl RunModeControl { get; }
-
-		public SegmentedControl SsaaControl { get; }
 
 		/// <summary>Opens and closes the System window.</summary>
 		public TogglePill SystemPill { get; }
@@ -292,24 +268,6 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			}
 		}
 
-		/// <summary>Sets <see cref="SsaaFactor"/> (one of <see cref="SsaaFactors"/>; others are ignored),
-		/// raising <see cref="SsaaFactorChanged"/> if it changed.</summary>
-		public void SetSsaaFactor(int factor)
-		{
-			int index = SsaaFactors.ToList().IndexOf(factor);
-			if (index < 0)
-			{
-				return;
-			}
-
-			this.SsaaControl.SelectedIndex = index;
-			if (factor != this.SsaaFactor)
-			{
-				this.SsaaFactor = factor;
-				this.SsaaFactorChanged?.Invoke(this, EventArgs.Empty);
-			}
-		}
-
 		/// <summary>Sets <see cref="InspectorEnabled"/>, raising <see cref="InspectorToggled"/> if it changed.</summary>
 		public void SetInspectorEnabled(bool enabled)
 		{
@@ -325,7 +283,6 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		public void ResetSettings()
 		{
 			this.SetRunMode(DemoRunMode.Reactive);
-			this.SetSsaaFactor(DefaultSsaaFactor);
 			this.SetInspectorEnabled(false);
 		}
 

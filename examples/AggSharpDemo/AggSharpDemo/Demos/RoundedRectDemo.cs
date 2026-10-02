@@ -88,7 +88,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "rounded_rect";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Shapes";
 
 		public override string Description => "A 1-pixel rounded rectangle. Drag its two handles to resize it.";
 

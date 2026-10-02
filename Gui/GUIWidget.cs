@@ -2538,7 +2538,32 @@ namespace MatterHackers.Agg.UI
 						// from the screen origin clips its children off the far side of its own buffer and
 						// composites as an empty pane - which is exactly what a popped out editor window, sat in
 						// the middle of the 3D view, did.
-						currentScreenClipping.Offset(currentGraphics2DTransform.Transform(Vector2.Zero) - this.ScreenSpaceOrigin());
+						//
+						// The clip already carries every ancestor's ParentToChildTransform, so it is carried onto the
+						// surface by the screen-to-surface map - out of screen space into this widget's coordinates,
+						// then through the graphics transform - not by the graphics transform alone, which would
+						// apply a scaled ancestor's scale twice. Drawing to the window that map is a translation and
+						// this is the plain offset; under a surface scale, flip or turn the clip is the upright
+						// bounding box of the carried rectangle.
+						var screenOrigin = this.ScreenSpaceOrigin();
+						var screenToSurface = this.screenClipping.LocalToScreen;
+						bool invertible = (screenToSurface.sx * screenToSurface.sy) - (screenToSurface.shx * screenToSurface.shy) != 0;
+						if (invertible)
+						{
+							screenToSurface.invert();
+							screenToSurface *= currentGraphics2DTransform;
+						}
+
+						if (!invertible
+							|| (Abs(screenToSurface.sx - 1) < 1e-9 && Abs(screenToSurface.sy - 1) < 1e-9
+								&& Abs(screenToSurface.shx) < 1e-9 && Abs(screenToSurface.shy) < 1e-9))
+						{
+							currentScreenClipping.Offset(currentGraphics2DTransform.Transform(Vector2.Zero) - screenOrigin);
+						}
+						else
+						{
+							currentScreenClipping = TransformedBounds(screenToSurface, currentScreenClipping);
+						}
 
 						currentScreenClipping.Left = Floor(currentScreenClipping.Left);
 						currentScreenClipping.Right = Ceiling(currentScreenClipping.Right);
@@ -2566,9 +2591,16 @@ namespace MatterHackers.Agg.UI
 					{
 						graphics2D.SetClippingRect(currentScreenClipping);
 
+						// The backbuffer is placed on whole pixels, upright and unflipped (see PaintAndComposite), so
+						// only a transform that is near enough that takes it; anything that turns, shears or flips
+						// the child draws it straight, which is exact where a resampled buffer would blur.
 						if (child.DoubleBuffer
 							&& accumulatedTransform.sx < 1.05
-							&& accumulatedTransform.sx > .95)
+							&& accumulatedTransform.sx > .95
+							&& accumulatedTransform.sy < 1.05
+							&& accumulatedTransform.sy > .95
+							&& accumulatedTransform.shx == 0
+							&& accumulatedTransform.shy == 0)
 						{
 							child.backbuffer.PaintAndComposite(graphics2D, currentGraphics2DTransform);
 						}
@@ -2878,6 +2910,14 @@ namespace MatterHackers.Agg.UI
 			/// </summary>
 			internal Vector2 ScreenOrigin;
 
+			/// <summary>
+			/// Carries the widget's own coordinates into screen coordinates: every <see cref="ParentToChildTransform"/>
+			/// from it up to the top <see cref="SystemWindow"/>, as <see cref="TransformToScreenSpace(Vector2)"/> applies
+			/// them. Cached beside <see cref="ScreenOrigin"/> so <see cref="DrawChild"/> does not walk the parents
+			/// once per child.
+			/// </summary>
+			internal Affine LocalToScreen = Affine.NewIdentity();
+
 			internal ScreenClipping(GuiWidget attachedTo)
 			{
 				this.attachedTo = attachedTo;
@@ -2923,6 +2963,9 @@ namespace MatterHackers.Agg.UI
 
 				ScreenClippingRect = attachedTo.TransformToScreenSpace(attachedTo.LocalBounds);
 				ScreenOrigin = attachedTo.TransformToScreenSpace(Vector2.Zero);
+				LocalToScreen = attachedTo is SystemWindow && parent == null
+					? Affine.NewIdentity()
+					: attachedTo.ParentToChildTransform * (parent?.screenClipping.LocalToScreen ?? Affine.NewIdentity());
 				VisibleAfterClipping = true;
 
 				if (parent != null)
@@ -4005,7 +4048,8 @@ namespace MatterHackers.Agg.UI
 					{
 						MouseUpCaptured?.Invoke(this, mouseEvent);
 
-						if (mouseUpOnWidget)
+						// a cancelled up ends the drag but is no click; see MouseEventArgs.Cancelled
+						if (mouseUpOnWidget && !mouseEvent.Cancelled)
 						{
 							OnClick(mouseEvent);
 						}
@@ -4270,13 +4314,21 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
+		/// <summary>
+		/// Routes the wheel to the topmost child under the pointer, then raises <see cref="MouseWheel"/> here. A
+		/// widget consumes the wheel by zeroing <see cref="MouseEventArgs.WheelDelta"/> (and WheelDeltaX); what it
+		/// leaves bubbles up to its ancestors.
+		/// </summary>
 		public virtual void OnMouseWheel(MouseEventArgs mouseEvent)
 		{
 			if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 			{
 				foreach (var child in Children.Reverse())
 				{
-					if (child.Visible & child.Enabled)
+					// Only the topmost hit child gets the wheel - see the break below. Non-selectable children are
+					// click-through overlays (a scroll view's edge fade, a label) and are passed over exactly as a
+					// mouse down passes over them, so they cannot hide what is beneath them from the wheel.
+					if (child.Visible && child.Enabled && child.Selectable)
 					{
 						double childX = mouseEvent.X;
 						double childY = mouseEvent.Y;
@@ -4292,6 +4344,11 @@ namespace MatterHackers.Agg.UI
 							// copy of the event or a widget that ate the sideways scroll would see it acted on
 							// again by an ancestor.
 							mouseEvent.WheelDeltaX = childMouseEvent.WheelDeltaX;
+
+							// The siblings below are covered at this point: whatever the child left unconsumed goes
+							// up to this widget, never sideways to them - or a window over a scroll view would
+							// scroll the view behind it.
+							break;
 						}
 					}
 				}

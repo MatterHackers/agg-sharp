@@ -76,7 +76,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "perspective";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Transforms";
 
 		public override string Description => "The lion mapped onto a quadrilateral. Drag a corner, an edge or the whole shape; choose a bilinear or perspective mapping.";
 

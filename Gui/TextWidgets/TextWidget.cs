@@ -386,7 +386,10 @@ namespace MatterHackers.Agg.UI
 				if (this.Underline)
 				{
 					var bounds = this.LocalBounds;
-					var bottom = Math.Round(Printer.LocalBounds.Bottom) + .5;
+					// At the descent's depth below the last line's baseline, under the descenders, as agg-gui's
+					// hyperlink underlines - not the line box's bottom, which can sit above the descent.
+					var baseline = Printer.LocalBounds.Bottom - Printer.LineBoxBottomInPixels;
+					var bottom = Math.Round(baseline + Printer.TypeFaceStyle.DescentInPixels) + .5;
 					graphics2D.Line(bounds.Left, bottom, bounds.Right, bottom, new Color(this.TextColor, 200));
 				}
 

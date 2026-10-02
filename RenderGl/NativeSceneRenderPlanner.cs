@@ -29,7 +29,6 @@ either expressed or implied, of the FreeBSD Project.
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using MatterHackers.Agg;
 
 namespace MatterHackers.RenderGl
@@ -100,10 +99,59 @@ namespace MatterHackers.RenderGl
 				}
 			}
 
-			// Sort opaque commands by mesh identity to group draws sharing the same GPU buffers/textures
-			plan.opaque.Sort((a, b) => RuntimeHelpers.GetHashCode(a.Mesh).CompareTo(RuntimeHelpers.GetHashCode(b.Mesh)));
+			GroupByMeshInSubmissionOrder(plan.opaque);
 
 			return plan;
+		}
+
+		/// <summary>
+		/// Pulls every draw of a mesh up beside that mesh's first draw (so draws sharing GPU buffers sit
+		/// together) and otherwise keeps submission order.
+		/// </summary>
+		/// <remarks>
+		/// The order has to be deterministic, not just grouped. Where two meshes meet at exactly equal depth
+		/// the later draw wins the pixel under the LessEqual test, so an order that varies between runs is a
+		/// picture that varies between runs. This used to sort by <c>RuntimeHelpers.GetHashCode</c>, which
+		/// is randomised per object, and one pixel of the golden Scene.Opaque flipped between the sphere and
+		/// the cube from CI run to CI run.
+		/// </remarks>
+		private static void GroupByMeshInSubmissionOrder(List<MeshRenderCommand> commands)
+		{
+			if (commands.Count < 2)
+			{
+				return;
+			}
+
+			var groups = new Dictionary<object, List<MeshRenderCommand>>(System.Collections.Generic.ReferenceEqualityComparer.Instance);
+			var groupOrder = new List<List<MeshRenderCommand>>();
+			var nullMeshGroup = new List<MeshRenderCommand>();
+
+			foreach (var command in commands)
+			{
+				List<MeshRenderCommand> group;
+				if (command.Mesh == null)
+				{
+					group = nullMeshGroup;
+					if (group.Count == 0)
+					{
+						groupOrder.Add(group);
+					}
+				}
+				else if (!groups.TryGetValue(command.Mesh, out group))
+				{
+					group = new List<MeshRenderCommand>();
+					groups.Add(command.Mesh, group);
+					groupOrder.Add(group);
+				}
+
+				group.Add(command);
+			}
+
+			commands.Clear();
+			foreach (var group in groupOrder)
+			{
+				commands.AddRange(group);
+			}
 		}
 
 		public static bool RequiresTransparency(MeshRenderCommand command)

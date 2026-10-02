@@ -25,6 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using System;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Transform;
 using MatterHackers.RenderCore;
 using MatterHackers.RenderGl.Compat;
 using MatterHackers.RenderGl.OpenGl;
@@ -167,8 +168,9 @@ namespace MatterHackers.RenderGl
 
 		/// <summary>
 		/// Draws the target's picture as a textured quad with its bottom-left corner at
-		/// (<paramref name="x"/>, <paramref name="y"/>), through <paramref name="destination"/>'s transform
-		/// (translation and scale) and clip.
+		/// (<paramref name="x"/>, <paramref name="y"/>), through <paramref name="destination"/>'s whole transform
+		/// (translation, scale, rotation, shear and flips) and clip - the contract
+		/// <see cref="Graphics2D.Render(Agg.Image.IImageByte, double, double, double, double, double)"/> gives an image draw.
 		/// </summary>
 		/// <remarks>
 		/// The target holds premultiplied color, so this blends One / OneMinusSrcAlpha - unlike the
@@ -176,6 +178,11 @@ namespace MatterHackers.RenderGl
 		/// and applies <paramref name="opacity"/> to all four channels, which is what scaling a premultiplied
 		/// pixel means. Opacity is quantized to 1/255, the vertex color's resolution. Nothing is drawn before
 		/// the first paint or while the target is being painted.
+		/// <para>
+		/// An axis-aligned transform samples the texture nearest, exact on the whole pixels a backbuffer is
+		/// placed on; a turned or sheared one samples it linearly, since no texel lands on a pixel there. The
+		/// quad's own edge is not anti-aliased under a turn.
+		/// </para>
 		/// </remarks>
 		/// <param name="destination">The surface drawn onto: the frame, or another target's graphics.</param>
 		/// <param name="x">Left edge in the destination's coordinates.</param>
@@ -190,6 +197,7 @@ namespace MatterHackers.RenderGl
 		/// <see cref="Composite(Graphics2DGpu, double, double, double)"/> keeping only what lies inside
 		/// <paramref name="roundedClip"/> (the target's pixels, from its bottom-left) rounded by
 		/// <paramref name="cornerRadius"/>, with a 1 pixel anti-aliased edge (see <see cref="RoundedLayerClip"/>).
+		/// The clip turns and shears with the picture.
 		/// </summary>
 		public void Composite(Graphics2DGpu destination, double x, double y, double opacity, Agg.RectangleDouble roundedClip, double cornerRadius)
 		{
@@ -203,22 +211,17 @@ namespace MatterHackers.RenderGl
 				return;
 			}
 
-			double scaleX = 1;
-			double scaleY = 1;
-			var transform = destination.GetTransform();
-			if (!transform.is_identity())
-			{
-				transform.Transform(ref x, ref y);
-				scaleX = transform.sx;
-				scaleY = transform.sy;
-			}
-
-			double right = x + (this.Width * scaleX);
-			double top = y + (this.Height * scaleY);
+			// The layer's own pixels onto the destination: placed at (x, y), then the whole graphics transform.
+			var layerToDestination = Affine.NewTranslation(x, y) * destination.GetTransform();
+			bool axisAligned = layerToDestination.shx == 0 && layerToDestination.shy == 0;
+			double scaleX = layerToDestination.sx;
+			double scaleY = layerToDestination.sy;
+			double left = layerToDestination.tx;
+			double bottom = layerToDestination.ty;
 
 			if (this.LinearLight)
 			{
-				this.CompositeLinear(destination, x, top, scaleX, scaleY, opacity, roundedClip.HasValue);
+				this.CompositeLinear(destination, left, bottom + (this.Height * scaleY), scaleX, scaleY, axisAligned, opacity, roundedClip.HasValue);
 				return;
 			}
 
@@ -234,31 +237,58 @@ namespace MatterHackers.RenderGl
 			destinationGl.Color4(alpha, alpha, alpha, alpha);
 			destinationGl.BindTexture(TextureTarget.Texture2D, this.textureName);
 
-			if (roundedClip.HasValue)
+			// The sampler is resolved when the draw is encoded (at End), so the filter only has to hold until then.
+			var entry = this.compat.Textures.Find(this.textureName);
+			entry.MagFilterLinear = !axisAligned;
+			entry.MinFilterLinear = !axisAligned;
+			try
 			{
-				var (clip, radius) = roundedClip.Value;
-				var quad = new Agg.RectangleDouble(x, y, right, top);
-				var clipOnDestination = new Agg.RectangleDouble(x + (clip.Left * scaleX), y + (clip.Bottom * scaleY), x + (clip.Right * scaleX), y + (clip.Top * scaleY));
-				RoundedLayerClip.Draw(destinationGl, quad, clipOnDestination, radius * Math.Min(Math.Abs(scaleX), Math.Abs(scaleY)), alpha);
-				destination.PopOrthoProjection();
-				return;
+				if (roundedClip.HasValue)
+				{
+					var (clip, radius) = roundedClip.Value;
+					if (axisAligned)
+					{
+						// Built in destination pixels, so the corners stay round under the small uneven scales a
+						// backbuffer is composited at.
+						var quad = new Agg.RectangleDouble(left, bottom, left + (this.Width * scaleX), bottom + (this.Height * scaleY));
+						var clipOnDestination = new Agg.RectangleDouble(left + (clip.Left * scaleX), bottom + (clip.Bottom * scaleY), left + (clip.Right * scaleX), bottom + (clip.Top * scaleY));
+						RoundedLayerClip.Draw(destinationGl, quad, clipOnDestination, radius * Math.Min(Math.Abs(scaleX), Math.Abs(scaleY)), alpha);
+					}
+					else
+					{
+						RoundedLayerClip.Draw(destinationGl, layerToDestination, this.Width, this.Height, clip, radius, alpha);
+					}
+
+					return;
+				}
+
+				// The texture's row 0 is the top of its picture (WebGPU framebuffer space), while the destination
+				// is y-up, so v runs 1 at the bottom to 0 at the top - the reverse of an uploaded ImageBuffer,
+				// whose row 0 is its bottom.
+				destinationGl.Begin(BeginMode.TriangleFan);
+				this.CornerVertex(destinationGl, layerToDestination, 0, 0);
+				this.CornerVertex(destinationGl, layerToDestination, 0, 1);
+				this.CornerVertex(destinationGl, layerToDestination, 1, 1);
+				this.CornerVertex(destinationGl, layerToDestination, 1, 0);
+				destinationGl.End();
 			}
+			finally
+			{
+				entry.MagFilterLinear = false;
+				entry.MinFilterLinear = false;
+				destination.PopOrthoProjection();
+			}
+		}
 
-			// The texture's row 0 is the top of its picture (WebGPU framebuffer space), while the destination
-			// is y-up, so v runs 1 at the bottom to 0 at the top - the reverse of an uploaded ImageBuffer,
-			// whose row 0 is its bottom.
-			destinationGl.Begin(BeginMode.TriangleFan);
-			destinationGl.TexCoord2(0, 1);
-			destinationGl.Vertex2(x, y);
-			destinationGl.TexCoord2(0, 0);
-			destinationGl.Vertex2(x, top);
-			destinationGl.TexCoord2(1, 0);
-			destinationGl.Vertex2(right, top);
-			destinationGl.TexCoord2(1, 1);
-			destinationGl.Vertex2(right, y);
-			destinationGl.End();
-
-			destination.PopOrthoProjection();
+		/// <summary>The quad corner <paramref name="across"/> and <paramref name="up"/> the picture (each 0 or 1),
+		/// carried onto the destination.</summary>
+		private void CornerVertex(GL destinationGl, Affine layerToDestination, int across, int up)
+		{
+			double cornerX = across * this.Width;
+			double cornerY = up * this.Height;
+			layerToDestination.Transform(ref cornerX, ref cornerY);
+			destinationGl.TexCoord2(across, 1 - up);
+			destinationGl.Vertex2(cornerX, cornerY);
 		}
 
 		/// <summary>Releases the texture and its GL name, first ending a draw still in progress so the frame
@@ -287,13 +317,14 @@ namespace MatterHackers.RenderGl
 		}
 
 		/// <summary>The linear-light composite: the texture placed texel for texel with its top-left at logical
-		/// (<paramref name="x"/>, <paramref name="top"/>) on the destination.</summary>
-		private void CompositeLinear(Graphics2DGpu destination, double x, double top, double scaleX, double scaleY, double opacity, bool rounded)
+		/// (<paramref name="x"/>, <paramref name="top"/>) on the destination. It is a copy through the comp-op
+		/// pass rather than a textured quad, so it cannot scale, turn, shear or flip the layer.</summary>
+		private void CompositeLinear(Graphics2DGpu destination, double x, double top, double scaleX, double scaleY, bool axisAligned, double opacity, bool rounded)
 		{
 			int scale = this.compat.CoordinateScale;
-			if (rounded || Math.Abs((scaleX * scale) - 1) > 1e-9 || Math.Abs((scaleY * scale) - 1) > 1e-9)
+			if (rounded || !axisAligned || Math.Abs((scaleX * scale) - 1) > 1e-9 || Math.Abs((scaleY * scale) - 1) > 1e-9)
 			{
-				throw new NotSupportedException("A linear-light layer is composited texel for texel: without scaling or a rounded clip.");
+				throw new NotSupportedException("A linear-light layer is composited texel for texel: without scaling, turning, shearing or a rounded clip.");
 			}
 
 			var state = this.compat.State;
@@ -331,7 +362,7 @@ namespace MatterHackers.RenderGl
 				this.textureName = this.compat.Textures.GenerateName(this.Texture);
 
 				// Composited 1:1 onto whole pixels, where nearest sampling is exact; clamped so the edge
-				// texels never pick up the opposite edge.
+				// texels never pick up the opposite edge. Composite samples linearly for the one draw that turns it.
 				var entry = this.compat.Textures.Find(this.textureName);
 				entry.MagFilterLinear = false;
 				entry.MinFilterLinear = false;

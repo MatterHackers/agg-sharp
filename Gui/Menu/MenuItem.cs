@@ -58,7 +58,8 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			if (AllowClicks?.Invoke() == true)
+			// a cancelled up ends a drag, it picks nothing; see MouseEventArgs.Cancelled
+			if (AllowClicks?.Invoke() == true && !mouseEvent.Cancelled)
 			{
 				if (PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y))
 				{

@@ -212,8 +212,9 @@ namespace MatterHackers.Agg.Font
 		/// <see cref="SnapBaselinesToWholePixels"/>, which rounds each line's baseline), and everything that
 		/// changes an outline's own vertices (<see cref="StyledTypeFace.DoUnderline"/> adds geometry,
 		/// <see cref="StyledTypeFace.FlattenCurves"/> and <see cref="ResolutionScale"/> change how curves are
-		/// flattened, <see cref="StyledTypeFace.FauxItalic"/> shears them), plus the <see cref="TextStyleSettings.Epoch"/> when the face follows those settings, since they
-		/// reshape every glyph.
+		/// flattened, <see cref="StyledTypeFace.FauxItalic"/> shears them), plus the face's own
+		/// <see cref="StyledTypeFace.Style"/> (by value) or, when it follows the process-wide settings instead, their
+		/// <see cref="TextStyleSettings.Epoch"/>, since a style reshapes every glyph.
 		/// <para>
 		/// <b><see cref="Origin"/> is in it because <see cref="Vertices"/> bakes it into the positions</b>
 		/// rather than leaving it to the caller's transform - that is the path
@@ -251,7 +252,7 @@ namespace MatterHackers.Agg.Font
 					Origin,
 					SnapBaselinesToWholePixels,
 					lineSpacing,
-					TypeFaceStyle.ApplyTextStyleSettings ? TextStyleSettings.Epoch : 0);
+					TypeFaceStyle.Style ?? (object)(TypeFaceStyle.ApplyTextStyleSettings ? TextStyleSettings.Epoch : 0L));
 			}
 		}
 
@@ -279,25 +280,36 @@ namespace MatterHackers.Agg.Font
 			this.lineSpacing = copyPropertiesFrom.LineSpacing;
 		}
 
+		/// <summary>
+		/// Where the one-em line box starts against the baseline (negative is below): centred between the top
+		/// of the ascent and the bottom of the descent, as agg-gui centres a run (text.rs centered_baseline_y).
+		/// Nunito's ascent height plus descent depth is 1.36 em, so a box starting at the descent sat 0.2 em low
+		/// and centred labels drew high. A face whose span is an em, or that gives none, starts at the descent.
+		/// </summary>
+		public double LineBoxBottomInPixels => TypeFaceStyle.AscentInPixels - TypeFaceStyle.DescentInPixels <= 0
+			? TypeFaceStyle.DescentInPixels
+			: (TypeFaceStyle.AscentInPixels + TypeFaceStyle.DescentInPixels - TypeFaceStyle.EmSizeInPixels) / 2;
+
 		public RectangleDouble LocalBounds
 		{
 			get
 			{
 				Vector2 size = GetSize();
+				double bottom = LineBoxBottomInPixels;
 				RectangleDouble bounds;
 
 				switch (Justification)
 				{
 					case Justification.Left:
-						bounds = new RectangleDouble(0, TypeFaceStyle.DescentInPixels, size.X, size.Y + TypeFaceStyle.DescentInPixels);
+						bounds = new RectangleDouble(0, bottom, size.X, size.Y + bottom);
 						break;
 
 					case Justification.Center:
-						bounds = new RectangleDouble(-size.X / 2, TypeFaceStyle.DescentInPixels, size.X / 2, size.Y + TypeFaceStyle.DescentInPixels);
+						bounds = new RectangleDouble(-size.X / 2, bottom, size.X / 2, size.Y + bottom);
 						break;
 
 					case Justification.Right:
-						bounds = new RectangleDouble(-size.X, TypeFaceStyle.DescentInPixels, 0, size.Y + TypeFaceStyle.DescentInPixels);
+						bounds = new RectangleDouble(-size.X, bottom, 0, size.Y + bottom);
 						break;
 
 					default:
@@ -820,7 +832,7 @@ namespace MatterHackers.Agg.Font
 			private readonly Vector2 origin;
 			private readonly bool snapBaselines;
 			private readonly double lineSpacing;
-			private readonly long styleEpoch;
+			private readonly object style;
 
 			internal TextRunIdentity(
 				string text,
@@ -835,7 +847,7 @@ namespace MatterHackers.Agg.Font
 				Vector2 origin,
 				bool snapBaselines,
 				double lineSpacing,
-				long styleEpoch)
+				object style)
 			{
 				this.text = text;
 				this.typeFace = typeFace;
@@ -849,7 +861,7 @@ namespace MatterHackers.Agg.Font
 				this.origin = origin;
 				this.snapBaselines = snapBaselines;
 				this.lineSpacing = lineSpacing;
-				this.styleEpoch = styleEpoch;
+				this.style = style;
 			}
 
 			public bool Equals(TextRunIdentity other)
@@ -868,7 +880,7 @@ namespace MatterHackers.Agg.Font
 					&& BitConverter.DoubleToInt64Bits(this.origin.Y) == BitConverter.DoubleToInt64Bits(other.origin.Y)
 					&& this.snapBaselines == other.snapBaselines
 					&& BitConverter.DoubleToInt64Bits(this.lineSpacing) == BitConverter.DoubleToInt64Bits(other.lineSpacing)
-					&& this.styleEpoch == other.styleEpoch;
+					&& object.Equals(this.style, other.style);
 			}
 
 			public override bool Equals(object obj)
@@ -891,7 +903,7 @@ namespace MatterHackers.Agg.Font
 				hash.Add(BitConverter.DoubleToInt64Bits(this.origin.X));
 				hash.Add(BitConverter.DoubleToInt64Bits(this.origin.Y));
 				hash.Add(this.snapBaselines);
-				hash.Add(this.styleEpoch);
+				hash.Add(this.style);
 
 				return hash.ToHashCode();
 			}

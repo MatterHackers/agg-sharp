@@ -173,6 +173,22 @@ namespace MatterHackers.Agg.Platform.Browser
 			bool insideView)
 			=> capture.ShouldDeliver(PointerEventKindFor(type, buttons), button, insideView);
 
+		/// <summary>Maps a DOM PointerEvent.pointerType ("mouse", "touch" or "pen") to agg's; anything else is a mouse.</summary>
+		public static PointerType TranslatePointerType(string pointerType)
+		{
+			switch (pointerType)
+			{
+				case "touch":
+					return PointerType.Touch;
+
+				case "pen":
+					return PointerType.Pen;
+
+				default:
+					return PointerType.Mouse;
+			}
+		}
+
 		/// <summary>
 		/// Composes the agg mouse event a pointer event carries, from the parts of it that determine one.
 		/// </summary>

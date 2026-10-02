@@ -163,7 +163,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "idea";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Shapes";
 
 		public override string Description => "A light bulb idea, filled and outlined. Check Rotate to spin it, and compare Even-Odd, Draft and Roundoff.";
 

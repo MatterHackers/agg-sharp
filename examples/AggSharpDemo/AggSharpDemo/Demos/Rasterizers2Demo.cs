@@ -120,7 +120,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "rasterizers2";
 
-		public override string Category => "Lines";
+		public override string Category => "Rendering";
 
 		public override string Description => "One spiral drawn five ways: aliased Bresenham lines, anti-aliased outlines, the scanline rasterizer and an image pattern laid along the line. Change the width, or turn on Rotate.";
 

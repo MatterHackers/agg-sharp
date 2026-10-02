@@ -1,6 +1,7 @@
 ﻿using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Transform;
 using MatterHackers.Agg.VertexSource;
+using MatterHackers.VectorMath;
 
 //----------------------------------------------------------------------------
 // Anti-Grain Geometry - Version 2.4
@@ -29,9 +30,36 @@ namespace MatterHackers.Agg.Font
 		private IVertexSource underline;
 		private IVertexSource glyph;
 
+		/// <summary>
+		/// <paramref name="glyph"/> followed by an underline rectangle from 0 to <paramref name="advanceForCharacter"/>,
+		/// all in font units.
+		/// </summary>
+		/// <remarks>
+		/// The rectangle winds the way the glyph's outer contours do (clockwise for agg-sharp's SVG fonts,
+		/// counter-clockwise for TrueType faces), so a contour offset that follows the winding - Faux Weight - grows
+		/// the underline with the glyph instead of shrinking it. Under a non-zero fill the winding draws the same.
+		/// </remarks>
 		public GlyphWithUnderline(IVertexSource glyph, int advanceForCharacter, int Underline_position, int Underline_thickness)
 		{
-			underline = new RoundedRect(new RectangleDouble(0, Underline_position, advanceForCharacter, Underline_position + Underline_thickness), 0);
+			double bottom = Underline_position;
+			double top = Underline_position + Underline_thickness;
+			var rectangle = new VertexStorage();
+			rectangle.MoveTo(0, bottom);
+			if (StyledTypeFace.SignedArea(glyph) < 0)
+			{
+				rectangle.LineTo(0, top);
+				rectangle.LineTo(advanceForCharacter, top);
+				rectangle.LineTo(advanceForCharacter, bottom);
+			}
+			else
+			{
+				rectangle.LineTo(advanceForCharacter, bottom);
+				rectangle.LineTo(advanceForCharacter, top);
+				rectangle.LineTo(0, top);
+			}
+
+			rectangle.ClosePolygon();
+			underline = rectangle;
 			this.glyph = glyph;
 		}
 
@@ -238,18 +266,33 @@ namespace MatterHackers.Agg.Font
 		/// <summary>
 		/// Slants this face's glyphs by <see cref="FauxItalicShear"/>. The fonts agg-sharp ships have no italic
 		/// face, so italic UI text (markdown <c>*emphasis*</c>) is the upright face sheared. Unlike
-		/// <see cref="TextStyleSettings.FauxItalic"/> it belongs to this face alone, not the whole process.
+		/// <see cref="GlyphStyle.FauxItalic"/> it is a plain on/off slant that stacks on whatever style applies.
 		/// </summary>
 		public bool FauxItalic { get; set; }
 
 		/// <summary>The horizontal shift per unit of height under <see cref="FauxItalic"/> - the rich text editor's slant.</summary>
 		public const double FauxItalicShear = 0.2;
 
-		/// <summary>True when this face opts in and a setting is away from its default.</summary>
-		private bool AppliesTextStyleSettings => ApplyTextStyleSettings && !TextStyleSettings.GlyphStyleIsIdentity;
+		/// <summary>
+		/// This face's own glyph style. Null (the default) leaves the face to <see cref="ApplyTextStyleSettings"/>;
+		/// set, it is used instead of the process-wide <see cref="TextStyleSettings"/> whatever that flag says - for
+		/// text that shows a style of its own, such as a typography demo, without restyling the rest of the app.
+		/// </summary>
+		/// <remarks>Init-only, so text measured and cached through this face never sees its style change.</remarks>
+		public GlyphStyle Style { get; init; }
 
-		/// <summary>True when glyphs are not the font's plain outlines, so they take the styled path and skip the image cache.</summary>
-		internal bool IsStyled => FauxItalic || AppliesTextStyleSettings;
+		/// <summary>The style glyphs and advances are shaped with, or null for the font's own shapes.</summary>
+		private GlyphStyle ActiveStyle
+		{
+			get
+			{
+				GlyphStyle style = Style ?? (ApplyTextStyleSettings ? TextStyleSettings.GlyphStyle : null);
+				return style == null || style.IsIdentity ? null : style;
+			}
+		}
+
+		/// <summary>True when glyphs are not the font's plain outlines (<see cref="FauxItalic"/>, or a style away from the defaults), so they take the styled path and skip the image cache.</summary>
+		internal bool IsStyled => FauxItalic || ActiveStyle != null;
 
 		/// <summary>
 		/// <para>If true the font will have it's curves flattened to the current point size when retrieved.</para>
@@ -364,6 +407,8 @@ namespace MatterHackers.Agg.Font
 			IVertexSource sourceGlyph = face.GetGlyphForCodePoint(codePoint);
 			if (sourceGlyph != null)
 			{
+				// The glyph before any underline: its winding is what Faux Weight follows.
+				IVertexSource bareGlyph = sourceGlyph;
 				if (DoUnderline)
 				{
 					// The primary face's underline, converted to the drawing face's units, so a fallback glyph's
@@ -376,9 +421,10 @@ namespace MatterHackers.Agg.Font
 						(int)Math.Round(TypeFace.Underline_thickness * toFaceUnits));
 				}
 
-				if (IsStyled)
+				GlyphStyle style = ActiveStyle;
+				if (style != null || FauxItalic)
 				{
-					return GetStyledGlyph(sourceGlyph, EmScalingFor(face), resolutionScale);
+					return GetStyledGlyph(sourceGlyph, bareGlyph, EmScalingFor(face), resolutionScale, style);
 				}
 
 				var glyphTransform = Affine.NewIdentity();
@@ -441,39 +487,48 @@ namespace MatterHackers.Agg.Font
 		{
 			TypeFace face = TypeFace.ResolveFace(codePoint);
 			double advance = face.GetAdvanceForCodePoint(codePoint) * EmScalingFor(face);
-			if (AppliesTextStyleSettings)
+			GlyphStyle style = ActiveStyle;
+			if (style != null)
 			{
 				// Interval piles a fixed spacing on top of the font's advance, as agg-gui's shape_text does. Width is
 				// deliberately not here: agg-gui scales the outline only and keeps the pen walk, so wide glyphs
 				// crowd and narrow ones open up.
-				advance += TextStyleSettings.Interval * emSizeInPixels;
+				advance += style.Interval * emSizeInPixels;
 			}
 
 			return advance;
 		}
 
 		/// <summary>
-		/// A glyph under the <see cref="TextStyleSettings"/> glyph style: scaled to size and by Width, sheared by
-		/// a third of Faux Italic (agg-gui's <c>x += y * faux_italic / 3</c>) plus this face's own
-		/// <see cref="FauxItalic"/>, then offset by Faux Weight.
+		/// A glyph under <paramref name="style"/> (null for none) and this face's own <see cref="FauxItalic"/>:
+		/// scaled to size and by Width, sheared by a third of the style's Faux Italic (agg-gui's
+		/// <c>x += y * faux_italic / 3</c>) plus <see cref="FauxItalicShear"/>, then offset by Faux Weight.
 		/// </summary>
 		/// <remarks>
 		/// The weight offset is agg-gui's port of AGG's <c>truetype_lcd.cpp</c>: flatten, stretch Y by 100, run the
 		/// contour, then squash Y back. The stretch makes the offset act almost only horizontally, so stems gain
 		/// weight while horizontal strokes stay thin, as a real bold does. The contour needs straight segments,
 		/// so a weighted glyph is flattened even when <see cref="FlattenCurves"/> is off.
+		/// <para>
+		/// Which way a contour width moves an edge follows the polygon's winding (orientation is not auto-detected,
+		/// see below), and fonts disagree on it: agg-sharp's SVG fonts wind their outer contours clockwise, TrueType
+		/// faces loaded with <see cref="TypeFace.LoadTTF"/> counter-clockwise. A fixed sign thickened the one and
+		/// thinned the other, so the sign is taken from each glyph's net winding, which its outer contours dominate.
+		/// It is read from <paramref name="windingSource"/>, the glyph without its underline: on a small glyph ('.',
+		/// ',') the underline's area outweighs the glyph's, so it must not get a say. The underline winds like the
+		/// glyph (see <see cref="GlyphWithUnderline"/>) and so grows with it.
+		/// </para>
 		/// </remarks>
-		private IVertexSource GetStyledGlyph(IVertexSource sourceGlyph, double emScaling, double resolutionScale)
+		private IVertexSource GetStyledGlyph(IVertexSource sourceGlyph, IVertexSource windingSource, double emScaling, double resolutionScale, GlyphStyle style)
 		{
-			// A face can be here for its own FauxItalic alone, so the process-wide settings count only if it opts in.
-			bool applySettings = AppliesTextStyleSettings;
-			double shear = (applySettings ? TextStyleSettings.FauxItalic / 3 : 0) + (FauxItalic ? FauxItalicShear : 0);
-			double width = applySettings ? TextStyleSettings.Width : 1;
+			// A face can be here for its own FauxItalic alone, with no style.
+			double shear = (style == null ? 0 : style.FauxItalic / 3) + (FauxItalic ? FauxItalicShear : 0);
+			double width = style == null ? 1 : style.Width;
 			var glyphTransform = new Affine(emScaling * width, 0, emScaling * shear, emScaling, 0, 0);
 			IVertexSource characterGlyph = new VertexSourceApplyTransform(sourceGlyph, glyphTransform);
 
-			double weightInPixels = applySettings ? TextStyleSettings.FauxWeightInPixels(emSizeInPixels) : 0;
-			if (FlattenCurves || weightInPixels != 0)
+			double growthInPixels = style == null ? 0 : style.FauxWeightGrowthInPixels(emSizeInPixels);
+			if (FlattenCurves || growthInPixels != 0)
 			{
 				characterGlyph = new FlattenCurves(characterGlyph)
 				{
@@ -481,8 +536,18 @@ namespace MatterHackers.Agg.Font
 				};
 			}
 
-			if (weightInPixels != 0)
+			if (growthInPixels != 0)
 			{
+				// A negative width grows a clockwise outline, a positive one a counter-clockwise outline.
+				// Scaling by positive factors and shearing keep the winding, so the source's sign is the outline's.
+				// A glyph with no area of its own (a space's bare underline) takes the sign of what is drawn.
+				double winding = SignedArea(windingSource);
+				if (winding == 0)
+				{
+					winding = SignedArea(characterGlyph);
+				}
+
+				double weightInPixels = winding > 0 ? growthInPixels : -growthInPixels;
 				const double YStretch = 100;
 				var stretched = new VertexSourceApplyTransform(characterGlyph, Affine.NewScaling(1, YStretch));
 				var contour = new Contour(stretched)
@@ -496,6 +561,43 @@ namespace MatterHackers.Agg.Font
 			}
 
 			return characterGlyph;
+		}
+
+		/// <summary>
+		/// The net signed area of <paramref name="path"/>'s polygon, positive when it winds counter-clockwise (y up).
+		/// Curve control points are taken as polygon vertices, which keeps the sign of a glyph's area.
+		/// </summary>
+		internal static double SignedArea(IVertexSource path)
+		{
+			double twiceArea = 0;
+			Vector2 start = default;
+			Vector2 previous = default;
+			bool inContour = false;
+			foreach (VertexData vertex in path.Vertices())
+			{
+				if (vertex.IsMoveTo || vertex.IsStop)
+				{
+					if (inContour)
+					{
+						twiceArea += (previous.X * start.Y) - (start.X * previous.Y);
+					}
+
+					inContour = vertex.IsMoveTo;
+					start = previous = vertex.Position;
+				}
+				else if (vertex.IsVertex)
+				{
+					twiceArea += (previous.X * vertex.Position.Y) - (vertex.Position.X * previous.Y);
+					previous = vertex.Position;
+				}
+			}
+
+			if (inContour)
+			{
+				twiceArea += (previous.X * start.Y) - (start.X * previous.Y);
+			}
+
+			return twiceArea / 2;
 		}
 
 		/// <summary>

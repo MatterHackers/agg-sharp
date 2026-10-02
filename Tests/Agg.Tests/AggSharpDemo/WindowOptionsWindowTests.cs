@@ -23,6 +23,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
@@ -43,12 +44,13 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 	{
 		private static DemoSpec Spec => GuiDemoSpecs.All.First(s => s.Title == "Window Options");
 
-		private static (WindowOptionsWindow Content, WindowWidget Window) Open(GuiWidget canvas, DemoTheme demoTheme)
+		private static (WindowOptionsWindow Content, WindowWidget Window) Open(GuiWidget canvas, DemoTheme demoTheme, Func<long> clockMs = null)
 		{
-			var host = new DemoWindowHost(canvas, demoTheme);
+			var host = new DemoWindowHost(canvas, demoTheme, clockMs);
 
 			// Every demo window has a collapse chevron by the same name; closing the first run's windows (About too)
-			// leaves this window's as the only one an automation click can find.
+			// leaves this window's as the only one an automation click can reach - the closed ones fade out
+			// still drawn, but let the pointer through.
 			foreach (DemoSpec other in GuiDemoSpecs.DefaultOpen)
 			{
 				host.SetOpen(other, false);
@@ -110,24 +112,66 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			var systemWindow = new SystemWindow(900, 700) { Name = "Window Options Test Window" };
 			var canvas = new GuiWidget { HAnchor = HAnchor.Stretch, VAnchor = VAnchor.Stretch };
 			systemWindow.AddChild(canvas);
-			(WindowOptionsWindow content, WindowWidget window) = Open(canvas, new DemoTheme(ThemePreference.Light));
 
-			await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, async testRunner =>
+			// The fade clock is held, so the closed default windows - each with its own "Window Collapse Button" -
+			// are still on the canvas fading out when the click comes. That is what a slow software-rendered CI
+			// frame did: fades step only when the canvas draws, and the click found a closing window's chevron,
+			// which takes no clicks.
+			(WindowOptionsWindow content, WindowWidget window) = Open(canvas, new DemoTheme(ThemePreference.Light), clockMs: () => 0);
+
+			// The deepest widget each press reached (InteractionObserved runs child first), so a click that does
+			// not fold the window says where it went.
+			GuiWidget pressed = null;
+			void RecordPress(GuiWidget widget, string interaction, MouseEventArgs e)
 			{
-				double height = window.Height;
-				testRunner.ClickByName("Window Collapse Button");
-				testRunner.WaitFor(() => window.Collapsed);
-				await Assert.That(window.Height).IsLessThan(height);
+				if (interaction == "mouse-down" && pressed == null)
+				{
+					pressed = widget;
+				}
+			}
 
-				testRunner.ClickByName("Window Collapse Button");
-				testRunner.WaitFor(() => !window.Collapsed);
+			GuiWidget.InteractionObserved += RecordPress;
+			try
+			{
+				await AutomationRunner.ShowWindowAndExecuteTests(systemWindow, async testRunner =>
+				{
+					double height = window.Height;
+					pressed = null;
+					testRunner.ClickByName("Window Collapse Button");
+					testRunner.WaitFor(() => window.Collapsed);
+					await Assert.That(window.Collapsed).IsTrue()
+						.Because($"the chevron click was pressed on {Describe(pressed)}, not this window's chevron");
+					await Assert.That(window.Height).IsLessThan(height);
 
-				testRunner.ClickByName("Window Options Collapsible");
-				testRunner.WaitFor(() => !window.Collapsible);
-				await Assert.That(content.CollapsibleBox.Checked).IsFalse();
-				await Assert.That(window.FindDescendant("Window Collapse Button").Visible).IsFalse();
-				testRunner.MarkTestComplete();
-			});
+					testRunner.ClickByName("Window Collapse Button");
+					testRunner.WaitFor(() => !window.Collapsed);
+
+					testRunner.ClickByName("Window Options Collapsible");
+					testRunner.WaitFor(() => !window.Collapsible);
+					await Assert.That(content.CollapsibleBox.Checked).IsFalse();
+					await Assert.That(window.FindDescendant("Window Collapse Button").Visible).IsFalse();
+					testRunner.MarkTestComplete();
+				});
+			}
+			finally
+			{
+				GuiWidget.InteractionObserved -= RecordPress;
+			}
+		}
+
+		/// <summary>A widget and the demo window it sits in, for a failure message.</summary>
+		private static string Describe(GuiWidget widget)
+		{
+			if (widget == null)
+			{
+				return "nothing";
+			}
+
+			DemoWindow demoWindow = widget.Parents<DemoWindow>().FirstOrDefault();
+			string where = demoWindow == null
+				? "outside every demo window"
+				: $"in '{demoWindow.Name}'{(demoWindow.Closing ? " (closing)" : "")}";
+			return $"{widget.GetType().Name} '{widget.Name}' {where}";
 		}
 	}
 }

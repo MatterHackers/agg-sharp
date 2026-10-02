@@ -34,7 +34,12 @@ namespace MatterHackers.Agg.UI
 {
 	public interface IPlatformWindow
 	{
-		// This must be set to false when doing parallel UI testing.
+		/// <summary>
+		/// Whether the hosts pass real mouse, keyboard-focus and drop input on to agg. The automation runner
+		/// turns it off while it drives a window, so the real cursor moving (or windows restacking under it)
+		/// cannot move the pointer a test is driving. Only the input arms are gated: windows still paint,
+		/// resize and close.
+		/// </summary>
 		public static bool EnablePlatformWindowInput { get; set; } = true;
 
 		/// <summary>

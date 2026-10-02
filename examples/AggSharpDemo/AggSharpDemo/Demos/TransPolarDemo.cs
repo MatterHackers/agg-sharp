@@ -72,7 +72,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "trans_polar";
 
-		public override string Category => "Transformations";
+		public override string Category => "Transforms";
 
 		public override string Description => "A slider wrapped around a circle by a polar transform. Drag the top slider to move its wrapped twin; the other sliders set the spiral and the radius.";
 

@@ -240,6 +240,11 @@ namespace MatterHackers.Agg
 			return image is ImageBuffer buffer && buffer.BitDepth == 32 ? buffer : null;
 		}
 
+		/// <summary>
+		/// Builds the image-to-surface transform the <see cref="Graphics2D.Render(IImageByte, double, double, double, double, double)"/>
+		/// contract describes - hotspot, scale, rotation, placement, then the whole graphics transform - and the
+		/// image's rectangle in its own pixels, which <see cref="DrawImage"/> rasterizes through it.
+		/// </summary>
 		private void DrawImageGetDestBounds(IImageByte sourceImage,
 			double destX,
 			double destY,
@@ -248,6 +253,7 @@ namespace MatterHackers.Agg
 			double scaleX,
 			double scaleY,
 			double angleRad,
+			Affine graphicsTransform,
 			out Affine destRectTransform)
 		{
 			destRectTransform = Affine.NewIdentity();
@@ -271,6 +277,8 @@ namespace MatterHackers.Agg
 			{
 				destRectTransform *= Affine.NewTranslation(destX, destY);
 			}
+
+			destRectTransform *= graphicsTransform;
 
 			int sourceBufferWidth = (int)sourceImage.Width;
 			int sourceBufferHeight = (int)sourceImage.Height;
@@ -309,34 +317,8 @@ namespace MatterHackers.Agg
 			this.FlushDeferredDraws();
 			Affine graphicsTransform = GetTransform();
 
-			// exit early if the dest and source bounds don't touch.
-			// TODO: <BUG> make this do rotation and scaling
-			RectangleInt sourceBounds = source.GetBounds();
-			RectangleInt destBounds = this.destImageByte.GetBounds();
-			sourceBounds.Offset((int)(destX + graphicsTransform.tx), (int)(destY + graphicsTransform.ty));
-
-			if (!RectangleInt.DoIntersect(sourceBounds, destBounds))
-			{
-				if (inScaleX != 1 || inScaleY != 1 || angleRadians != 0)
-				{
-					//throw new NotImplementedException();
-				}
-
-				//return;
-			}
-
 			double scaleX = inScaleX;
 			double scaleY = inScaleY;
-
-			if (!graphicsTransform.is_identity())
-			{
-				if (scaleX != 1 || scaleY != 1 || angleRadians != 0)
-				{
-					//throw new NotImplementedException();
-				}
-
-				graphicsTransform.Transform(ref destX, ref destY);
-			}
 
 #if false // this is an optimization that eliminates the drawing of images that have their alpha set to all 0 (happens with generated images like explosions).
 	        MaxAlphaFrameProperty maxAlphaFrameProperty = MaxAlphaFrameProperty::GetMaxAlphaFrameProperty(source);
@@ -348,12 +330,15 @@ namespace MatterHackers.Agg
 #endif
 			bool isScaled = scaleX != 1 || scaleY != 1;
 
-			bool isRotated = true;
 			if (Math.Abs(angleRadians) < (0.1 * MathHelper.Tau / 360))
 			{
-				isRotated = false;
 				angleRadians = 0;
 			}
+
+			// Only a whole-pixel translation of the image can skip resampling; any scale, turn or shear - the
+			// image's own or the graphics transform's - has to be sampled.
+			DrawImageGetDestBounds(source, destX, destY, source.OriginOffset.X, source.OriginOffset.Y, scaleX, scaleY, angleRadians, graphicsTransform, out Affine imageToDest);
+			bool isTranslationOnly = imageToDest.sx == 1 && imageToDest.sy == 1 && imageToDest.shx == 0 && imageToDest.shy == 0;
 
 			// bool IsMipped = false;
 			double sourceOriginOffsetX = source.OriginOffset.X;
@@ -364,7 +349,7 @@ namespace MatterHackers.Agg
 				canUseMipMaps = false;
 			}
 
-			bool renderRequriesSourceSampling = isScaled || isRotated || destX != (int)destX || destY != (int)destY;
+			bool renderRequriesSourceSampling = !isTranslationOnly || imageToDest.tx != (int)imageToDest.tx || imageToDest.ty != (int)imageToDest.ty;
 
 			// this is the fast drawing path
 			if (renderRequriesSourceSampling)
@@ -392,7 +377,7 @@ namespace MatterHackers.Agg
 				{
 					case TransformQuality.Fastest:
 						{
-							DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out Affine destRectTransform);
+							var destRectTransform = new Affine(imageToDest);
 
 							var sourceRectTransform = new Affine(destRectTransform);
 							// We invert it because it is the transform to make the image go to the same position as the polygon. LBB [2/24/2004]
@@ -411,7 +396,7 @@ namespace MatterHackers.Agg
 
 					case TransformQuality.Best:
 						{
-							DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out Affine destRectTransform);
+							var destRectTransform = new Affine(imageToDest);
 
 							var sourceRectTransform = new Affine(destRectTransform);
 							// We invert it because it is the transform to make the image go to the same position as the polygon. LBB [2/24/2004]
@@ -445,7 +430,7 @@ namespace MatterHackers.Agg
 			}
 			else // TODO: this can be even faster if we do not use an intermediate buffer
 			{
-				DrawImageGetDestBounds(source, destX, destY, sourceOriginOffsetX, sourceOriginOffsetY, scaleX, scaleY, angleRadians, out Affine destRectTransform);
+				var destRectTransform = new Affine(imageToDest);
 
 				var sourceRectTransform = new Affine(destRectTransform);
 				// We invert it because it is the transform to make the image go to the same position as the polygon. LBB [2/24/2004]

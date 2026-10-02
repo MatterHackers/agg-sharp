@@ -452,6 +452,43 @@ namespace MatterHackers.Agg.UI
 			base.OnMouseMove(mouseEvent);
 		}
 
+		private Vector2 scrollOnTouchPan;
+
+		/// <summary>Whether a finger dragging by <paramref name="travel"/> can scroll this view: it has content
+		/// hidden along the drag's main axis. A view that cannot leaves the drag to the nearest ancestor that can, as
+		/// agg-gui's ScrollView ignores a pan it has nothing to scroll for.</summary>
+		internal bool CanTouchPan(Vector2 travel)
+		{
+			return Math.Abs(travel.Y) >= Math.Abs(travel.X)
+				? HasVerticalOverflow
+				: HorizontalScroll && HasHorizontalOverflow;
+		}
+
+		/// <summary>Starts a finger pan (see <see cref="TouchPressDeferral"/>); an auto-hiding floating bar fades in
+		/// for it, since a finger has no hover to find the bar with.</summary>
+		internal void BeginTouchPan()
+		{
+			scrollOnTouchPan = ScrollPosition;
+			SetBarsTouchPanning(true);
+		}
+
+		/// <summary>Moves the content with the finger, <paramref name="travel"/> from where it went down.</summary>
+		internal void TouchPan(Vector2 travel)
+		{
+			ScrollPosition = new Vector2(HorizontalScroll ? scrollOnTouchPan.X + travel.X : ScrollPosition.X, scrollOnTouchPan.Y + travel.Y);
+		}
+
+		internal void EndTouchPan() => SetBarsTouchPanning(false);
+
+		private void SetBarsTouchPanning(bool panning)
+		{
+			VerticalScrollBar.TouchPanning = panning;
+			if (HorizontalScrollBar != null)
+			{
+				HorizontalScrollBar.TouchPanning = panning;
+			}
+		}
+
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
 			mouseDownOnScrollArea = false;

@@ -305,8 +305,26 @@ namespace MatterHackers.Agg.UI
 		/// <summary>The thumb's length along a track: the share of the content in view, held to <see cref="HandleMinLength"/>.</summary>
 		private double ThumbLength(double track, double viewRatio) => Math.Max(viewRatio * track, Math.Min(handleMinLength, track));
 
-		/// <summary>The opacity an auto-hiding bar is heading for at <paramref name="nowMs"/>: shown while hovered or
-		/// dragged, hidden otherwise. A scroll alone does not bring it up, as in agg-gui.</summary>
+		private bool touchPanning;
+
+		/// <summary>Whether a finger is panning the view's content. A finger has no hover to find an auto-hiding
+		/// bar with, so the pan itself brings it up (thin, as it is not hovered) to show where the view is, and it
+		/// fades again when the finger lifts.</summary>
+		internal bool TouchPanning
+		{
+			get => touchPanning;
+			set
+			{
+				if (value != touchPanning)
+				{
+					touchPanning = value;
+					Retarget();
+				}
+			}
+		}
+
+		/// <summary>The opacity an auto-hiding bar is heading for at <paramref name="nowMs"/>: shown while hovered,
+		/// dragged or touch-panned, hidden otherwise. A wheel scroll alone does not bring it up, as in agg-gui.</summary>
 		internal double FadeTarget(long nowMs)
 		{
 			if (!AutoHides)
@@ -314,7 +332,7 @@ namespace MatterHackers.Agg.UI
 				return 1;
 			}
 
-			return mouseInBounds || thumb.Dragging ? 1 : 0;
+			return mouseInBounds || thumb.Dragging || touchPanning ? 1 : 0;
 		}
 
 		/// <summary>Points the fade and the hover growth at what the bar should be showing at

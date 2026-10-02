@@ -24,7 +24,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Platform;
@@ -34,46 +33,55 @@ using MatterHackers.AggSharpDemo.GuiDemo;
 namespace MatterHackers.AggSharpDemo
 {
 	/// <summary>
-	/// The whole site as one widget: a sidebar listing the AGG demos and the GUI demo, and the page for
-	/// whichever is selected. A head only has to put this in a window.
+	/// The whole site as one widget: a tab strip across the top choosing between the classic AGG demos
+	/// (<see cref="AggDemosPage"/>) and the agg-sharp GUI demo (<see cref="GuiDemoShell"/>), and below it the
+	/// selected one. Both pages have the same shape - a menu bar, the content, and the selection bar docked on the
+	/// right - so switching tabs changes what is browsed, not the app. A head only has to put this in a window.
 	/// </summary>
 	/// <remarks>
 	/// The site is one app with one theme: the GUI demo's light/dark/system preference and accent
-	/// (<see cref="DemoTheme"/>) colour this chrome too, as agg-gui's theme is its whole app's. The theme
-	/// outlives the GUI demo page, which is rebuilt each time it is selected.
+	/// (<see cref="DemoTheme"/>) colour the tab strip and the AGG page too, as agg-gui's theme is its whole app's.
+	/// The theme outlives the pages, each of which is rebuilt every time its tab is selected (the GUI demo page
+	/// saves its windows on closing and restores them when rebuilt).
 	/// </remarks>
-	public class AggSharpDemoApp : FlowLayoutWidget
+	public class AggSharpDemoApp : GuiWidget
 	{
-		private readonly IDemoStateStore guiDemoStateStore;
+		/// <summary>Passing this as initialDemo opens on the agg-sharp Demos tab (the GUI demo page).</summary>
+		public const string GuiDemoName = "GUI Demo";
+
+		/// <summary>The saved <see cref="DemoState.AppTab"/> of the AGG Demos tab.</summary>
+		public const string AggDemosTab = "agg";
+
+		/// <summary>The saved <see cref="DemoState.AppTab"/> of the agg-sharp Demos tab.</summary>
+		public const string AggSharpDemosTab = "agg-sharp";
+
+		public const string AggDemosLabel = "AGG Demos";
+
+		public const string AggSharpDemosLabel = "agg-sharp Demos";
+
+		/// <summary>The tab strip's height in design units: the GUI demo's menu bar plus room for the accent bar.</summary>
+		public const double TabBarHeight = 32;
+
+		private readonly IDemoStateStore stateStore;
 
 		/// <summary>True when this app owns <see cref="GuiWidget.DeviceScale"/> - see the constructor.</summary>
 		private readonly bool followDisplayScale;
 
-		private ScrollableWidget sidebarScroll;
-
-		private GuiWidget content;
-
-		private readonly List<TextWidget> sectionHeaders = new List<TextWidget>();
-
-		/// <summary>The sidebar rows by the page name they show.</summary>
-		private readonly Dictionary<string, ThemedTextButton> entries = new Dictionary<string, ThemedTextButton>();
-
-		private string selectedEntry;
-
 		/// <summary>Following the window's display scale (<see cref="UiScale.Follow"/>), once loaded.</summary>
 		private IDisposable displayScaleFollowing;
 
-		/// <summary>Recolours the open AGG demo page's header; null while the GUI demo page is open (it
-		/// recolours itself).</summary>
-		private Action recolorPage;
+		private GuiWidget aggDemosHost;
 
-		/// <summary>The sidebar name of the GUI demo page; passing it as initialDemo opens on that page.</summary>
-		public const string GuiDemoName = "GUI Demo";
+		private GuiWidget aggSharpDemosHost;
 
-		/// <param name="initialDemo">The name of the AGG demo to open on (as the sidebar lists it), or
-		/// <see cref="GuiDemoName"/>; null or an unknown name opens on the first AGG demo.</param>
-		/// <param name="guiDemoStateStore">Where the GUI demo keeps its windows and settings between runs; null
-		/// starts it fresh every time.</param>
+		/// <summary>The AGG demo to show on the AGG Demos tab; kept across tab switches and rebuilds.</summary>
+		private string selectedAggDemo;
+
+		/// <param name="initialDemo">The name of the AGG demo to open on, or <see cref="GuiDemoName"/> for the
+		/// agg-sharp Demos tab; null opens where the last run left off (the saved tab and AGG demo), or on the AGG
+		/// Demos tab's lion the first time. An unknown name opens on the lion.</param>
+		/// <param name="guiDemoStateStore">Where the app keeps its tab, its AGG demo and the GUI demo's windows and
+		/// settings between runs; null starts fresh every time.</param>
 		/// <param name="followDisplayScale">
 		/// True for a head: the app sets <see cref="GuiWidget.DeviceScale"/> to the display's scale (the Retina
 		/// factor, or the browser's devicePixelRatio) before it builds anything, and rebuilds itself at the new
@@ -83,10 +91,9 @@ namespace MatterHackers.AggSharpDemo
 		/// design unit - half size on a 2x display. False (tests) leaves the process-wide DeviceScale alone.
 		/// </param>
 		public AggSharpDemoApp(string initialDemo = null, IDemoStateStore guiDemoStateStore = null, bool followDisplayScale = false)
-			: base(FlowDirection.LeftToRight)
 		{
 			this.AnchorAll();
-			this.guiDemoStateStore = guiDemoStateStore;
+			this.stateStore = guiDemoStateStore;
 			this.followDisplayScale = followDisplayScale;
 
 			if (followDisplayScale)
@@ -101,79 +108,134 @@ namespace MatterHackers.AggSharpDemo
 			EmojiFont.ChainOnto(AggContext.DefaultFontBold);
 
 			this.DemoTheme = new DemoTheme(systemPrefersDark: () => SystemAppearance.PrefersDark ?? true);
-			if (guiDemoStateStore != null)
+			DemoState saved = guiDemoStateStore != null ? DemoState.Parse(guiDemoStateStore.Load()) : new DemoState();
+
+			// Open in the saved theme even when the first page is the AGG one.
+			DemoStatePersistence.ApplyTheme(saved, this.DemoTheme);
+
+			// The first visit opens on the AGG Demos tab: the first thing a visitor sees should be AGG drawing.
+			if (initialDemo == GuiDemoName)
 			{
-				// Open in the saved theme even when the first page is an AGG demo.
-				DemoStatePersistence.ApplyTheme(DemoState.Parse(guiDemoStateStore.Load()), this.DemoTheme);
+				this.SelectedTab = AggSharpDemosTab;
+				this.selectedAggDemo = saved.AggDemo;
 			}
-
-			this.BuildUi(initialDemo);
-			this.DemoTheme.ThemeChanged += this.DemoTheme_ThemeChanged;
-		}
-
-		/// <summary>Builds the sidebar and opens <paramref name="openName"/> (an AGG demo's name or
-		/// <see cref="GuiDemoName"/>), all at the current <see cref="GuiWidget.DeviceScale"/>.</summary>
-		private void BuildUi(string openName)
-		{
-			this.sectionHeaders.Clear();
-			this.entries.Clear();
-
-			// The demo list is taller than a typical window, so the sidebar scrolls to keep every demo reachable.
-			this.sidebarScroll = new ScrollableWidget(autoScroll: true)
+			else if (initialDemo != null)
 			{
-				HAnchor = HAnchor.Absolute,
-				Width = 200 * GuiWidget.DeviceScale,
-				VAnchor = VAnchor.Stretch,
-			};
-			sidebarScroll.ScrollArea.HAnchor = HAnchor.Stretch;
-			this.AddChild(sidebarScroll);
-
-			var sidebar = new FlowLayoutWidget(FlowDirection.TopToBottom)
-			{
-				HAnchor = HAnchor.Stretch,
-				Padding = 8,
-			};
-			sidebarScroll.AddChild(sidebar);
-
-			this.content = new GuiWidget()
-			{
-				HAnchor = HAnchor.Stretch,
-				VAnchor = VAnchor.Stretch,
-			};
-			this.AddChild(this.content);
-
-			sidebar.AddChild(this.SectionHeader("AGG Demos"));
-			AggDemo openDemo = null;
-			foreach (AggDemo demo in DemoRegistry.CreateAggDemos())
-			{
-				if (openDemo == null || demo.Name == openName)
-				{
-					openDemo = demo;
-				}
-
-				sidebar.AddChild(this.SidebarEntry(demo.Name, () => this.ShowAggDemoPage(demo)));
-			}
-
-			sidebar.AddChild(this.SectionHeader("GUI Demo"));
-			sidebar.AddChild(this.SidebarEntry(GuiDemoName, () => this.ShowPage(GuiDemoName, new GuiDemoShell(this.DemoTheme, this.guiDemoStateStore))));
-
-			this.ApplyTheme();
-
-			// Open on a demo rather than an empty page: the first thing a visitor sees should be AGG drawing.
-			if (openDemo == null || openName == GuiDemoName)
-			{
-				this.ShowPage(GuiDemoName, new GuiDemoShell(this.DemoTheme, this.guiDemoStateStore));
+				this.SelectedTab = AggDemosTab;
+				this.selectedAggDemo = initialDemo;
 			}
 			else
 			{
-				this.ShowAggDemoPage(openDemo);
+				this.SelectedTab = saved.AppTab == AggSharpDemosTab ? AggSharpDemosTab : AggDemosTab;
+				this.selectedAggDemo = saved.AggDemo;
+			}
+
+			this.BuildUi();
+			this.DemoTheme.ThemeChanged += this.DemoTheme_ThemeChanged;
+		}
+
+		/// <summary>The light/dark preference and accent of the whole site.</summary>
+		public DemoTheme DemoTheme { get; }
+
+		/// <summary>The tab strip and the two pages under it.</summary>
+		public TabView Tabs { get; private set; }
+
+		/// <summary><see cref="AggDemosTab"/> or <see cref="AggSharpDemosTab"/>.</summary>
+		public string SelectedTab { get; private set; }
+
+		/// <summary>The AGG Demos page while its tab is selected, else null.</summary>
+		public AggDemosPage AggDemosPage => this.aggDemosHost?.Children.OfType<AggDemosPage>().FirstOrDefault();
+
+		/// <summary>The GUI demo page while the agg-sharp Demos tab is selected, else null.</summary>
+		public GuiDemoShell GuiDemoShell => this.aggSharpDemosHost?.Children.OfType<GuiDemoShell>().FirstOrDefault();
+
+		/// <summary>The automation name of the tab labelled <paramref name="label"/>.</summary>
+		public static string TabName(string label) => "App Tab " + label;
+
+		/// <summary>Selects the tab <paramref name="tab"/> (<see cref="AggDemosTab"/> or <see cref="AggSharpDemosTab"/>),
+		/// as clicking it does.</summary>
+		public void SelectTab(string tab) => this.Tabs.SelectedIndex = tab == AggSharpDemosTab ? 1 : 0;
+
+		/// <summary>Builds the tab strip and opens <see cref="SelectedTab"/>, all at the current
+		/// <see cref="GuiWidget.DeviceScale"/>.</summary>
+		private void BuildUi()
+		{
+			this.Tabs = new TabView(TabBarHeight)
+			{
+				Name = "App Tabs",
+			};
+
+			this.aggDemosHost = new GuiWidget() { HAnchor = HAnchor.Stretch, VAnchor = VAnchor.Stretch };
+			this.aggSharpDemosHost = new GuiWidget() { HAnchor = HAnchor.Stretch, VAnchor = VAnchor.Stretch };
+			this.Tabs.AddTab(AggDemosLabel, this.aggDemosHost, TabName(AggDemosLabel));
+			this.Tabs.AddTab(AggSharpDemosLabel, this.aggSharpDemosHost, TabName(AggSharpDemosLabel));
+			this.AddChild(this.Tabs);
+			this.ApplyTheme();
+
+			this.Tabs.SelectedIndexChanged += (s, e) => this.ShowSelectedTab();
+
+			// AddTab already selected the first tab, so selecting it again raises nothing; its page is opened here.
+			int index = this.SelectedTab == AggSharpDemosTab ? 1 : 0;
+			if (this.Tabs.SelectedIndex == index)
+			{
+				this.ShowSelectedTab();
+			}
+			else
+			{
+				this.Tabs.SelectedIndex = index;
 			}
 		}
 
-		/// <summary>The light/dark preference and accent of the whole site: this chrome and the GUI demo page.</summary>
-		public DemoTheme DemoTheme { get; }
+		/// <summary>Closes the page of the tab left (the GUI demo page saves its state as it closes) and builds the
+		/// selected tab's, then remembers the choice.</summary>
+		private void ShowSelectedTab()
+		{
+			bool aggSelected = this.Tabs.SelectedIndex == 0;
+			GuiWidget host = aggSelected ? this.aggDemosHost : this.aggSharpDemosHost;
+			GuiWidget other = aggSelected ? this.aggSharpDemosHost : this.aggDemosHost;
+			other.CloseChildren();
 
-		/// <summary>The page is built before its window is shown, which is when the platform installs the
+			if (host.Children.Count == 0)
+			{
+				if (aggSelected)
+				{
+					var page = new AggDemosPage(this.DemoTheme, this.selectedAggDemo);
+					this.selectedAggDemo = page.SelectedDemo.Name;
+					page.SelectedDemoChanged += (s, e) =>
+					{
+						this.selectedAggDemo = page.SelectedDemo.Name;
+						this.SaveAppState();
+					};
+					host.AddChild(page);
+				}
+				else
+				{
+					host.AddChild(new GuiDemoShell(this.DemoTheme, this.stateStore));
+				}
+			}
+
+			this.SelectedTab = aggSelected ? AggDemosTab : AggSharpDemosTab;
+			this.SaveAppState();
+		}
+
+		/// <summary>Writes the tab and AGG demo into the shared state, leaving the GUI demo's part as it is.</summary>
+		private void SaveAppState()
+		{
+			if (this.stateStore == null)
+			{
+				return;
+			}
+
+			DemoState state = DemoState.Parse(this.stateStore.Load());
+			if (state.AppTab != this.SelectedTab || state.AggDemo != this.selectedAggDemo)
+			{
+				state.AppTab = this.SelectedTab;
+				state.AggDemo = this.selectedAggDemo;
+				this.stateStore.Save(state.Serialize());
+			}
+		}
+
+		/// <summary>The pages are built before their window is shown, which is when the platform installs the
 		/// appearance provider, so System is asked again once the app is on screen.</summary>
 		public override void OnLoad(EventArgs args)
 		{
@@ -183,17 +245,12 @@ namespace MatterHackers.AggSharpDemo
 			{
 				// The window moved to a display with another scale (or the browser zoomed): rebuild everything
 				// at it. Closing the GUI demo page saves its state to the store in design units, so it closes
-				// at the old scale; the new page restores it, and the open page is reopened by name, so a
+				// at the old scale; the new page restores it, and the selected tab and AGG demo are kept, so a
 				// visitor sees the same page and windows, sized for the new display.
-				string openName = null;
 				this.displayScaleFollowing = UiScale.Follow(
 					window,
-					rebuild: () => this.BuildUi(openName),
-					beforeRescale: () =>
-					{
-						openName = this.selectedEntry;
-						this.CloseChildren();
-					});
+					rebuild: this.BuildUi,
+					beforeRescale: this.CloseChildren);
 			}
 
 			base.OnLoad(args);
@@ -210,138 +267,18 @@ namespace MatterHackers.AggSharpDemo
 
 		private void DemoTheme_ThemeChanged(object sender, EventArgs e) => this.ApplyTheme();
 
-		/// <summary>The sidebar takes agg-gui's panel_fill and the page area its bg_color, as the GUI demo's
-		/// own sidebar and canvas do.</summary>
+		/// <summary>The tab strip takes the top bar's fill, so it and the page's menu bar read as one header, with
+		/// the selected tab in the accent; the pages recolour themselves.</summary>
 		private void ApplyTheme()
 		{
 			DemoPalette palette = this.DemoTheme.Palette;
-			this.sidebarScroll.BackgroundColor = palette.PanelFill;
-			this.content.BackgroundColor = palette.BackgroundColor;
-			foreach (TextWidget header in this.sectionHeaders)
-			{
-				header.TextColor = palette.TextColor;
-			}
-
-			foreach (KeyValuePair<string, ThemedTextButton> entry in this.entries)
-			{
-				this.ApplyTheme(entry.Value, entry.Key == this.selectedEntry);
-			}
-
-			this.recolorPage?.Invoke();
-			this.Invalidate();
-		}
-
-		/// <summary>agg-gui's sidebar row: the selected one is filled with the accent and lettered white, the
-		/// rest are transparent over the panel with a faint accent hover.</summary>
-		private void ApplyTheme(ThemedTextButton entry, bool selected)
-		{
-			Color accent = DemoTheme.ColorOf(this.DemoTheme.Accent);
-			entry.BackgroundColor = selected ? accent : Color.Transparent;
-			entry.TextColor = selected ? Color.White : this.DemoTheme.Palette.TextColor;
-			entry.HoverColor = selected ? accent : this.DemoTheme.Theme.MinimalShade;
-			entry.Invalidate();
-		}
-
-		private GuiWidget SectionHeader(string text)
-		{
-			// HAnchor.Left so the sidebar's Padding and this Margin place it; the default Absolute ignores both.
-			var header = new TextWidget(text, pointSize: 13, bold: true)
-			{
-				HAnchor = HAnchor.Left,
-				Margin = new BorderDouble(2, 4, 0, 10),
-			};
-			this.sectionHeaders.Add(header);
-			return header;
-		}
-
-		/// <summary>The sidebar row for one page; <paramref name="select"/> shows that page.</summary>
-		private GuiWidget SidebarEntry(string text, Action select)
-		{
-			var entry = new ThemedTextButton(text, this.DemoTheme.Theme, 10)
-			{
-				Name = EntryName(text),
-				HAnchor = HAnchor.Stretch,
-				TextHAnchor = HAnchor.Left,
-				Height = 20 * GuiWidget.DeviceScale,
-				Margin = new BorderDouble(0, 1),
-				Padding = new BorderDouble(5, 0),
-			};
-			entry.Click += (sender, e) => select();
-			this.entries.Add(text, entry);
-			return entry;
-		}
-
-		/// <summary>The automation name of the sidebar row for <paramref name="text"/> (an AGG demo's name or
-		/// <see cref="GuiDemoName"/>).</summary>
-		public static string EntryName(string text) => "App Sidebar " + text;
-
-		/// <summary>The page for one AGG demo: its name, description, the render mode toggle, and the demo.</summary>
-		private GuiWidget CreateAggDemoPage(AggDemo demo, out Action recolor)
-		{
-			var page = new FlowLayoutWidget(FlowDirection.TopToBottom)
-			{
-				HAnchor = HAnchor.Stretch,
-				VAnchor = VAnchor.Stretch,
-				Padding = 8,
-			};
-
-			var view = new AggDemoView(demo)
-			{
-				HAnchor = HAnchor.Stretch,
-				VAnchor = VAnchor.Stretch,
-			};
-
-			var header = new FlowLayoutWidget(FlowDirection.LeftToRight)
-			{
-				HAnchor = HAnchor.Stretch,
-				Margin = new BorderDouble(0, 0, 0, 8),
-			};
-			var name = new TextWidget(demo.Name, pointSize: 14, bold: true);
-			header.AddChild(name);
-			var description = new TextWidget("  " + demo.Description, pointSize: 10)
-			{
-				VAnchor = VAnchor.Center,
-			};
-			header.AddChild(description);
-			header.AddChild(new HorizontalSpacer());
-
-			var softwareToggle = new CheckBox("Software (AGG reference)")
-			{
-				VAnchor = VAnchor.Center,
-			};
-			softwareToggle.CheckedStateChanged += (sender, e) =>
-				view.RenderMode = softwareToggle.Checked ? AggDemoRenderMode.Software : AggDemoRenderMode.Gpu;
-			header.AddChild(softwareToggle);
-
-			page.AddChild(header);
-			page.AddChild(view);
-
-			recolor = () =>
-			{
-				Color textColor = this.DemoTheme.Palette.TextColor;
-				name.TextColor = textColor;
-				description.TextColor = textColor;
-				softwareToggle.TextColor = textColor;
-			};
-			return page;
-		}
-
-		private void ShowAggDemoPage(AggDemo demo)
-		{
-			GuiWidget page = this.CreateAggDemoPage(demo, out Action recolor);
-			this.ShowPage(demo.Name, page, recolor);
-		}
-
-		/// <param name="entryName">The sidebar row that shows <paramref name="page"/>; it is lit.</param>
-		/// <param name="recolor">Recolours what <paramref name="page"/> copied from the theme; null for a page
-		/// that follows the theme itself.</param>
-		private void ShowPage(string entryName, GuiWidget page, Action recolor = null)
-		{
-			this.content.CloseChildren();
-			this.selectedEntry = entryName;
-			this.recolorPage = recolor;
-			this.ApplyTheme();
-			this.content.AddChild(page);
+			this.Tabs.BarColor = palette.TopBarBackground;
+			this.Tabs.SeparatorColor = palette.Separator;
+			this.Tabs.AccentColor = DemoTheme.ColorOf(this.DemoTheme.Accent);
+			this.Tabs.TextColor = palette.TextColor;
+			this.Tabs.TextDimColor = palette.TextDim;
+			this.Tabs.HoverColor = this.DemoTheme.Theme.MinimalShade;
+			this.Tabs.Invalidate();
 		}
 	}
 }

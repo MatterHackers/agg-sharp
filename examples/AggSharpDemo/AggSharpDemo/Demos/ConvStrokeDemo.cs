@@ -97,7 +97,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "conv_stroke";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Paths & Strokes";
 
 		public override string Description => "Line joins, caps and miter limits on a wide stroke. Drag a corner or the whole triangle.";
 

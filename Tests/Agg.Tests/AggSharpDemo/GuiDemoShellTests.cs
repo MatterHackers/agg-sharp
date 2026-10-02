@@ -90,30 +90,25 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		}
 
 		[Test]
-		public async Task TheBackendPanelsSsaaAndThe3DAnimationSelectorAreOneSetting()
+		public async Task The3DAnimationWindowsOwnSelectorIsItsOnlySsaaSetting()
 		{
 			var shell = new GuiDemoShell();
-			shell.BackendPanel.SetSsaaFactor(3);
-
-			// A window opened later starts at the panel's factor.
 			var spec = GuiDemoSpecs.All.First(s => s.Title == "3D Animation");
+			await Assert.That(shell.ThreeDAnimation).IsNull().Because("the window is built when first opened");
+
+			// It opens at the bar grid's own default, nothing else seeding it.
 			shell.Windows.SetOpen(spec, true);
 			var window = shell.ThreeDAnimation;
 			await Assert.That(window).IsNotNull();
-			await Assert.That(window.BarGrid.SsaaFactor).IsEqualTo(3);
-			await Assert.That(window.SsaaFactor).IsEqualTo(3);
+			await Assert.That(window.SsaaFactor).IsEqualTo(MatterHackers.AggSharpDemo.GuiDemo.Windows.Graphics.ThreeDAnimationWindow.DefaultSsaaFactor);
 
-			// The panel drives the window's selector and bars...
-			shell.BackendPanel.SetSsaaFactor(4);
+			// Its selector drives its bars, and the choice survives a close and reopen.
+			window.SsaaButtons[3].InvokeClick();
 			await Assert.That(window.BarGrid.SsaaFactor).IsEqualTo(4);
-			await Assert.That(window.SsaaButtons[3].BackgroundColor).IsNotEqualTo(window.SsaaButtons[0].BackgroundColor);
-
-			// ...and the window's selector drives the panel, across a close and reopen.
 			shell.Windows.SetOpen(spec, false);
 			shell.Windows.SetOpen(spec, true);
-			window.SsaaButtons[0].InvokeClick();
-			await Assert.That(shell.BackendPanel.SsaaFactor).IsEqualTo(1);
-			await Assert.That(shell.BackendPanel.SsaaControl.SelectedIndex).IsEqualTo(0);
+			await Assert.That(shell.ThreeDAnimation).IsSameReferenceAs(window);
+			await Assert.That(window.SsaaFactor).IsEqualTo(4);
 		}
 
 		[Test]

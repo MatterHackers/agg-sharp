@@ -499,7 +499,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			var widgetCell = new GuiWidget
 			{
 				HAnchor = HAnchor.Stretch,
-				VAnchor = VAnchor.Fit,
+				VAnchor = VAnchor.Fit | VAnchor.Top,
 			};
 			if (widget.HAnchor != HAnchor.Stretch)
 			{
@@ -509,6 +509,11 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			widgetCell.AddChild(widget);
 			row.AddChild(widgetCell);
 
+			void Level() => LevelWithFirstLine(left, widget, widgetCell);
+			left.BoundsChanged += (s, e) => Level();
+			widget.BoundsChanged += (s, e) => Level();
+			Level();
+
 			// egui's Grid::striped(true): every second row gets a faint band.
 			if (this.grid.Children.Count % 2 == 1)
 			{
@@ -516,6 +521,44 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Widgets
 			}
 
 			this.grid.AddChild(row);
+		}
+
+		/// <summary>
+		/// Puts the label's centre level with the centre of the control's first line - the control itself, or
+		/// the first option of a stacked group such as the radio buttons - by pushing whichever top-anchored cell
+		/// starts higher down. A control more than twice the label's height (an image, the colour wheel) is
+		/// read from its top, so its label stays at the top.
+		/// </summary>
+		private static void LevelWithFirstLine(GuiWidget label, GuiWidget control, GuiWidget controlCell)
+		{
+			GuiWidget firstLine = control is FlowLayoutWidget { FlowDirection: FlowDirection.TopToBottom } && control.Children.Count > 0
+				? control.Children[0]
+				: control;
+			// The first line's centre down from the cell's top, walked up through the parents rather than summed
+			// from margins, as a field's Border band sits outside its bounds but inside the Fit cell.
+			double centreInCell = firstLine.LocalBounds.Center.Y;
+			for (GuiWidget widget = firstLine; widget != controlCell; widget = widget.Parent)
+			{
+				centreInCell += widget.OriginRelativeParent.Y;
+			}
+
+			double centreFromTop = firstLine.Height > 2 * label.Height
+				? label.Height / 2
+				: controlCell.LocalBounds.Top - centreInCell;
+
+			// Device pixels to the design units Margin takes
+			double labelDrop = (centreFromTop - label.Height / 2) / DeviceScale;
+			double labelTop = Math.Max(0, labelDrop);
+			double controlTop = Math.Max(0, -labelDrop);
+			if (label.Margin.Top != labelTop)
+			{
+				label.Margin = new BorderDouble(label.Margin.Left, label.Margin.Bottom, label.Margin.Right, labelTop);
+			}
+
+			if (controlCell.Margin.Top != controlTop)
+			{
+				controlCell.Margin = new BorderDouble(controlCell.Margin.Left, controlCell.Margin.Bottom, controlCell.Margin.Right, controlTop);
+			}
 		}
 
 		/// <summary>egui's bottom bar: Visible, and while visible, Interactive and Opacity, each with its tooltip.</summary>

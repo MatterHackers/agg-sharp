@@ -116,7 +116,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "scanline_boolean2";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Masks & Clipping";
 
 		public override string Description => "Boolean operations on complex shapes - Great Britain, arrows, a spiral, a glyph - stored as scanlines and combined. Pick the shapes, the operation, the fill rule and the scanline type, and drag to move the spiral, arrows or path.";
 

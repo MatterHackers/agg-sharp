@@ -89,7 +89,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "polymorphic_renderer";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Rendering";
 
 		public override string Description => "A triangle drawn through a renderer picked for the pixel format. Pick rgb555 or rgb565 to see 16-bit color.";
 

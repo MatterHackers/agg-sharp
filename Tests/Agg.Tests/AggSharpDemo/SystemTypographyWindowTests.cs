@@ -135,6 +135,11 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 				tab.Font.SelectedIndex = 1;
 				await Assert.That(AggContext.DefaultFont).IsSameReferenceAs(LiberationSansBoldFont.Instance);
 
+				// The picker names each font in its own face, the closed field included.
+				await Assert.That(tab.Font.SelectedTypeFace).IsSameReferenceAs(LiberationSansBoldFont.Instance);
+				await Assert.That(tab.Font.Descendants<TextWidget>().First().Printer.TypeFaceStyle.TypeFace)
+					.IsSameReferenceAs(LiberationSansBoldFont.Instance);
+
 				// The preview rebuilds its paragraphs in the new face.
 				var paragraph = (WrappedTextWidget)window.SampleText.FindDescendant("System Sample Text").Children.Last().Children.First();
 				TextWidget line = paragraph.Descendants<TextWidget>().First();
@@ -187,6 +192,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 
 		/// <summary>The point size field copies its text colour when built, so a theme change has to recolour it.</summary>
 		[Test]
+		[NotInParallel(SharedStateKeys.ThemeConfigCurrent)] // new DemoTheme() writes ThemeConfig.Current
 		public async Task ThemeChangeRecoloursThePointSizeField()
 		{
 			var demoTheme = new DemoTheme(ThemePreference.Light);

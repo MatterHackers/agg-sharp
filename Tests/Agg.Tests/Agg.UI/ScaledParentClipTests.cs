@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System.Collections.Generic;
+using MatterHackers.Agg.Image;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Transform;
 using MatterHackers.VectorMath;
@@ -370,6 +371,54 @@ namespace MatterHackers.Agg.UI.Tests
 			});
 
 			await Assert.That(window.FindDescendants("target").Count).IsEqualTo(1);
+		}
+
+		public static IEnumerable<(string Name, Affine CanvasTransform, double DrawnArea)> DrawnCanvases()
+		{
+			yield return ("doubled", Affine.NewScaling(2) * Affine.NewTranslation(5, 5), 1600);
+			yield return ("halved", Affine.NewScaling(0.5) * Affine.NewTranslation(5, 5), 100);
+			yield return ("flipped", Affine.NewScaling(-1, 1) * Affine.NewTranslation(100, 50), 400);
+			yield return ("quarter turned", Affine.NewRotation(System.Math.PI / 2) * Affine.NewTranslation(100, 50), 400);
+			yield return ("turned 30 degrees", Affine.NewRotation(System.Math.PI / 6) * Affine.NewTranslation(100, 50), 400);
+		}
+
+		/// <summary>
+		/// A child of a scaled, flipped or turned canvas is drawn whole: its clip is where the canvas draws it.
+		/// The clip already carries every ancestor's transform, so carrying it through the graphics transform as
+		/// well applied the canvas's scale twice - a doubled child was cut to a quarter of itself.
+		/// </summary>
+		[Test]
+		[MethodDataSource(nameof(DrawnCanvases))]
+		public async Task AChildOfATransformedCanvasIsDrawnWhole(string name, Affine canvasTransform, double drawnArea)
+		{
+			var root = new GuiWidget(200, 200);
+			var canvas = new GuiWidget();
+			root.AddChild(canvas);
+			canvas.LocalBounds = new RectangleDouble(0, 0, 200, 200);
+			canvas.ParentToChildTransform = canvasTransform;
+			canvas.AddChild(new GuiWidget(20, 20)
+			{
+				BackgroundColor = Color.Red,
+				Position = new Vector2(10, 10),
+			});
+
+			var image = new ImageBuffer(200, 200);
+			var graphics = image.NewGraphics2D();
+			graphics.Clear(Color.White);
+			root.OnDraw(graphics);
+
+			int red = 0;
+			for (int y = 0; y < image.Height; y++)
+			{
+				for (int x = 0; x < image.Width; x++)
+				{
+					var pixel = image.GetPixel(x, y);
+					red += pixel.red > 128 && pixel.green < 128 ? 1 : 0;
+				}
+			}
+
+			await Assert.That((double)red).IsEqualTo(drawnArea).Within(drawnArea * 0.1)
+				.Because($"the {name} canvas draws its 20 x 20 child over {drawnArea} pixels");
 		}
 	}
 }

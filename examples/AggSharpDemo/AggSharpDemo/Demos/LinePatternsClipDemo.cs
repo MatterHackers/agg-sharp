@@ -100,7 +100,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "line_patterns_clip";
 
-		public override string Category => "Lines";
+		public override string Category => "Paths & Strokes";
 
 		public override string Description => "Clipping lines drawn with an image pattern: a polyline drawn as an outline and with a picture along it, clipped to a box. Drag the points; + and - zoom about the mouse; Scale X stretches the picture, Start X slides it.";
 

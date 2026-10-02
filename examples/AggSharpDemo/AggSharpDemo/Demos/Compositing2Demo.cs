@@ -93,7 +93,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "compositing2";
 
-		public override string Category => "Compositing";
+		public override string Category => "Masks & Clipping";
 
 		public override string Description => "Radial gradients combined with the SVG compositing operators. Pick an operator; the sliders set the source and destination alpha.";
 

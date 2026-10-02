@@ -171,7 +171,7 @@ namespace MatterHackers.Agg.UI
 				this.panning = false;
 				// Only a second click that stayed put resets: a drag, even one that starts with a double-click,
 				// keeps its pan (agg-gui's pan_then_press_does_not_reset_view).
-				if (this.pressWasDoubleClick && !this.panMoved)
+				if (this.pressWasDoubleClick && !this.panMoved && !mouseEvent.Cancelled)
 				{
 					this.ResetView();
 				}

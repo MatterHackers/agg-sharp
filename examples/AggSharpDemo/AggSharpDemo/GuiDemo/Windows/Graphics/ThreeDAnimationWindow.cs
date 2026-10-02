@@ -41,6 +41,10 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Graphics
 		/// <summary>The button labels, index i being linear factor i + 1.</summary>
 		public static readonly string[] SsaaLabels = { "Off", "4×", "9×", "16×" };
 
+		/// <summary>The factor the window opens at and "Reset all state" returns to: 1, Off. agg-gui starts the cube
+		/// without AA (font_init.rs reads the saved msaa_samples with unwrap_or(0)).</summary>
+		public const int DefaultSsaaFactor = 1;
+
 		private readonly DemoTheme demoTheme;
 		private readonly TextWidget label;
 
@@ -57,6 +61,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Graphics
 				HAnchor = HAnchor.Stretch,
 				VAnchor = VAnchor.Stretch,
 				SoftwarePlaceholder = "3D needs the GPU renderer",
+				SsaaFactor = DefaultSsaaFactor,
 			};
 
 			this.Status = new TextWidget(string.Empty, pointSize: 8, textColor: demoTheme.Palette.TextDim)

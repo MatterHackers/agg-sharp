@@ -94,7 +94,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "scanline_boolean";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Masks & Clipping";
 
 		public override string Description => "Boolean operations on two rings of circles, done on anti-aliased scanlines. Pick an operation, drag the quads' corners and edges, and set each shape's opacity.";
 

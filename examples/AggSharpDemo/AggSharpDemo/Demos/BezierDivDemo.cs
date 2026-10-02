@@ -170,7 +170,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "bezier_div";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Paths & Strokes";
 
 		public override string Description => "Bezier flattening by subdivision or increments, with its error measured. Drag the curve's points or pick a test case.";
 

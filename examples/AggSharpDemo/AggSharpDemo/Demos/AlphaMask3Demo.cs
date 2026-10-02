@@ -90,7 +90,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "alpha_mask3";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Masks & Clipping";
 
 		public override string Description => "An alpha mask used as a polygon clipper: the red shape is drawn only inside (AND) or only outside (SUB) the other one. Pick the shapes and the operation, and drag to move the spiral, arrows or path.";
 

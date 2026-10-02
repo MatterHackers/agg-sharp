@@ -64,7 +64,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "component_rendering";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Rendering";
 
 		public override string Description => "Three black circles, each drawn into only the red, green or blue channel, so they mix like inks. Drag the slider to change their alpha.";
 

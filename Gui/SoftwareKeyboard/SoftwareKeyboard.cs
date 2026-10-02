@@ -124,7 +124,7 @@ namespace MatterHackers.Agg.UI
 			SoftwareKey key = this.pressedKey;
 			this.pressedKey = null;
 			base.OnMouseUp(mouseEvent);
-			if (key != null && this.KeyAt(mouseEvent.Position) == key)
+			if (key != null && !mouseEvent.Cancelled && this.KeyAt(mouseEvent.Position) == key)
 			{
 				// The press reached this panel through its ancestors, and one of them took the focus when no child
 				// did. Give it back to the field before typing so the keys land there.

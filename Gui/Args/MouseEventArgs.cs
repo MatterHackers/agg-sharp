@@ -38,6 +38,18 @@ namespace MatterHackers.Agg.UI
         { get { return y; } set { y = value; } }
     }
 
+    /// <summary>
+    /// What a pointer event came from. Only the hosts that can tell (the browser, from PointerEvent.pointerType)
+    /// say anything but <see cref="Mouse"/>, so a widget that treats touch differently still behaves exactly as
+    /// before everywhere else.
+    /// </summary>
+    public enum PointerType
+    {
+        Mouse,
+        Touch,
+        Pen
+    }
+
     public class MouseEventArgs : EventArgs
     {
         private bool acceptDrop = false;
@@ -49,6 +61,8 @@ namespace MatterHackers.Agg.UI
             this.WheelDeltaX = original.WheelDeltaX;
             this.WheelDeltaIsPreciseScroll = original.WheelDeltaIsPreciseScroll;
             this.FromTrackpadPinch = original.FromTrackpadPinch;
+            this.PointerType = original.PointerType;
+            this.Cancelled = original.Cancelled;
             positions[0] = new Vector2(newX, newY);
 
             // Routing into a child moves the first position to (newX, newY); the other fingers take the same
@@ -146,6 +160,20 @@ namespace MatterHackers.Agg.UI
         /// would zoom twice.
         /// </summary>
         public bool FromTrackpadPinch { get; set; }
+
+        /// <summary>
+        /// The device behind this event. A finger has no hover and nothing to aim with, so a widget may read a
+        /// touch drag differently from a mouse drag - <see cref="ScrollableWidget"/> pans its content under one.
+        /// Carried into a child's copy as the event is routed down the tree.
+        /// </summary>
+        public PointerType PointerType { get; set; } = PointerType.Mouse;
+
+        /// <summary>
+        /// True on a mouse up that ends a drag without being a release the user meant: the platform took the
+        /// pointer away (a browser pointercancel), or the touch layer ruled the gesture a drag or a pinch rather than
+        /// a tap. It still ends the drag and releases capture, but clicks nothing.
+        /// </summary>
+        public bool Cancelled { get; set; }
 
         // public Point Location { get; }
         public double X

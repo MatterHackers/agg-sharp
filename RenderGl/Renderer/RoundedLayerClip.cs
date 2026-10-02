@@ -30,6 +30,7 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Transform;
 using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
 
@@ -61,6 +62,41 @@ namespace MatterHackers.RenderGl
 		/// <param name="alpha">The composite's opacity as a premultiplied vertex colour.</param>
 		public static void Draw(GL gl, RectangleDouble quad, RectangleDouble clip, double radius, byte alpha)
 		{
+			Draw(gl, Affine.NewIdentity(), quad, clip, radius, alpha, 0.5);
+		}
+
+		/// <summary>
+		/// Emits the clipped quad for a layer placed by a transform that turns or shears it: the geometry is
+		/// built in the layer's own pixels and every vertex is carried through <paramref name="layerToDestination"/>,
+		/// so the rounded rectangle turns and shears with the picture it clips. The caller has bound the
+		/// texture, set the blend and the projection.
+		/// </summary>
+		/// <remarks>
+		/// The anti-aliased ring is a destination pixel wide on average: half a pixel each way divided by the
+		/// transform's area scale. Under a shear or a non-uniform scale it is a little wider one way than the
+		/// other, which only softens the corners slightly.
+		/// </remarks>
+		/// <param name="gl">The destination's GL facade.</param>
+		/// <param name="layerToDestination">Maps the layer's pixels (origin at its bottom-left) onto the destination.</param>
+		/// <param name="width">The layer's width in its own pixels.</param>
+		/// <param name="height">The layer's height in its own pixels.</param>
+		/// <param name="clip">The clip rectangle in the layer's pixels.</param>
+		/// <param name="radius">Corner radius in the layer's pixels.</param>
+		/// <param name="alpha">The composite's opacity as a premultiplied vertex colour.</param>
+		public static void Draw(GL gl, Affine layerToDestination, double width, double height, RectangleDouble clip, double radius, byte alpha)
+		{
+			double areaScale = Math.Sqrt(Math.Abs((layerToDestination.sx * layerToDestination.sy) - (layerToDestination.shx * layerToDestination.shy)));
+			if (areaScale <= 0)
+			{
+				return;
+			}
+
+			Draw(gl, layerToDestination, new RectangleDouble(0, 0, width, height), clip, radius, alpha, 0.5 / areaScale);
+		}
+
+		/// <param name="ringHalfWidth">Half the anti-aliased ring's width, in the units of <paramref name="quad"/>.</param>
+		private static void Draw(GL gl, Affine toDestination, RectangleDouble quad, RectangleDouble clip, double radius, byte alpha, double ringHalfWidth)
+		{
 			// The geometry wants ordinary rectangles; quad as given keeps mapping positions to texture
 			// coordinates the right way round under a flip.
 			var bounds = Normalized(quad);
@@ -73,26 +109,26 @@ namespace MatterHackers.RenderGl
 			radius = RoundedClipCoverage.ClampRadius(clip, radius);
 
 			// Enough segments that the polygon strays well under a tenth of a pixel from the arc.
-			int segments = Math.Clamp((int)Math.Ceiling(radius), 2, 32);
-			var inner = Outline(clip, radius, -0.5, segments);
-			var outer = Outline(clip, radius, 0.5, segments);
+			int segments = Math.Clamp((int)Math.Ceiling(radius * 0.5 / ringHalfWidth), 2, 32);
+			var inner = Outline(clip, radius, -ringHalfWidth, segments);
+			var outer = Outline(clip, radius, ringHalfWidth, segments);
 			var center = clip.Center;
 
 			gl.Begin(BeginMode.Triangles);
 			for (int i = 0; i < inner.Count; i++)
 			{
 				int next = (i + 1) % inner.Count;
-				Vertex(gl, quad, bounds, center, alpha);
-				Vertex(gl, quad, bounds, inner[i], alpha);
-				Vertex(gl, quad, bounds, inner[next], alpha);
+				Vertex(gl, toDestination, quad, bounds, center, alpha);
+				Vertex(gl, toDestination, quad, bounds, inner[i], alpha);
+				Vertex(gl, toDestination, quad, bounds, inner[next], alpha);
 
-				Vertex(gl, quad, bounds, inner[i], alpha);
-				Vertex(gl, quad, bounds, outer[i], 0);
-				Vertex(gl, quad, bounds, outer[next], 0);
+				Vertex(gl, toDestination, quad, bounds, inner[i], alpha);
+				Vertex(gl, toDestination, quad, bounds, outer[i], 0);
+				Vertex(gl, toDestination, quad, bounds, outer[next], 0);
 
-				Vertex(gl, quad, bounds, inner[i], alpha);
-				Vertex(gl, quad, bounds, outer[next], 0);
-				Vertex(gl, quad, bounds, inner[next], alpha);
+				Vertex(gl, toDestination, quad, bounds, inner[i], alpha);
+				Vertex(gl, toDestination, quad, bounds, outer[next], 0);
+				Vertex(gl, toDestination, quad, bounds, inner[next], alpha);
 			}
 
 			gl.End();
@@ -142,12 +178,13 @@ namespace MatterHackers.RenderGl
 		/// is grown by, see WidgetBackbuffer) would otherwise smear the clamped edge texels into a faint ring
 		/// outside it. Clamping flattens the fringe onto the straight edges, where it adds nothing anyway.
 		/// </remarks>
-		private static void Vertex(GL gl, RectangleDouble quad, RectangleDouble bounds, Vector2 position, byte alpha)
+		private static void Vertex(GL gl, Affine toDestination, RectangleDouble quad, RectangleDouble bounds, Vector2 position, byte alpha)
 		{
 			double x = Math.Clamp(position.X, bounds.Left, bounds.Right);
 			double y = Math.Clamp(position.Y, bounds.Bottom, bounds.Top);
 			gl.Color4(alpha, alpha, alpha, alpha);
 			gl.TexCoord2((x - quad.Left) / (quad.Right - quad.Left), 1 - ((y - quad.Bottom) / (quad.Top - quad.Bottom)));
+			toDestination.Transform(ref x, ref y);
 			gl.Vertex2(x, y);
 		}
 

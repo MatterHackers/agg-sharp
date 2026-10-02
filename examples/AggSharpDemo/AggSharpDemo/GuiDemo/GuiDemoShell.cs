@@ -111,18 +111,6 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			this.BackendPanel.RunModeChanged += (s, e) => this.Invalidate();
 			this.BackendPanel.ResetAllRequested += (s, e) => this.ResetAllState();
 
-			// The panel's SSAA factor and the 3D Animation window's own selector are one setting: each follows
-			// the other, and a window opened later starts at the panel's factor. SetSsaaFactor and the selector
-			// ignore an unchanged value, so the two-way hookup does not loop.
-			this.BackendPanel.SsaaFactorChanged += (s, e) =>
-			{
-				if (this.ThreeDAnimation != null)
-				{
-					this.ThreeDAnimation.SsaaFactor = this.BackendPanel.SsaaFactor;
-				}
-			};
-			this.Windows.OpenChanged += (s, spec) => this.HookUpThreeDAnimation();
-
 			// The backend panel's Inspector pill and the sidebar's Inspector row are one open state, as both
 			// flip agg-gui's show_inspector cell. Each ignores an unchanged value, so the hookup does not loop.
 			this.BackendPanel.InspectorToggled += (s, e) => this.Windows.SetOpen(GuiDemoSpecs.Inspector, this.BackendPanel.InspectorEnabled);
@@ -168,28 +156,15 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>The panel on the left (View > Backend Panel); hidden while the menu item is unchecked.</summary>
 		public BackendPanel BackendPanel { get; }
 
-		/// <summary>The 3D Animation window's content once it has been opened, else null.</summary>
-		public Windows.Graphics.ThreeDAnimationWindow ThreeDAnimation { get; private set; }
-
-		/// <summary>The first time the 3D Animation window exists, starts it at the panel's SSAA factor and
-		/// sends its selector's changes back to the panel. The window is kept (not rebuilt) across close and
-		/// reopen, so this runs once.</summary>
-		private void HookUpThreeDAnimation()
+		/// <summary>The 3D Animation window's content once it has been opened (the host keeps it across close and
+		/// reopen), else null.</summary>
+		public Windows.Graphics.ThreeDAnimationWindow ThreeDAnimation
 		{
-			if (this.ThreeDAnimation != null)
+			get
 			{
-				return;
+				var spec = System.Linq.Enumerable.First(GuiDemoSpecs.All, s => s.Title == "3D Animation");
+				return this.Windows.GetWindow(spec)?.FindDescendant(spec.ContentName) as Windows.Graphics.ThreeDAnimationWindow;
 			}
-
-			var spec = System.Linq.Enumerable.First(GuiDemoSpecs.All, s => s.Title == "3D Animation");
-			if (this.Windows.GetWindow(spec)?.FindDescendant(spec.ContentName) is not Windows.Graphics.ThreeDAnimationWindow content)
-			{
-				return;
-			}
-
-			this.ThreeDAnimation = content;
-			content.SsaaFactor = this.BackendPanel.SsaaFactor;
-			content.SsaaFactorChanged += (s, e) => this.BackendPanel.SetSsaaFactor(content.SsaaFactor);
 		}
 
 		/// <summary>Whether a frame just drawn asks for the next one straight away: the backend panel's Continuous
@@ -198,12 +173,14 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		/// <summary>
 		/// "Reset all state": every window back to its default (open-by-default ones open and tiled, the rest
-		/// closed), agg-gui's default theme, snapping on, the backend panel's settings back to theirs, and the
-		/// saved state forgotten. The backend panel stays open, since that is where the button was pressed.
+		/// closed), agg-gui's default theme, snapping on, the backend panel's settings and the 3D Animation
+		/// window's SSAA back to theirs, and the saved state forgotten. The backend panel stays open, since that is
+		/// where the button was pressed.
 		/// </summary>
 		public void ResetAllState()
 		{
 			this.BackendPanel.ResetSettings();
+
 			if (this.Persistence != null)
 			{
 				this.Persistence.ResetAll();

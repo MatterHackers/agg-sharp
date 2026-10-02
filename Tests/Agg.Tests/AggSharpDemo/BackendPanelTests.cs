@@ -123,7 +123,8 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			shell.TopBar.SetSnapEnabled(false);
 			shell.TopBar.SetBackendPanelOpen(true);
 			shell.BackendPanel.SetRunMode(DemoRunMode.Continuous);
-			shell.BackendPanel.SetSsaaFactor(4);
+			shell.Windows.SetOpen(Spec("3D Animation"), true);
+			shell.ThreeDAnimation.SsaaFactor = 4;
 			shell.BackendPanel.SetInspectorEnabled(true);
 			shell.Persistence.SaveNow();
 			await Assert.That(store.Json).IsNotNull();
@@ -138,7 +139,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(shell.DemoTheme.Accent).IsEqualTo(AccentColor.Blue);
 			await Assert.That(shell.TopBar.SnapEnabled).IsTrue();
 			await Assert.That(shell.BackendPanel.RunMode).IsEqualTo(DemoRunMode.Reactive);
-			await Assert.That(shell.BackendPanel.SsaaFactor).IsEqualTo(BackendPanel.DefaultSsaaFactor);
+			await Assert.That(shell.ThreeDAnimation.SsaaFactor).IsEqualTo(MatterHackers.AggSharpDemo.GuiDemo.Windows.Graphics.ThreeDAnimationWindow.DefaultSsaaFactor);
 			await Assert.That(shell.BackendPanel.InspectorEnabled).IsFalse();
 			await Assert.That(shell.BackendPanel.OpenWindowTitles).IsEquivalentTo(shell.Windows.DefaultStacking().Reverse().Select(s => s.Title).ToList(), CollectionOrdering.Matching);
 		}
@@ -164,18 +165,15 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		}
 
 		[Test]
-		public async Task PickingAnSsaaFactorRaisesTheEvent()
+		public async Task ThePanelHasNoSsaaControlOfItsOwn()
 		{
+			// agg-gui's SSAA selector lives only in the 3D Animation window (windows.rs's SsaaRow); a second one
+			// here labelled 1x-4x beside the window's Off/4x/9x/16x only confused which was which.
 			GuiDemoShell shell = LaidOutShell();
-			var raised = new List<int>();
-			shell.BackendPanel.SsaaFactorChanged += (s, e) => raised.Add(shell.BackendPanel.SsaaFactor);
+			shell.TopBar.SetBackendPanelOpen(true);
 
-			shell.BackendPanel.SsaaControl.SelectedIndex = 2;
-			shell.BackendPanel.SetSsaaFactor(3);
-			shell.BackendPanel.SetSsaaFactor(5);
-
-			await Assert.That(raised).IsEquivalentTo(new[] { 3 }, CollectionOrdering.Matching);
-			await Assert.That(shell.BackendPanel.SsaaFactor).IsEqualTo(3);
+			await Assert.That(shell.BackendPanel.FindDescendant("Backend SSAA")).IsNull();
+			await Assert.That(shell.BackendPanel.Descendants<TextWidget>().Any(t => t.Text.Contains("SSAA"))).IsFalse();
 		}
 
 		[Test]

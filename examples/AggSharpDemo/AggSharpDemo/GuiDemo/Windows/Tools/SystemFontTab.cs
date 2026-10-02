@@ -81,15 +81,16 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools
 
 			column.AddChild(this.Heading("Font"));
 			column.AddChild(this.Description("Sets the system font for every widget built after the change.", 13));
-			this.Font = new DropDownList("Other", kit.Theme.TextColor, pointSize: kit.FontSize(14))
+			// Each font's name is drawn in its own face, as agg-gui's font_picker_with_size shows it.
+			this.Font = new FontSelector("Other", kit.Theme.TextColor, pointSize: kit.FontSize(14))
 			{
 				Name = "System Font",
 				HAnchor = HAnchor.Stretch,
 				Margin = new BorderDouble(0, 4),
 			};
-			foreach ((string name, _) in FontOptions)
+			foreach ((string name, Func<TypeFace> face) in FontOptions)
 			{
-				this.Font.AddItem(name);
+				this.Font.AddFontLazy(name, face);
 			}
 
 			this.Font.SelectedIndex = CurrentFontIndex();
@@ -162,7 +163,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools
 		/// <summary>Raised after a control changed a process-wide setting, so the window can repaint its preview.</summary>
 		public event EventHandler SettingChanged;
 
-		public DropDownList Font { get; }
+		/// <summary>The system font choice, each name shown in its own face.</summary>
+		public FontSelector Font { get; }
 
 		/// <summary>The body-text point size; see <see cref="BasePointSize"/>.</summary>
 		public ThemedNumberEdit PointSize { get; }

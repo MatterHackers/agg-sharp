@@ -420,7 +420,7 @@ namespace MatterHackers.Agg.UI
 
 		public override void OnMouseUp(MouseEventArgs mouseEvent)
 		{
-			bool wasClick = mousePressed && !dragging && mouseEvent.Button == MouseButtons.Left;
+			bool wasClick = mousePressed && !dragging && mouseEvent.Button == MouseButtons.Left && !mouseEvent.Cancelled;
 			bool wasDrag = dragging;
 			mousePressed = false;
 			dragging = false;

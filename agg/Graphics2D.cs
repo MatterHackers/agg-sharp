@@ -888,6 +888,16 @@ namespace MatterHackers.Agg
             Render(imageSource, x, y, 0, width / imageSource.Width, height / imageSource.Height);
         }
 
+        /// <summary>
+        /// Draws <paramref name="imageSource"/> exactly where a vector fill of its rectangle would land: each image
+        /// pixel (u, v) - measured from the image's <see cref="IImageByte.OriginOffset"/> - is scaled by
+        /// (<paramref name="scaleX"/>, <paramref name="scaleY"/>), turned counter-clockwise by
+        /// <paramref name="angleRadians"/>, moved to (<paramref name="x"/>, <paramref name="y"/>), and then carried
+        /// through the <b>whole</b> graphics transform (<see cref="GetTransform"/>) - its scale, rotation and shear
+        /// as well as its translation, the same as every vector draw on this surface. So under
+        /// <c>Affine.NewScaling(2)</c> a 10 pixel image draws 20 pixels wide on every backend; a caller wanting
+        /// 1:1 pixels sets a translation-only transform first, as <c>WidgetBackbuffer</c> does.
+        /// </summary>
         public abstract void Render(IImageByte imageSource,
             double x,
             double y,

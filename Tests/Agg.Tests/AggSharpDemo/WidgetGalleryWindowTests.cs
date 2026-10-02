@@ -188,6 +188,70 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(inked).IsGreaterThan(20);
 		}
 
+		/// <summary>Each left-column doc link sits level with the first line of its control, as egui's grid
+		/// rows read: the label's letters and the control's letters share a vertical centre.</summary>
+		[Test]
+		[Arguments("Label")]
+		[Arguments("TextEdit")]
+		[Arguments("Button")]
+		[Arguments("Checkbox")]
+		[Arguments("RadioButton")]
+		public async Task DocLabelsSitLevelWithTheirControlsFirstLine(string title)
+		{
+			WidgetGalleryWindow gallery = Build();
+			GuiWidget docLink = gallery.FindDescendant("Gallery Doc " + title);
+			GuiWidget row = docLink.Parent.Parent;
+			GuiWidget control = row.Children[1];
+
+			TextWidget labelText = docLink.Descendants<TextWidget>().Single();
+			TextWidget controlText = control.Descendants<TextWidget>().First(t => t.Visible && t.Text != "");
+
+			double labelCentre = LetterInkCentre(labelText, row);
+			double controlCentre = LetterInkCentre(controlText, row);
+			await Assert.That(labelCentre).IsEqualTo(controlCentre).Within(1);
+		}
+
+		/// <summary>The vertical centre, in <paramref name="ancestor"/>'s coordinates, of the text's ink above
+		/// its baseline - the letters without descenders, so "Write something here" and "TextEdit" compare.</summary>
+		private static double LetterInkCentre(TextWidget text, GuiWidget ancestor)
+		{
+			RectangleDouble bounds = text.LocalBounds;
+			var image = new ImageBuffer((int)Math.Ceiling(bounds.Width), (int)Math.Ceiling(bounds.Height));
+			Graphics2D graphics = image.NewGraphics2D();
+			graphics.SetTransform(Transform.Affine.NewTranslation(-bounds.Left, -bounds.Bottom));
+			text.OnDraw(graphics);
+
+			int baselineRow = (int)Math.Round(-bounds.Bottom);
+			int inkBottom = -1;
+			int inkTop = -1;
+			for (int y = baselineRow; y < image.Height; y++)
+			{
+				for (int x = 0; x < image.Width; x++)
+				{
+					// Half of the text's own alpha: the TextEdit's hint is drawn in a translucent colour
+					if (image.GetPixel(x, y).alpha > text.TextColor.alpha / 2)
+					{
+						inkBottom = inkBottom < 0 ? y : inkBottom;
+						inkTop = y;
+						break;
+					}
+				}
+			}
+
+			if (inkTop < 0)
+			{
+				throw new InvalidOperationException($"\"{text.Text}\" drew no ink above its baseline.");
+			}
+
+			double centre = (inkBottom + inkTop + 1) / 2.0 + bounds.Bottom;
+			for (GuiWidget widget = text; widget != ancestor; widget = widget.Parent)
+			{
+				centre += widget.OriginRelativeParent.Y;
+			}
+
+			return centre;
+		}
+
 		[Test]
 		public async Task ThemeChangeRecoloursAndKeepsTheToggleState()
 		{

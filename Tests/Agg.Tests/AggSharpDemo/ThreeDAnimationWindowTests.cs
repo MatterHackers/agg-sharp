@@ -40,14 +40,18 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		public async Task TheSsaaSegmentsSetTheBarGridsFactor()
 		{
 			var spec = GuiDemoSpecs.All.First(s => s.Title == "3D Animation");
-			var window = (ThreeDAnimationWindow)GuiDemoSpecs.CreateContent(spec, new DemoTheme());
+			var demoTheme = new DemoTheme();
+			var window = (ThreeDAnimationWindow)GuiDemoSpecs.CreateContent(spec, demoTheme);
 
 			await Assert.That(window.Name).IsEqualTo(spec.ContentName);
 			await Assert.That(window.FindDescendant("3D Animation Bar Grid")).IsSameReferenceAs(window.BarGrid);
 			await Assert.That(window.SsaaButtons.Select(b => b.Text)).IsEquivalentTo(ThreeDAnimationWindow.SsaaLabels, TUnit.Assertions.Enums.CollectionOrdering.Matching);
 
-			// Starts at 4x (linear 2); each button is its linear factor.
-			await Assert.That(window.SsaaFactor).IsEqualTo(2);
+			// Starts Off (linear 1), as agg-gui's cube does; each button is its linear factor.
+			Color accent = DemoTheme.ColorOf(demoTheme.Accent);
+			await Assert.That(window.SsaaButtons.Single(b => b.BackgroundColor == accent).Text).IsEqualTo("Off");
+			await Assert.That(window.BarGrid.SsaaFactor).IsEqualTo(1);
+			await Assert.That(window.Status.Text).StartsWith("Off");
 			window.SsaaButtons[3].InvokeClick();
 			await Assert.That(window.BarGrid.SsaaFactor).IsEqualTo(4);
 			window.SsaaButtons[0].InvokeClick();

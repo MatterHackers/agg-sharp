@@ -71,7 +71,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "aa_demo";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Rendering";
 
 		public override string Description => "Each square is one pixel of the small triangle. Drag a corner or the whole triangle.";
 

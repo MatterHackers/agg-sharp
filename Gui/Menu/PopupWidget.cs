@@ -111,9 +111,9 @@ namespace MatterHackers.Agg.UI
 
 			if (makeScrollable)
 			{
-				// A hosted PopupMenu owns the arrow keys - see PopupMenu.MenuScrollWindow. Everything else
+				// A hosted PopupMenu owns the arrow keys - see PopupMenuScrollWindow. Everything else
 				// (drop down lists, arbitrary popup content) keeps the plain widget's arrow-to-scroll.
-				scrollingWindow = contentWidget is PopupMenu ? new PopupMenu.MenuScrollWindow() : new ScrollableWidget(true);
+				scrollingWindow = contentWidget is PopupMenu ? new PopupMenuScrollWindow() : new ScrollableWidget(true);
 				{
 					contentWidget.ClearRemovedFlag();
 					scrollingWindow.AddChild(contentWidget);
@@ -274,6 +274,7 @@ namespace MatterHackers.Agg.UI
 
 				scrollPositionAtMouseUp = scrollingWindow.ScrollPosition;
 				if (!scrollingWindow.VerticalScrollBar.ChildHasMouseCaptured
+					&& !mouseEvent.Cancelled
 					&& AllowClickingItems()
 					&& clickIsInsideScrollArea
 					&& !specialChildHasFocus

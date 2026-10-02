@@ -152,5 +152,67 @@ namespace MatterHackers.Agg.UI.Tests
                 AutomationRunner.CloseWindowTimeoutSeconds = originalCloseTimeout;
             }
         }
+
+        private const uint WM_MOUSEMOVE = 0x0200;
+        private const uint WM_MOUSELEAVE = 0x02A3;
+        private const uint WM_KEYDOWN = 0x0100;
+        private const uint WM_KEYUP = 0x0101;
+        private const uint WM_CHAR = 0x0102;
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+        // An automation run drives its window with simulated input only. The real cursor is still on the
+        // desktop, though: whoever is using the machine moves it, and Windows sends a window a mouse move
+        // or a mouse leave whenever windows open, close or restack under a still cursor - all of which a
+        // run of automation tests does constantly. Reaching agg, those moved the pointer out from under the
+        // widget the test had just moved to, so hovers ended, menus and popups closed and clicks landed on
+        // nothing, intermittently and only in long runs.
+        [Test]
+        public async Task RealMouseInputDoesNotReachAWindowUnderAutomation()
+        {
+            var systemWindow = new SystemWindow(300, 200);
+            var target = new GuiWidget(100, 100) { Name = "Target", HAnchor = HAnchor.Center, VAnchor = VAnchor.Center };
+            systemWindow.AddChild(target);
+
+            UnderMouseState afterRealMove = UnderMouseState.NotUnderMouse;
+            UnderMouseState afterRealLeave = UnderMouseState.NotUnderMouse;
+            int realKeys = 0;
+
+            await AutomationRunner.ShowWindowAndExecuteTests(
+                systemWindow,
+                (testRunner) =>
+                {
+                    testRunner.MoveToByName("Target");
+                    testRunner.WaitFor(() => target.UnderMouseState != UnderMouseState.NotUnderMouse);
+
+                    var form = (System.Windows.Forms.Form)systemWindow.PlatformWindow;
+                    IntPtr surface = IntPtr.Zero;
+                    form.Invoke(() => surface = form.Controls[0].Handle);
+
+                    // SendMessage to another thread's window returns only once that thread has handled it,
+                    // so the state read after each call already reflects the message.
+                    SendMessage(surface, WM_MOUSEMOVE, IntPtr.Zero, (IntPtr)((2 << 16) | 2));
+                    afterRealMove = target.UnderMouseState;
+                    SendMessage(surface, WM_MOUSELEAVE, IntPtr.Zero, IntPtr.Zero);
+                    afterRealLeave = target.UnderMouseState;
+
+                    // A user who clicks a test window to watch it can then type into it.
+                    systemWindow.KeyDown += (s, e) => realKeys++;
+                    systemWindow.KeyPressed += (s, e) => realKeys++;
+                    systemWindow.KeyUp += (s, e) => realKeys++;
+                    SendMessage(surface, WM_KEYDOWN, (IntPtr)'A', (IntPtr)1);
+                    SendMessage(surface, WM_CHAR, (IntPtr)'a', (IntPtr)1);
+                    SendMessage(surface, WM_KEYUP, (IntPtr)'A', unchecked((IntPtr)(int)0xC0000001));
+
+                    testRunner.MarkTestComplete();
+                    return Task.CompletedTask;
+                },
+                secondsToTestFailure: 30);
+
+            await Assert.That(afterRealMove).IsNotEqualTo(UnderMouseState.NotUnderMouse).Because("a real mouse move must not move the pointer a test is driving");
+            await Assert.That(afterRealLeave).IsNotEqualTo(UnderMouseState.NotUnderMouse).Because("a real mouse leave must not take the pointer off the widget a test moved to");
+            await Assert.That(realKeys).IsEqualTo(0).Because("real keystrokes must not reach a window a test is typing into");
+        }
 	}
 }

@@ -61,7 +61,7 @@ namespace MatterHackers.AggSharpDemo.Demos
 
 		public override string Name => "alpha_mask";
 
-		public override string Category => "Vector Graphics";
+		public override string Category => "Masks & Clipping";
 
 		public override string Description => "The lion seen through an alpha mask of random gray ellipses. Left-drag to rotate and scale it, right-drag to skew it.";
 
