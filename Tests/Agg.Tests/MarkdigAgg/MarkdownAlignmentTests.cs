@@ -161,6 +161,16 @@ namespace Markdig.Agg.Tests
 		}
 
 		[Test]
+		public async Task OneLineAlignedDivShowsItsText()
+		{
+			// AI-written notes often center a line as a one-line div; it used to render as nothing.
+			var root = RenderMarkdown("<div align=\"center\">Centered: version 3</div>\n");
+
+			var paragraph = RowContaining<ParagraphX>(root, "Centered:");
+			await Assert.That(paragraph.ContentHAnchor).IsEqualTo(HAnchor.Center);
+		}
+
+		[Test]
 		public async Task MarkupOnlyElementAddsNoEmptyRow()
 		{
 			var root = RenderMarkdown("<p align=\"center\"><img src=\"logo.png\"></p>");

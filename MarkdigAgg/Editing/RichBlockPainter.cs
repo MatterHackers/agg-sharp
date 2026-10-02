@@ -32,6 +32,7 @@ using System.Collections.Generic;
 using MatterHackers.Agg;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.Image;
+using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
 
 namespace Markdig.Agg.Editing
@@ -79,12 +80,39 @@ namespace Markdig.Agg.Editing
 				graphics2D.FillRectangle(Offset(bar, originY), colors.QuoteBar);
 			}
 
-			if (text.Marker != null)
+			if (text.MarkerIsBullet)
+			{
+				DrawBullet(graphics2D, text, originY, style);
+			}
+			else if (text.Marker != null)
 			{
 				DrawText(graphics2D, text.Marker, text.MarkerFace, text.MarkerX, originY + text.MarkerBaseline, style.TextColor);
 			}
 
 			DrawLines(graphics2D, text.Lines, text.Block.Inlines, originY, style, colors, loadedImage);
+		}
+
+		// A bullet is drawn, not typed: a filled dot, a hollow dot, then a small square by depth
+		// (RichLayoutStyle.BulletMarker), centred on the x-height in the box BulletBoxWidth gave it.
+		private static void DrawBullet(Graphics2D graphics2D, RichBlockLayout text, double originY, RichLayoutStyle style)
+		{
+			double box = RichLayoutStyle.BulletBoxWidth(text.MarkerFace);
+			double centerX = text.MarkerX + box / 2;
+			double centerY = originY + text.MarkerBaseline + text.MarkerFace.XHeightInPixels / 2;
+			double radius = box * 0.32;
+			switch (text.Marker)
+			{
+				case "•":
+					graphics2D.Circle(centerX, centerY, radius, style.TextColor);
+					break;
+				case "◦":
+					var ring = new Stroke(new Ellipse(centerX, centerY, radius, radius), Math.Max(1, style.Scale));
+					graphics2D.Render(ring, style.TextColor);
+					break;
+				default:
+					graphics2D.FillRectangle(centerX - radius, centerY - radius, centerX + radius, centerY + radius, style.TextColor);
+					break;
+			}
 		}
 
 		private static void DrawTable(Graphics2D graphics2D, RichTableLayout table, double originY, RichLayoutStyle style, RichEditColors colors, Func<InlineAtom, ImageBuffer> loadedImage)

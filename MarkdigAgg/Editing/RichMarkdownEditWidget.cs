@@ -497,7 +497,8 @@ namespace Markdig.Agg.Editing
 		{
 			return new RichEditColors
 			{
-				CodeBackground = theme.MinimalShade,
+				// MinimalShade is a black tint, invisible on a dark background; the text colour shows on both.
+				CodeBackground = new Color(theme.TextColor, RichLayoutStyle.ShadeAlpha),
 
 				// The viewer's quote bar (QuoteBlockX) is the text colour at this alpha.
 				QuoteBar = theme.TextColor.WithAlpha(90),

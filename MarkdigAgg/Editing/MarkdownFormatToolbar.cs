@@ -103,7 +103,7 @@ namespace Markdig.Agg.Editing
 			});
 
 			BoldButton = AddStyleButton("B", MarkdownFormatGlyph.None, RichInlineStyle.Bold, "Bold (" + Shortcut("B") + ")", boldLabel: true);
-			ItalicButton = AddStyleButton("I", MarkdownFormatGlyph.None, RichInlineStyle.Italic, "Italic (" + Shortcut("I") + ")");
+			ItalicButton = AddStyleButton("I", MarkdownFormatGlyph.None, RichInlineStyle.Italic, "Italic (" + Shortcut("I") + ")", italicLabel: true);
 			StrikeButton = AddStyleButton("S", MarkdownFormatGlyph.Strike, RichInlineStyle.Strike, "Strikethrough");
 			CodeButton = AddStyleButton("</>", MarkdownFormatGlyph.None, RichInlineStyle.Code, "Inline code");
 			AddSeparator();
@@ -501,9 +501,9 @@ namespace Markdig.Agg.Editing
 			Edit((d, s) => RichStyleOperations.ToggleStyle(d, s, style));
 		}
 
-		private MarkdownFormatButton AddStyleButton(string text, MarkdownFormatGlyph glyph, RichInlineStyle style, string toolTip, bool boldLabel = false)
+		private MarkdownFormatButton AddStyleButton(string text, MarkdownFormatGlyph glyph, RichInlineStyle style, string toolTip, bool boldLabel = false, bool italicLabel = false)
 		{
-			return AddButton(new MarkdownFormatButton(theme, text, glyph, toolTip, boldLabel), () => ToggleStyle(style));
+			return AddButton(new MarkdownFormatButton(theme, text, glyph, toolTip, boldLabel, italicLabel), () => ToggleStyle(style));
 		}
 
 		private MarkdownFormatButton AddAlignButton(MarkdownFormatGlyph glyph, RichAlignment alignment, string toolTip)

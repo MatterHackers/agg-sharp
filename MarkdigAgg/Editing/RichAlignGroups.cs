@@ -48,6 +48,17 @@ namespace Markdig.Agg.Editing
 			@"^<div\s+align\s*=\s*([""']?)(left|center|right)\1\s*>$",
 			RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
+		// The one-line element form: <div align="center">text</div>, <p align=...>...</p> or <h2 align=...>...</h2>
+		// on one line, with only the align attribute. Its inner text is read as inline markdown (see FoldOneLine).
+		private static readonly Regex OneLineElement = new Regex(
+			@"^(?:\s*<(?<tag>div|p|h[1-6])\s+align\s*=\s*(?<q>[""']?)(?<align>left|center|right)\k<q>\s*>)(?<inner>[^\r\n]*?)(?:</\k<tag>\s*>\s*)$",
+			RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+		// Block-level HTML inside a one-line element is not something the rich view can edit as one paragraph.
+		private static readonly Regex BlockTag = new Regex(
+			@"</?(div|p|h[1-6]|table|ul|ol|li|blockquote|pre|hr)\b",
+			RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
 		/// <param name="htmlBlocks">The Raw blocks that came from a Markdig HtmlBlock. Only they are tags; the same
 		/// text as indented code or inside a list is not.</param>
 		public static void Fold(List<RichBlock> blocks, HashSet<RichBlock> htmlBlocks)
@@ -104,6 +115,61 @@ namespace Markdig.Agg.Editing
 
 				// Resume after the group's last block.
 				i = close - 2;
+			}
+
+			FoldOneLine(blocks, htmlBlocks);
+		}
+
+		/// <summary>
+		/// Makes each one-line aligned element (<see cref="OneLineElement"/>) an aligned Paragraph, or a Heading for
+		/// h1-h6, instead of a Raw block the rich view would show as nothing. The line goes on a one-member
+		/// <see cref="RichAlignGroup"/> (<see cref="RichAlignGroup.OneLineSource"/>), so an untouched block writes back
+		/// its exact line; once edited or re-aligned it is written in the regenerated wrapper form like any aligned
+		/// block. Runs after the multi-line fold, so an element inside an aligned wrapper is not taken into it.
+		/// </summary>
+		private static void FoldOneLine(List<RichBlock> blocks, HashSet<RichBlock> htmlBlocks)
+		{
+			foreach (var block in blocks)
+			{
+				if (!htmlBlocks.Contains(block))
+				{
+					continue;
+				}
+
+				var element = OneLineElement.Match(block.OriginalSource);
+				string inner = element.Groups["inner"].Value.Trim();
+				if (!element.Success || inner.Length == 0 || BlockTag.IsMatch(inner))
+				{
+					continue;
+				}
+
+
+				// The inner text must read as exactly one paragraph of itself ("# x" or "1. x" would not).
+				var innerDocument = RichMarkdownParser.Parse(inner);
+				if (innerDocument.Blocks.Count != 1
+					|| innerDocument.Blocks[0].Kind != RichBlockKind.Paragraph
+					|| innerDocument.Blocks[0].OriginalSource != inner)
+				{
+					continue;
+				}
+
+				string tag = element.Groups["tag"].Value;
+				bool heading = tag.Length == 2 && char.ToLowerInvariant(tag[0]) == 'h';
+				var alignment = Enum.Parse<RichAlignment>(element.Groups["align"].Value, ignoreCase: true);
+				block.Kind = heading ? RichBlockKind.Heading : RichBlockKind.Paragraph;
+				block.HeadingLevel = heading ? tag[1] - '0' : 0;
+				block.Inlines = innerDocument.Blocks[0].Inlines;
+				// The block's own source is its markdown, as for any clean block (a heading split off the group is
+				// still written from it); the group keeps the exact line for while it is intact.
+				string line = block.OriginalSource;
+				block.OriginalSource = heading ? new string('#', block.HeadingLevel) + " " + inner : inner;
+				block.Alignment = alignment;
+				block.AlignGroup = new RichAlignGroup
+				{
+					Alignment = alignment,
+					OneLineSource = line,
+					OriginalMemberCount = 1,
+				};
 			}
 		}
 

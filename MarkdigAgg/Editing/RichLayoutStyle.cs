@@ -55,9 +55,23 @@ namespace Markdig.Agg.Editing
 			fontScale = Scale * TextStyleSettings.SizeScale;
 			TextColor = theme?.TextColor ?? Color.Black;
 
-			// The viewer shows a link as underlined text in the text colour; the editor matches it.
-			LinkColor = TextColor;
+			// A link reads as a link, as in any editor: the theme's accent pushed to body-text contrast (4.5) on the
+			// background, so it stays readable on light and dark themes alike (Hyperlink's rule, at text contrast).
+			var accent = theme?.PrimaryAccentColor ?? new Color("#7AD7F0");
+			var background = theme?.BackgroundColor ?? Color.White;
+			LinkColor = accent.WithContrast(background, 4.5).ToColor();
 		}
+
+		/// <summary>
+		/// The alpha of the text colour that shades code blocks, inline code and striped table rows. Derived from
+		/// the text colour rather than a fixed grey, so the shading shows on a dark background as well as a light one.
+		/// </summary>
+		public const int ShadeAlpha = 24;
+
+		/// <summary>
+		/// The shading behind code blocks and inline code: the text colour at <see cref="ShadeAlpha"/>.
+		/// </summary>
+		public Color CodeBackgroundColor => new Color(TextColor, ShadeAlpha);
 
 		/// <summary>
 		/// The device scale every spacing value below is already multiplied by.
@@ -74,18 +88,34 @@ namespace Markdig.Agg.Editing
 		public Color TableGridColor => new Color(TextColor, 150);
 
 		/// <summary>
-		/// The shading of a table's striped body rows: the text colour at the viewer's ZebraStripeAlpha (12).
+		/// The shading of a table's striped body rows: the text colour at <see cref="ShadeAlpha"/>, the code shading
+		/// (the viewer's ZebraStripeAlpha matches it, so Help and Edit stripe alike).
 		/// </summary>
-		public Color TableStripeColor => new Color(TextColor, 12);
+		public Color TableStripeColor => new Color(TextColor, ShadeAlpha);
 
 		public double BodyPointSize { get; set; } = 10;
 
 		public double CodePointSize { get; set; } = 10;
 
 		/// <summary>
-		/// What an unordered list item shows in its gutter; the viewer draws "-".
+		/// The bullet an unordered list item shows at <paramref name="depth"/>: a filled dot, then a hollow one, then a
+		/// small square, repeating, as common editors do. The painter draws the shape itself; the saved markdown keeps
+		/// the author's "-", "*" or "+".
 		/// </summary>
-		public string BulletMarker { get; set; } = "-";
+		public string BulletMarker(int depth)
+		{
+			return (depth % 3) switch
+			{
+				0 => "•",
+				1 => "◦",
+				_ => "▪",
+			};
+		}
+
+		/// <summary>
+		/// The width a drawn bullet takes in the gutter: the face's x-height, the box the shape is centred in.
+		/// </summary>
+		public static double BulletBoxWidth(StyledTypeFace face) => face.XHeightInPixels;
 
 		/// <summary>
 		/// How far each list depth moves the item right (the viewer's ListX margin, (depth + 1) * 14).
@@ -151,14 +181,15 @@ namespace Markdig.Agg.Editing
 
 		/// <summary>
 		/// Space above and below a block, matching the viewer's margins. A block layout's height includes it, so
-		/// blocks stack by adding heights.
+		/// blocks stack by adding heights. A list's last item (<paramref name="endsList"/>) takes a paragraph's 12
+		/// below, so the list stands apart from the paragraph or other list after it.
 		/// </summary>
-		public (double Before, double After) BlockSpacing(RichBlock block)
+		public (double Before, double After) BlockSpacing(RichBlock block, bool endsList = false)
 		{
 			(double before, double after) = block.Kind switch
 			{
 				RichBlockKind.Heading => (12, 4),
-				RichBlockKind.ListItem => (0, 3),
+				RichBlockKind.ListItem => (0, endsList ? 12 : 3),
 				// The viewer's AggTable sits 12 below whatever is above it.
 				RichBlockKind.Table => (12, 12),
 				_ => (0, 12),

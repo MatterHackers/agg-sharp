@@ -27,6 +27,7 @@ of the authors and should not be interpreted as representing official policies,
 either expressed or implied, of the FreeBSD Project.
 */
 
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Image;
@@ -152,6 +153,56 @@ namespace MatterHackers.Agg.UI.Tests
 					.Because("the visible state widget is what carries the row fill, hovered or not");
 
 				await Assert.That(state.BackgroundRadius == new RadiusCorners(theme.MenuRowRadius)).IsTrue();
+			}
+		}
+
+		/// <summary>
+		/// The fade under the drop arrow was a gradient image; a field at a fractional position (a centred toolbar
+		/// dropdown) resampled it against the transparent black around it, drawing dark lines along its edges
+		/// inside the field's border. No row of the fade may be darker than the plain field beside it.
+		/// </summary>
+		[Test]
+		public async Task ArrowFadeDrawsNoLineAtAFractionalPosition()
+		{
+			var parent = new GuiWidget(400, 200) { BackgroundColor = Color.White };
+			var dropDown = new DropDownList("", Color.Black)
+			{
+				BackgroundColor = Color.White,
+				// As the markdown toolbar sizes its text-size list: an empty list is otherwise only arrow-wide.
+				MinimumSize = new Vector2(140, 0),
+				// A themed field has an outline band; the old fade stopped that band short of the top, and its top edge showed.
+				Border = new BorderDouble(1),
+			};
+			parent.AddChild(dropDown);
+			dropDown.OriginRelativeParent = new Vector2(10.5, 10.37);
+
+			var image = new ImageBuffer(400, 200);
+			var graphics = image.NewGraphics2D();
+			graphics.Clear(Color.White);
+			parent.OnDraw(graphics);
+
+			var field = dropDown.BoundsRelativeToParent;
+			await Assert.That(field.Top < image.Height && field.Right < image.Width && field.Bottom > 0 && field.Width >= 140).IsTrue().Because($"the field ({field}) must lie on the image");
+			int referenceX = (int)field.Left + 12;
+			int fadeLeft = (int)(field.Right - 70);
+			int fadeRight = (int)(field.Right - 12);
+			// Every row, outline included: the outline runs the full width, so the plain field beside the fade
+			// shows the same outline in the same row.
+			for (int y = (int)Math.Floor(field.Bottom); y <= (int)Math.Ceiling(field.Top); y++)
+			{
+				// The chevron sits mid-height in the fade's right end; the line was along the top and bottom edges.
+				if (Math.Abs(y - field.Center.Y) < 8)
+				{
+					continue;
+				}
+
+				int reference = image.GetPixel(referenceX, y).Red0To255;
+				for (int x = fadeLeft; x <= fadeRight; x++)
+				{
+					int shown = image.GetPixel(x, y).Red0To255;
+					await Assert.That(shown).IsGreaterThanOrEqualTo(reference - 8)
+						.Because($"the fade at ({x}, {y}) is darker than the field beside it: a stray line");
+				}
 			}
 		}
 

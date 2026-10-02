@@ -95,6 +95,11 @@ namespace Markdig.Agg.Editing
 				// An unchanged wrapper's bytes go around its first and last members; a changed one at Left drops.
 				var align = block.AlignGroup != null && unchanged.Contains(block.AlignGroup) ? block.AlignGroup : null;
 				string text = block.Dirty ? WriteBlock(block, newline) : block.OriginalSource;
+				if (align?.OneLineSource != null)
+				{
+					// An intact one-line element: its line holds the tags and the text (its Open/CloseSource are empty).
+					text = align.OneLineSource;
+				}
 				if (text.Length == 0 && align == null)
 				{
 					// An empty paragraph writes nothing, gap included, so the lists or quotes around it stay apart

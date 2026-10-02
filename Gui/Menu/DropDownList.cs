@@ -67,8 +67,6 @@ namespace MatterHackers.Agg.UI
 
 		private static Color whiteTransparent = new Color(255, 255, 255, 0);
 
-		private readonly Dictionary<Color, ImageBuffer> clippingBackgrounds = new Dictionary<Color, ImageBuffer>();
-
 		private VertexStorage directionArrow = null;
 
 		private RectangleDouble dropArrowBounds;
@@ -407,30 +405,12 @@ namespace MatterHackers.Agg.UI
 			// The occluder blends into whatever the field was filled with, theme fill included.
 			var background = FieldColor;
 
-			// Retrieve or create per color clipping images used to occlude text under drop arrow. The default
-			// background is white at alpha 0, which is not Color.Transparent but still invisible; comparing
-			// against Transparent drew an opaque white gradient box behind the arrow on a dark theme.
+			// Occlude the text under the drop arrow, fading in from transparent. The default background is white at
+			// alpha 0, which is not Color.Transparent but still invisible; comparing against Transparent drew an
+			// opaque white box behind the arrow on a dark theme.
 			if (background.Alpha0To255 > 0)
 			{
-				if (!clippingBackgrounds.TryGetValue(background, out ImageBuffer gradientBackground))
-				{
-					var gradientDistanceMinusBorder = (int)(gradientDistance - Border.Width);
-
-					gradientBackground = Util.TrasparentToColorGradientX(
-						(int)(dropArrowBounds.Width + gradientDistanceMinusBorder),
-						(int)(this.LocalBounds.Height - Border.Height),
-						background,
-						gradientDistance);
-
-					clippingBackgrounds[background] = gradientBackground;
-				}
-
-				// The gradient is square; stop it short of the rounded right edge and finish that edge with a
-				// rounded fill of the same (solid, at that end) colour, so no square corner pokes out.
-				double radius = FieldInnerRadius;
-				graphics2D.Render(gradientBackground, this.LocalBounds.Right - gradientBackground.Width - radius, 0);
-				var edge = new RectangleDouble(LocalBounds.Right - 3 * radius, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top);
-				graphics2D.Render(new RoundedRect(edge, radius), background);
+				DrawArrowOccluder(graphics2D, background);
 			}
 
 			// agg-gui draws the open affordance as a chevron rather than a filled triangle. It sits where the
@@ -450,6 +430,30 @@ namespace MatterHackers.Agg.UI
 				chevron.LineTo(center.X + halfWidth, center.Y - tipDirection * halfHeight);
 
 				graphics2D.Render(new Stroke(chevron, 1.5 * DeviceScale), this.TextColor);
+			}
+		}
+
+		/// <summary>
+		/// Fills the arrow end of the field with <paramref name="background"/>, ramping from transparent over
+		/// <see cref="gradientDistance"/> to solid, so long text fades out under the arrow. The ramp is stacked
+		/// vector layers, each running to the rounded right end: layer i (of n) at alpha 1/(n - i) brings the
+		/// coverage at its left edge to (i + 1)/n. It used to be a pre-rendered gradient image, which a field placed
+		/// at a fractional position (a centred toolbar dropdown) resampled against the transparent black around
+		/// it, leaving a dark line along the image's top edge, just inside the field's top border.
+		/// </summary>
+		private void DrawArrowOccluder(Graphics2D graphics2D, Color background)
+		{
+			const int Layers = 8;
+			double radius = FieldInnerRadius;
+			double ramp = gradientDistance * DeviceScale;
+			double solidLeft = LocalBounds.Right - radius - (dropArrowBounds.Width - Border.Width);
+			for (int i = 0; i < Layers; i++)
+			{
+				double left = solidLeft - ramp + ramp * i / Layers;
+				var layer = new RectangleDouble(left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top);
+				// The ramp ends fully opaque whatever the fill's own alpha, as the gradient image it replaced did.
+				int alpha = (int)Math.Round(255 / (double)(Layers - i));
+				graphics2D.Render(new RoundedRect(layer, radius), background.WithAlpha(alpha));
 			}
 		}
 

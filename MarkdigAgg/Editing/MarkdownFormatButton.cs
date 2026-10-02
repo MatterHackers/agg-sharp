@@ -64,7 +64,7 @@ namespace Markdig.Agg.Editing
 
 		private RichStyleCoverage coverage;
 
-		public MarkdownFormatButton(ThemeConfig theme, string text, MarkdownFormatGlyph glyph, string toolTip, bool boldLabel = false)
+		public MarkdownFormatButton(ThemeConfig theme, string text, MarkdownFormatGlyph glyph, string toolTip, bool boldLabel = false, bool italicLabel = false)
 			: base(theme)
 		{
 			this.glyph = glyph;
@@ -86,6 +86,8 @@ namespace Markdig.Agg.Editing
 					VAnchor = VAnchor.Center,
 					AutoExpandBoundsToText = true,
 					Selectable = false,
+					// The Italic button's "I" is slanted like the text it makes (faux italic, as the editor draws it).
+					Italic = italicLabel,
 				});
 			}
 			else

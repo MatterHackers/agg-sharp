@@ -46,7 +46,8 @@ namespace Markdig.Agg
 	public class AggMarkdownDocument
 	{
 		private const int TableBorderAlpha = 150;
-		private const int ZebraStripeAlpha = 12;
+		// The rich editor's RichLayoutStyle.ShadeAlpha, so Help and the Edit tab stripe alike; 12 vanished on dark themes.
+		private const int ZebraStripeAlpha = 24;
 
 		private string _markDownText = null;
 		private MarkdownPipeline _pipeLine = null;

@@ -16,7 +16,8 @@ namespace Markdig.Renderers.Agg
 	public class AggTableRenderer : AggObjectRenderer<Table>
 	{
 		private const int TableBorderAlpha = 150;
-		private const int ZebraStripeAlpha = 12;
+		// The rich editor's RichLayoutStyle.ShadeAlpha, so Help and the Edit tab stripe alike; 12 vanished on dark themes.
+		private const int ZebraStripeAlpha = 24;
 
 		protected override void Write(AggRenderer renderer, Table mdTable)
 		{

@@ -66,9 +66,15 @@ namespace Markdig.Agg.Editing
 		public double TextLeft { get; private set; }
 
 		/// <summary>
-		/// A list item's marker ("-" or "3."), or null.
+		/// A list item's marker (a bullet from <see cref="RichLayoutStyle.BulletMarker"/>, or "3."), or null.
 		/// </summary>
 		public string Marker { get; private set; }
+
+		/// <summary>
+		/// Whether <see cref="Marker"/> is a bullet, drawn as a shape (see <see cref="RichBlockPainter"/>) rather
+		/// than as text: the UI font is not guaranteed to hold the bullet glyphs.
+		/// </summary>
+		public bool MarkerIsBullet { get; private set; }
 
 		public double MarkerX { get; private set; }
 
@@ -90,9 +96,10 @@ namespace Markdig.Agg.Editing
 		/// Lays a block out to <paramref name="width"/>. <paramref name="listNumber"/> is the number an ordered list
 		/// item shows; the caller counts it because numbering depends on the blocks around this one. Text wraps at
 		/// spaces and a word wider than the line breaks between characters; code keeps its spaces and breaks only
-		/// at its newlines and where a line is wider than the block.
+		/// at its newlines and where a line is wider than the block. <paramref name="endsList"/> marks a list's last
+		/// item, which takes a paragraph's space below (<see cref="RichLayoutStyle.BlockSpacing"/>).
 		/// </summary>
-		public static RichBlockLayout Layout(RichBlock block, double width, RichLayoutStyle style, int listNumber = 1)
+		public static RichBlockLayout Layout(RichBlock block, double width, RichLayoutStyle style, int listNumber = 1, bool endsList = false)
 		{
 			if (block.Kind == RichBlockKind.Table)
 			{
@@ -102,7 +109,7 @@ namespace Markdig.Agg.Editing
 
 			var layout = new RichBlockLayout(block);
 			var blockFace = style.BlockFace(block);
-			var (before, after) = style.BlockSpacing(block);
+			var (before, after) = style.BlockSpacing(block, endsList);
 			bool code = block.Kind == RichBlockKind.CodeBlock;
 			double rightInset = 0;
 			switch (block.Kind)
@@ -112,9 +119,10 @@ namespace Markdig.Agg.Editing
 					layout.TextLeft = (depth + 1) * style.ListIndent + style.MarkerGutter;
 					bool ordered = block.List?.Ordered ?? false;
 					char numberMarker = block.List?.Marker == ')' ? ')' : '.';
-					layout.Marker = ordered ? $"{listNumber}{numberMarker}" : style.BulletMarker;
+					layout.Marker = ordered ? $"{listNumber}{numberMarker}" : style.BulletMarker(depth);
+					layout.MarkerIsBullet = !ordered;
 					layout.MarkerFace = blockFace;
-					double markerWidth = RichLayoutItems.Measure(blockFace, layout.Marker);
+					double markerWidth = ordered ? RichLayoutItems.Measure(blockFace, layout.Marker) : RichLayoutStyle.BulletBoxWidth(blockFace);
 
 					// A wide number ("1000.") grows the gutter rather than hanging past the item's indent.
 					layout.TextLeft = Math.Max(layout.TextLeft, depth * style.ListIndent + markerWidth + style.MarkerGap);

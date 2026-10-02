@@ -167,11 +167,13 @@ namespace Markdig.Agg.Editing
 					|| changed == null
 					|| changed.Contains(block)
 					|| entry.Number != numbers[i]
+					|| entry.EndsList != EndsList(blocks, i)
 					|| entry.Inputs != LayoutInputs.Of(block))
 				{
 					// A renumbered ordered item re-lays out too: an edit above it moved its number. So does a block an
 					// edit reshaped without naming it - list children lifted a level when their parent left the list.
-					entry = new Entry(block, LayoutBlock(block, numbers[i]), numbers[i]);
+					bool endsList = EndsList(blocks, i);
+					entry = new Entry(block, LayoutBlock(block, numbers[i], endsList), numbers[i], endsList);
 				}
 
 				next.Add(entry);
@@ -226,12 +228,31 @@ namespace Markdig.Agg.Editing
 			}
 		}
 
-		private IRichBlockLayout LayoutBlock(RichBlock block, int number)
+		private IRichBlockLayout LayoutBlock(RichBlock block, int number, bool endsList)
 		{
 			LayoutCount++;
 			return block.Kind == RichBlockKind.Table
 				? RichTableLayout.Layout(block, layoutWidth, style)
-				: RichBlockLayout.Layout(block, layoutWidth, style, number);
+				: RichBlockLayout.Layout(block, layoutWidth, style, number, endsList);
+		}
+
+		/// <summary>
+		/// Whether the block at <paramref name="index"/> is a list's last item: a list item followed by the document's
+		/// end, a block that is not a list item, or an item of another list. Its layout takes a paragraph's space below
+		/// so the list does not run into what follows (a bullet list straight into a numbered one).
+		/// </summary>
+		internal static bool EndsList(List<RichBlock> blocks, int index)
+		{
+			var block = blocks[index];
+			if (block.Kind != RichBlockKind.ListItem)
+			{
+				return false;
+			}
+
+			return index + 1 >= blocks.Count
+				|| blocks[index + 1].Kind != RichBlockKind.ListItem
+				|| blocks[index + 1].ListGroup != block.ListGroup
+				|| (blocks[index + 1].List?.Ordered ?? false) != (block.List?.Ordered ?? false) && (blocks[index + 1].List?.Depth ?? 0) == (block.List?.Depth ?? 0);
 		}
 
 		// Ordered items count up from their list's start at each depth; a shallower item restarts the deeper count.
@@ -495,11 +516,12 @@ namespace Markdig.Agg.Editing
 
 		private sealed class Entry
 		{
-			public Entry(RichBlock block, IRichBlockLayout layout, int number)
+			public Entry(RichBlock block, IRichBlockLayout layout, int number, bool endsList)
 			{
 				Block = block;
 				Layout = layout;
 				Number = number;
+				EndsList = endsList;
 				Inputs = LayoutInputs.Of(block);
 			}
 
@@ -514,6 +536,11 @@ namespace Markdig.Agg.Editing
 			public IRichBlockLayout Layout { get; }
 
 			public int Number { get; }
+
+			/// <summary>
+			/// Whether the layout was built as its list's last item, with a paragraph's space below.
+			/// </summary>
+			public bool EndsList { get; }
 
 			/// <summary>
 			/// Distance from the document's top to the top of this block's box.

@@ -145,7 +145,9 @@ namespace Markdig.Agg.Tests
 
 			await Assert.That(top.Lines[0].Left).IsGreaterThan(paragraph.Lines[0].Left);
 			await Assert.That(nested.Lines[0].Left - top.Lines[0].Left).IsEqualTo(style.ListIndent).Within(0.001);
-			await Assert.That(top.Marker).IsEqualTo("-");
+			await Assert.That(top.Marker).IsEqualTo("\u2022");
+			await Assert.That(top.MarkerIsBullet).IsTrue();
+			await Assert.That(nested.Marker).IsEqualTo("\u25E6");
 			await Assert.That(numbered.Marker).IsEqualTo("3.");
 			await Assert.That(numbered.MarkerX).IsLessThan(numbered.TextLeft);
 			await Assert.That(numbered.MarkerX).IsGreaterThanOrEqualTo(0);

@@ -59,11 +59,12 @@ namespace Markdig.Renderers.Agg
 			@"(?:^|\s)align\s*=\s*[""']?(left|center|right)\b",
 			RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-		// The one-line form GitHub READMEs use: <p align="center">text</p> or <h2 align="center">Title</h2>.
+		// The one-line form GitHub READMEs use: <p align="center">text</p> or <h2 align="center">Title</h2>, and
+		// the <div align="center">text</div> AI-written notes often carry.
 		// The inner text may not open or close the same tag, so <p align="center">a</p><p>b</p> is not read
 		// as one element gluing "a" and "b"; that block falls through to showing nothing.
 		private static readonly Regex AlignedTextElement = new Regex(
-			@"^<(p|h[1-6])(\s[^>]*)?>((?:(?!</?\1\b).)*)</\1\s*>$",
+			@"^<(p|div|h[1-6])(\s[^>]*)?>((?:(?!</?\1\b).)*)</\1\s*>$",
 			RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Singleline);
 
 		private static readonly Regex AnyTag = new Regex(@"<[^>]*>", RegexOptions.CultureInvariant);

@@ -76,6 +76,13 @@ namespace Markdig.Agg.Editing
 		/// tag is the next block's separator.
 		/// </summary>
 		public string CloseSource { get; set; } = "";
+
+		/// <summary>
+		/// For a one-line element (<c>&lt;h2 align="center"&gt;Title&lt;/h2&gt;</c>), the whole line as parsed; null
+		/// for a wrapper. The member's own OriginalSource stays its markdown ("## Title"), so a clean member written
+		/// without the group still reads back as what it is; this line replaces it only while the group is intact.
+		/// </summary>
+		public string OneLineSource { get; set; }
 	}
 
 	/// <summary>
