@@ -46,11 +46,13 @@ namespace MatterHackers.Agg.UI
         public ThemedButton(ThemeConfig theme)
         {
             this.theme = theme;
-            HoverColor = theme.SlightShade;
-            MouseDownColor = theme.MinimalShade;
+            // Bound rather than copied, so a button in an open popup follows a theme changed in place
+            // (ThemeConfig.Changed); a colour a caller sets afterwards replaces the binding's
+            ThemeBindings.Bind(this, nameof(HoverColor), theme, t => t.SlightShade, () => HoverColor, c => HoverColor = c);
+            ThemeBindings.Bind(this, nameof(MouseDownColor), theme, t => t.MinimalShade, () => MouseDownColor, c => MouseDownColor = c);
             Margin = new BorderDouble(3, 0);
             Cursor = Cursors.Hand;
-            BackgroundColor = theme.ButtonBackgroundColor;
+            ThemeBindings.Bind(this, nameof(BackgroundColor), theme, t => t.ButtonBackgroundColor, () => FillColor, c => FillColor = c);
 
             // The theme's optional outline. GuiWidget draws it inside the bounds, so an outlined button is
             // the same size as a plain one; at the default width of 0 nothing is drawn.
@@ -166,6 +168,13 @@ namespace MatterHackers.Agg.UI
                     return base.BackgroundColor;
                 }
             }
+            set => base.BackgroundColor = value;
+        }
+
+        /// <summary>The resting fill, whatever state the button is drawn in (the getter above answers per state).</summary>
+        internal Color FillColor
+        {
+            get => base.BackgroundColor;
             set => base.BackgroundColor = value;
         }
 

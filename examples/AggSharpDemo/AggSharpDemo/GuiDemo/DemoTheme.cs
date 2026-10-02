@@ -304,6 +304,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		private void ApplyAndNotify()
 		{
 			this.Apply();
+
+			// Open menus restyle from the library's signal; the demo's own widgets from ThemeChanged
+			this.Theme.NotifyChanged();
 			this.ThemeChanged?.Invoke(this, EventArgs.Empty);
 		}
 

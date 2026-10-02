@@ -68,7 +68,7 @@ namespace MatterHackers.Agg.UI
 			this.Theme = theme;
 			this.VAnchor = VAnchor.Fit;
 			this.HAnchor = HAnchor.Fit;
-			this.BackgroundColor = theme.BackgroundColor;
+			ThemeBindings.BindBackground(this, theme, t => t.BackgroundColor);
 
 			// The panel's rounded corners. The border SystemWindowExtension.ShowPopup draws around a popup,
 			// and PopupWidget's own outline when the menu is popup hosted, both read this back off the widget
@@ -550,12 +550,12 @@ namespace MatterHackers.Agg.UI
 
 		public HorizontalLine CreateSeparator(double height = 1)
 		{
-			var line = new HorizontalLine(Theme.BorderColor20)
+			var line = new HorizontalLine()
 			{
 				Margin = new BorderDouble(8, 1),
-				BackgroundColor = Theme.RowBorder,
 				Height = height * DeviceScale,
 			};
+			ThemeBindings.BindBackground(line, Theme, t => t.RowBorder);
 
 			this.AddChild(line);
 
@@ -566,10 +566,7 @@ namespace MatterHackers.Agg.UI
 		{
 			GuiWidget content;
 
-			var textWidget = new TextWidget(name, pointSize: Theme.DefaultFontSize, textColor: Theme.TextColor)
-			{
-				Padding = MenuPadding,
-			};
+			var textWidget = MenuLabel.Create(name, Theme, MenuPadding);
 
 			if (shortCut != null)
 			{
@@ -579,10 +576,9 @@ namespace MatterHackers.Agg.UI
 					VAnchor = VAnchor.Fit
 				};
 
-				content.AddChild(new TextWidget(shortCut, pointSize: Theme.DefaultFontSize, textColor: Theme.TextColor)
-				{
-					HAnchor = HAnchor.Right
-				});
+				var shortCutLabel = MenuLabel.Create(shortCut, Theme);
+				shortCutLabel.HAnchor = HAnchor.Right;
+				content.AddChild(shortCutLabel);
 
 				content.AddChild(textWidget);
 			}
@@ -813,7 +809,7 @@ namespace MatterHackers.Agg.UI
 
 			private ImageBuffer faChecked;
 
-			private double faCheckedScale;
+			private (double Scale, Color Color) faCheckedFor;
 
 			public CheckboxMenuItem(GuiWidget widget, ThemeConfig theme)
 				: base(widget, theme)
@@ -821,7 +817,7 @@ namespace MatterHackers.Agg.UI
 			}
 
 			/// <summary>
-			/// Loads the check mark, or leaves it alone if it is already the size the current display wants.
+			/// Loads the check mark, or leaves it alone if it is already the display's size in the theme's text colour.
 			/// </summary>
 			/// <remarks>
 			/// <see cref="StaticData.LoadIcon(string, int, int, bool, Func{ImageBuffer, ValueTuple{ImageBuffer, string}})"/>
@@ -832,13 +828,13 @@ namespace MatterHackers.Agg.UI
 			private void EnsureCheckIcon()
 			{
 				if (faChecked != null
-					&& faCheckedScale == GuiWidget.DeviceScale)
+					&& faCheckedFor == (GuiWidget.DeviceScale, theme.TextColor))
 				{
 					return;
 				}
 
 				faChecked = MenuCheckMark.Create(theme.TextColor);
-				faCheckedScale = GuiWidget.DeviceScale;
+				faCheckedFor = (GuiWidget.DeviceScale, theme.TextColor);
 
 				this.Image = _checked ? faChecked : null;
 			}
@@ -889,7 +885,7 @@ namespace MatterHackers.Agg.UI
 
 			private ImageBuffer radioIconUnchecked;
 
-			private double radioIconScale;
+			private (double Scale, Color Color) radioIconsFor;
 
 			public RadioMenuItem(GuiWidget widget, ThemeConfig theme)
 				: base(widget, theme)
@@ -905,7 +901,7 @@ namespace MatterHackers.Agg.UI
 
 			/// <summary>
 			/// Rasterizes the two radio circles, or leaves them alone if they are already the size the
-			/// current display wants.
+			/// current display wants, in the theme's text colour (it can change under an open menu).
 			/// </summary>
 			/// <remarks>
 			/// The icons are rasterized at <see cref="GuiWidget.DeviceScale"/>, and that can change under a
@@ -915,7 +911,7 @@ namespace MatterHackers.Agg.UI
 			private void EnsureRadioIcons()
 			{
 				if (radioIconChecked != null
-					&& radioIconScale == GuiWidget.DeviceScale)
+					&& radioIconsFor == (GuiWidget.DeviceScale, theme.TextColor))
 				{
 					return;
 				}
@@ -923,7 +919,7 @@ namespace MatterHackers.Agg.UI
 				var size = (int)Math.Round(16 * GuiWidget.DeviceScale);
 				radioIconChecked = SetPreMultiply(new ImageBuffer(size, size));
 				radioIconUnchecked = SetPreMultiply(new ImageBuffer(size, size));
-				radioIconScale = GuiWidget.DeviceScale;
+				radioIconsFor = (GuiWidget.DeviceScale, theme.TextColor);
 
 				var rect = new RectangleDouble(0, 0, size, size);
 
@@ -1122,10 +1118,7 @@ namespace MatterHackers.Agg.UI
 		/// </returns>
 		public SubMenuItemButton CreateSubMenu(string menuTitle, ThemeConfig menuTheme, Action<PopupMenu> populateSubMenu, ImageBuffer icon = null)
 		{
-			var content = new TextWidget(menuTitle, pointSize: Theme.DefaultFontSize, textColor: Theme.TextColor)
-			{
-				Padding = MenuPadding,
-			};
+			var content = MenuLabel.Create(menuTitle, Theme, MenuPadding);
 
 			content.Selectable = false;
 
@@ -1148,10 +1141,7 @@ namespace MatterHackers.Agg.UI
 
 		public MenuItem CreateBoolMenuItem(string name, Func<bool> getter, Action<bool> setter, bool useRadioStyle = false, IList<GuiWidget> siblingRadioButtonList = null)
 		{
-			var textWidget = new TextWidget(name, pointSize: Theme.DefaultFontSize, textColor: Theme.TextColor)
-			{
-				Padding = MenuPadding,
-			};
+			var textWidget = MenuLabel.Create(name, Theme, MenuPadding);
 
 			return this.CreateBoolMenuItem(textWidget, name, getter, setter, useRadioStyle, siblingRadioButtonList);
 		}
@@ -1162,13 +1152,10 @@ namespace MatterHackers.Agg.UI
 			{
 				Selectable = false
 			};
-			row.AddChild(new ThemedIconButton(icon, Theme));
+			row.AddChild(MenuLabel.CreateIcon(icon, Theme));
 
-			var textWidget = new TextWidget(name, pointSize: Theme.DefaultFontSize, textColor: Theme.TextColor)
-			{
-				Padding = MenuPadding,
-				VAnchor = VAnchor.Center
-			};
+			var textWidget = MenuLabel.Create(name, Theme, MenuPadding);
+			textWidget.VAnchor = VAnchor.Center;
 			row.AddChild(textWidget);
 
 			return this.CreateBoolMenuItem(row, name, getter, setter, useRadioStyle, siblingRadioButtonList);
@@ -1254,7 +1241,7 @@ namespace MatterHackers.Agg.UI
 				this.MinimumSize = new Vector2(150 * GuiWidget.DeviceScale, theme.MenuRowHeight);
 				this.content = content;
 				this.GutterWidth = theme.MenuGutterWidth;
-				this.HoverColor = theme.AccentMimimalOverlay;
+				ThemeBindings.Bind(this, nameof(HoverColor), theme, t => t.AccentMimimalOverlay, () => HoverColor, c => HoverColor = c);
 
 				// Windows 11's inset highlight: the row - and so the hover/focus fill, which is the row's own
 				// background - is held clear of the panel edge on all four sides and rounded itself, rather

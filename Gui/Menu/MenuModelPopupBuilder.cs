@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using MatterHackers.Agg.Image;
 
 namespace MatterHackers.Agg.UI
@@ -112,6 +113,7 @@ namespace MatterHackers.Agg.UI
 				var menuItem = popupMenu.CreateMenuItem(item.Text, IconFor(item, theme), item.ShortcutText);
 
 				ApplyItemProperties(menuItem, item);
+				FollowThemeWithGlyph(menuItem, item, theme, () => menuItem.Image, i => menuItem.Image = i);
 
 				menuItem.Click += (s, e) => item.Action?.Invoke();
 			}
@@ -134,6 +136,13 @@ namespace MatterHackers.Agg.UI
 
 			ApplyItemProperties(menuItem, item);
 
+			if (icon != null)
+			{
+				// The icon sits beside the label (CreateBoolMenuItem's icon overload); the row's own Image is the check
+				var iconWidget = menuItem.Descendants<ImageWidget>().First();
+				FollowThemeWithGlyph(iconWidget, item, popupMenu.Theme, () => iconWidget.Image, i => iconWidget.Image = i);
+			}
+
 			if (item.CloseMenuOnPick)
 			{
 				// What a command row does (PopupMenu.CreateMenuItem): losing focus closes the menu chain. Added
@@ -153,6 +162,20 @@ namespace MatterHackers.Agg.UI
 
 			// A sub menu gets the same name and gate handling the leaves get
 			ApplyItemProperties(subMenuItemButton, item);
+			FollowThemeWithGlyph(subMenuItemButton, item, theme, () => subMenuItemButton.Image, i => subMenuItemButton.Image = i);
+		}
+
+		/// <summary>
+		/// Redraws a glyph icon in the theme's new text colour when the theme changes under an open menu. An
+		/// <see cref="MenuItemModel.Icon"/> is the caller's own picture (the Color menu's swatches) and is kept.
+		/// </summary>
+		private static void FollowThemeWithGlyph(GuiWidget widget, MenuItemModel item, ThemeConfig theme, Func<ImageBuffer> get, Action<ImageBuffer> set)
+		{
+			if (item.Icon == null
+				&& !string.IsNullOrEmpty(item.IconGlyph))
+			{
+				ThemeBindings.Bind(widget, "Icon", theme, t => IconFor(item, t), get, set);
+			}
 		}
 
 		/// <summary>

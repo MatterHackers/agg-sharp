@@ -417,8 +417,15 @@ namespace MatterHackers.Agg.UI
 			// An open title paints as open, so whatever an earlier dismissal suppressed is moot
 			suppressHoverFor = -1;
 
+			// The open title is drawn in the theme's accent; a theme picked from the open menu (View > Color)
+			// has to reach it too. Held for as long as this popup is up.
+			System.EventHandler themeChanged = (s, e) => UpdateTitleColors();
+			theme.Changed += themeChanged;
+
 			popupMenu.Closed += (s, e) =>
 			{
+				theme.Changed -= themeChanged;
+
 				// Only if it is still the current one - switching menus closes the outgoing popup after the
 				// incoming one has already claimed these fields.
 				if (openPopup == popupMenu)

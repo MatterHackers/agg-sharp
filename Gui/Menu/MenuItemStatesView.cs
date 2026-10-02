@@ -227,7 +227,8 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private void ApplyColors()
+		/// <summary>Shows the state colours as they are now: a theme binding changed one under an open list.</summary>
+		internal void ApplyColors()
 		{
 			bool showSelected = selected && SelectedBackgroundColor.Alpha0To255 > 0;
 			BackgroundColor = showSelected ? SelectedBackgroundColor : highlighted ? OverBackgroundColor : NormalBackgroundColor;

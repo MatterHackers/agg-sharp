@@ -147,6 +147,10 @@ namespace MatterHackers.Agg.UI
 		{
 			var hookedParents = new HashSet<GuiWidget>();
 
+			// A menu row can change the theme and leave the menu open (View > Color), so the open popup restyles
+			// with it. A menu follows the theme it was built from, which is the one its colours were copied out of.
+			ThemeBindings.FollowWhileOpen(popup.Widget, popup.Widget is PopupMenu popupMenu ? popupMenu.Theme : theme);
+
 			List<IIgnoredPopupChild> ignoredWidgets = popup.Widget.Children.OfType<IIgnoredPopupChild>().ToList();
 
 			void Widget_Draw(object sender, DrawEventArgs e)
