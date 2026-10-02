@@ -149,11 +149,11 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			await Assert.That(log.ReportsBeforeEachYield).IsNotEmpty()
 				.Because("a boolean that never yields is a frozen frame in the browser for as long as it runs");
 
-			// Reports on both sides of a yield is what "between two operations" means: the fold had
-			// already told the bar where it was, handed the thread over, and then went on folding.
+			// Reports on both sides of a yield is what "between two operations" means: the combine had
+			// already told the bar it was starting, handed the thread over, and then ran.
 			await Assert.That(log.ReportsBeforeEachYield.Any(reports => reports > 0 && reports < log.Reports.Count))
 				.IsTrue()
-				.Because("the yield has to land between two pairwise booleans, not only before the first");
+				.Because("the bar has to get a frame after the combine starts, not only before any report");
 
 			await Assert.That(log.Reports.All(report => report.ratio >= 0 && report.ratio <= 1)).IsTrue();
 
@@ -166,8 +166,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		public async Task AUnionNobodyIsWatchingNeverYields()
 		{
 			// The hook is installed, so the only reason not to hop the event loop is that there is no
-			// reporter. Getting this wrong costs every non-UI caller a UI hop per operand - and a null
-			// reporter is also what lets the kernel keep its n-ary batch path.
+			// reporter. Getting this wrong costs every non-UI caller a UI hop per operand.
 			var previousHook = ProgressReporter.UiYield;
 			var log = new ProgressLog();
 			ProgressReporter.UiYield = log.RecordYield;
@@ -203,9 +202,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 				ProgressReporter.UiYield = previousHook;
 			}
 
-			// A reporter that does nothing, rather than none at all: a null reporter would put the
-			// kernel on its batch path and this would be comparing two folds instead of comparing one
-			// fold with and without the yields.
+			// A reporter that is watched but does nothing, so this compares the same combine with and
+			// without the yields.
 			var plain = BooleanProcessing.DoArray(
 				ThreeOverlappingCubes(),
 				CsgModes.Union,

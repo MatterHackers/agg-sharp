@@ -61,7 +61,7 @@ namespace MatterHackers.PolygonMesh.Csg
 	/// continuation ran, so the "yield" would hand the frame back to a boolean that had already
 	/// gone on without it. And the call can arrive on a native worker thread, which on any host is
 	/// not the thread that paints. A boolean's yields therefore live in the managed loop around the
-	/// kernel - see <see cref="ManifoldKernel"/>'s async pairwise fold - between native calls,
+	/// kernel - see <see cref="ManifoldKernel"/>'s async combine - between native calls,
 	/// never inside one.
 	/// </para>
 	/// </remarks>

@@ -228,18 +228,16 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		/// <summary>
 		/// <see cref="RunBoolean"/> for a caller that can hand the UI its thread back: the same
-		/// boolean, with a yield after every operand's import and between every pair of the n-ary
-		/// fold.
+		/// boolean, with a yield after every operand's import and around the combine.
 		/// </summary>
 		/// <remarks>
 		/// The yields are what make a boolean's progress bar move at all on a host where the job and
-		/// the UI share one thread. They are only ever between operations: a single pairwise boolean
-		/// is one uninterruptible call, so the frame it holds is still frozen for however long
-		/// that call takes.
+		/// the UI share one thread. They are only ever between native calls: the n-ary batch (or one
+		/// pairwise boolean of a winding-rule fold) is one uninterruptible call, so the frame it
+		/// holds is still frozen for however long that call takes.
 		/// <para>
 		/// A <paramref name="reporter"/> nobody is watching - null, or one with no target - never
-		/// yields and keeps the kernel's n-ary batch path, exactly as in the synchronous entry
-		/// point - see <see cref="CombineAndRead"/> and <see cref="AnyoneWatching"/>.
+		/// yields - see <see cref="AnyoneWatching"/>.
 		/// </para>
 		/// </remarks>
 		/// <inheritdoc cref="RunBoolean"/>
@@ -534,24 +532,27 @@ namespace MatterHackers.PolygonMesh.Csg
 				// only cost a copy.
 				boolResult = batch.Manifolds[0];
 			}
-			else if (NeedsExplicitBoolean(reporter, windingRule))
+			else if (NeedsExplicitBoolean(windingRule))
 			{
 				boolResult = CombinePairwise(
 					batch.Manifolds, operationType, windingRule, cancellationToken, reporter, amountPerOperation, ratioCompleted);
 			}
 			else
 			{
+				var progress = BatchProgressFor(reporter, amountPerOperation, ratioCompleted);
 				boolResult = BatchBoolean(batch.Manifolds, operationType, cancellationToken);
+				progress?.CompleteOperation(CombineCompletePhase);
 			}
 
 			return ReadResult(boolResult, batch);
 		}
 
 		/// <summary>
-		/// <see cref="CombineAndRead"/> with a yield between each pair of the n-ary fold.
+		/// <see cref="CombineAndRead"/> with a yield on either side of the batch, or between each
+		/// pair of a winding-rule fold.
 		/// </summary>
 		/// <remarks>
-		/// Only the fold differs: reading the result back is one export and a walk over managed
+		/// Only the combine differs: reading the result back is one export and a walk over managed
 		/// collections, with no point inside it where handing the frame away would leave the
 		/// kernel's data in a state anything else may look at.
 		/// </remarks>
@@ -576,14 +577,26 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				boolResult = batch.Manifolds[0];
 			}
-			else if (NeedsExplicitBoolean(reporter, windingRule))
+			else if (NeedsExplicitBoolean(windingRule))
 			{
 				boolResult = await CombinePairwiseAsync(
 					batch.Manifolds, operationType, windingRule, cancellationToken, reporter, amountPerOperation, ratioCompleted);
 			}
 			else
 			{
+				// The batch is one native call with no progress hook, so the bar can only move at its
+				// two ends. Yield on both sides of it: before, so the "combining" report paints
+				// before the frame is held; after, so the finished bar paints and a Stop pressed
+				// while the call ran lands here rather than after the result is read back.
+				var progress = BatchProgressFor(reporter, amountPerOperation, ratioCompleted);
+				cancellationToken.ThrowIfCancellationRequested();
+				await (reporter?.YieldToUi() ?? default);
+
 				boolResult = BatchBoolean(batch.Manifolds, operationType, cancellationToken);
+
+				progress?.CompleteOperation(CombineCompletePhase);
+				cancellationToken.ThrowIfCancellationRequested();
+				await (reporter?.YieldToUi() ?? default);
 			}
 
 			return ReadResult(boolResult, batch);
@@ -613,20 +626,34 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// </summary>
 		/// <remarks>
 		/// BatchBoolean runs the kernel's CSG tree, which is what makes a large n-ary union
-		/// tractable, but it reports no progress and takes no winding rule - it reads the
-		/// process-global engine and the default rule. So it stays the path whenever neither is
-		/// asked for, and asking for either drops to a pairwise left fold over the explicit binary
-		/// entry point.
+		/// tractable, but it takes no winding rule - it reads the process-global engine and the
+		/// default rule - so only a non-default rule drops to a pairwise left fold over the
+		/// explicit binary entry point. Progress is NOT a reason to fold: the fold re-runs a full
+		/// binary boolean against the growing result for every operand, which turned a 20-operand
+		/// union from seconds into minutes, and every boolean in the app is watched. A watched
+		/// batch reports at its start and end instead (<see cref="BatchProgressFor"/>).
 		/// </remarks>
-		/// <param name="reporter">
-		/// Whatever the caller's progress sink is - an <c>Action</c> or a
-		/// <see cref="ProgressReporter"/>, which the former converts to. Only whether anyone is
-		/// watching it is read here, and being watched costs the batch path, so a caller with no
-		/// progress to show may pass null or a do-nothing reporter interchangeably.
-		/// </param>
-		private static bool NeedsExplicitBoolean(ProgressReporter reporter, RustWindingRule windingRule)
+		private static bool NeedsExplicitBoolean(RustWindingRule windingRule)
 		{
-			return AnyoneWatching(reporter) || windingRule != RustWindingRule.Positive;
+			return windingRule != RustWindingRule.Positive;
+		}
+
+		/// <summary>
+		/// The bar for a batch boolean, which the kernel cannot report into: already told the
+		/// combine has started, and closed out by the caller with
+		/// <see cref="BooleanProgressAdapter.CompleteOperation"/> once it returns. Null when
+		/// nobody is watching.
+		/// </summary>
+		private static BooleanProgressAdapter BatchProgressFor(ProgressReporter reporter, double amountPerOperation, double ratioCompleted)
+		{
+			if (!AnyoneWatching(reporter))
+			{
+				return null;
+			}
+
+			var progress = new BooleanProgressAdapter(reporter, ratioCompleted, amountPerOperation, 1);
+			progress.Report((CombineCompletePhase, null));
+			return progress;
 		}
 
 		/// <summary>
@@ -639,11 +666,8 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// reporter's own <c>Report</c> method group - so a null check on either shape answers yes
 		/// when the truth is no.
 		/// <para>
-		/// Getting that wrong here was worse than a wasted allocation. <see cref="NeedsExplicitBoolean"/>
-		/// picks between the kernel's CSG tree and the pairwise left fold, which are two evaluation
-		/// orders over the same operands: a caller passing a do-nothing reporter got a different mesh
-		/// than one passing null. Same test <see cref="MinkowskiProcessing"/>'s morph makes, for the
-		/// same reason.
+		/// Getting that wrong costs a progress adapter, and a UI yield per operand on the async path,
+		/// for a bar nobody can see. Same test <see cref="MinkowskiProcessing"/>'s morph makes.
 		/// </para>
 		/// <para>
 		/// Takes a <see cref="ProgressReporter"/> so both entry points can share it: an
@@ -802,10 +826,10 @@ namespace MatterHackers.PolygonMesh.Csg
 			double amountPerOperation,
 			double ratioCompleted)
 		{
-			// AnyoneWatching rather than a null check: this fold is also reached for a winding rule
-			// the batch path cannot express, so a targetless reporter does get here - and building
-			// an adapter around its never-null no-op action would pay for a progress bar nobody can
-			// see, once per pair.
+			// AnyoneWatching rather than a null check: this fold is reached for a winding rule the
+			// batch path cannot express, whoever is watching, so a targetless reporter does get here -
+			// and building an adapter around its never-null no-op action would pay for a progress bar
+			// nobody can see, once per pair.
 			var progress = AnyoneWatching(reporter)
 				? new BooleanProgressAdapter(reporter, ratioCompleted, amountPerOperation, manifolds.Count - 1)
 				: null;
@@ -887,8 +911,8 @@ namespace MatterHackers.PolygonMesh.Csg
 		}
 
 		/// <summary>
-		/// Message phase for the boundary between two pairwise booleans, where the
-		/// kernel itself has nothing to report because no operation is running.
+		/// Message phase for the edges of a combine - either end of the batch, or between two
+		/// pairwise booleans - where the kernel itself has nothing to report.
 		/// </summary>
 		private const string CombineCompletePhase = "combining";
 

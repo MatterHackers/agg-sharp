@@ -42,18 +42,17 @@ using TUnit.Core;
 namespace MatterHackers.PolygonMesh.UnitTests
 {
 	/// <summary>
-	/// Which n-ary route the boolean kernel takes has to be decided by whether anyone is actually
-	/// watching, not by whether a reporter object exists.
+	/// Which n-ary route the boolean kernel takes must not depend on the progress reporter at all -
+	/// not on whether one exists, and not on whether anyone is watching it.
 	/// </summary>
 	/// <remarks>
 	/// The two routes - the kernel's CSG tree and the explicit pairwise left fold - are two
-	/// evaluation orders over the same operands, so they are free to build the same solid out of
-	/// different vertices. That is fine as long as a caller cannot pick between them by accident.
-	/// It could: <see cref="ProgressReporter.Null"/> and <c>new ProgressReporter(null)</c> report
-	/// nowhere, but both convert to a NON-null <c>Action</c> (the conversion hands back the
-	/// reporter's own <c>Report</c> method group), so a null check on the sink said "somebody is
-	/// watching" and routed the boolean down the fold. These tests pin that a do-nothing reporter
-	/// gets exactly what null gets.
+	/// evaluation orders over the same operands, so they build the same solid out of different
+	/// vertices, and the fold costs a full binary boolean per operand. Only a non-default winding
+	/// rule may take the fold. <see cref="ProgressReporter.Null"/> and <c>new ProgressReporter(null)</c>
+	/// convert to a NON-null <c>Action</c>, so a null check once routed them down the fold, and a
+	/// watched reporter once did too, which made every boolean in the app O(n^2). These tests pin
+	/// that every reporter shape gets exactly what null gets.
 	/// </remarks>
 	public class BooleanReporterRoutingTests
 	{
@@ -166,21 +165,48 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		[Test]
-		public async Task ATargetedReporterStillGetsProgressForEveryPair()
+		public async Task AWatchedReporterKeepsTheNaryBatchPath()
 		{
 			var reports = new List<(double ratio, string message)>();
 
-			Union((ratio, message) => reports.Add((ratio, message)));
+			var withNoReporter = Union(null);
+			var watched = Union((ratio, message) => reports.Add((ratio, message)));
 
-			// One "combining" report closes out each pairwise boolean of the fold, so a four
-			// operand union has three: the fold is what a watched boolean is routed to, and this
-			// is the observable that says it still is.
-			int operandCount = AsymmetricOperands().Count;
-			await Assert.That(reports.Count(report => report.message.EndsWith("combining", StringComparison.Ordinal)))
-				.IsEqualTo(operandCount - 1)
-				.Because("a watched n-ary boolean reports the completion of every pair it folds");
+			// A boolean in the app always runs under a watched reporter, so a watched boolean that
+			// fell back to the pairwise fold re-ran a full binary boolean against the growing body
+			// for every operand - minutes on a 20-operand union the CSG tree finishes in seconds.
+			// The fold and the tree build different vertices for these operands, so matching the
+			// unwatched result exactly is what says the watched one took the tree.
+			await AssertSameMesh(
+				withNoReporter,
+				watched,
+				"progress being watched must not drop the n-ary boolean to a pairwise fold");
 
+			await Assert.That(reports).IsNotEmpty()
+				.Because("a watched boolean still tells the bar when it starts and finishes");
 			await Assert.That(reports.All(report => report.ratio >= 0 && report.ratio <= 1)).IsTrue();
+		}
+
+		[Test]
+		public async Task AWatchedReporterKeepsTheNaryBatchPathOnTheAsyncPath()
+		{
+			var reports = new List<(double ratio, string message)>();
+
+			var withNoReporter = await UnionAsync(null);
+			var watched = await UnionAsync(new ProgressReporter((ratio, message) =>
+			{
+				lock (reports)
+				{
+					reports.Add((ratio, message));
+				}
+			}));
+
+			await AssertSameMesh(
+				withNoReporter,
+				watched,
+				"the async entry point keeps the n-ary boolean under a watched reporter too");
+
+			await Assert.That(reports).IsNotEmpty();
 		}
 	}
 }

@@ -139,14 +139,14 @@ namespace MatterHackers.PolygonMesh.Csg
 
 		/// <summary>
 		/// <see cref="DoArray"/> for a job that can hand the UI its thread back: the same boolean,
-		/// yielding after each operand's import and between each pair of the n-ary fold.
+		/// yielding after each operand's import and around the combine.
 		/// </summary>
 		/// <remarks>
 		/// The reporter travels as the object rather than as the <c>Action&lt;double, string&gt;</c>
 		/// it converts to because the yields go through it - see
 		/// <see cref="ProgressReporter.YieldToUi"/>. Nobody watching - null, or a reporter with no
-		/// target such as <see cref="ProgressReporter.Null"/> - is what buys the kernel's n-ary
-		/// batch path, and the two spellings are interchangeable: they yield alike and route alike.
+		/// target such as <see cref="ProgressReporter.Null"/> - never yields, and the two spellings
+		/// are interchangeable. Watched or not, the kernel takes the same n-ary route.
 		/// <para>
 		/// Only worth calling from a job's top level async flow. Everything else - including the
 		/// native progress callback, which physically cannot await - keeps using

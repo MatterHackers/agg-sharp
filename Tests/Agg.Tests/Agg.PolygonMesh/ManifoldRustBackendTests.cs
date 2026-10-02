@@ -559,8 +559,8 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
-		/// The same contract for the pairwise path - a reporter drops the combine out of the
-		/// CSG tree onto the explicit binary entry point, which has its own token bridging -
+		/// The same contract for the pairwise path - a non-default winding rule drops the combine
+		/// out of the CSG tree onto the explicit binary entry point, which has its own token bridging -
 		/// and this time with a cancel that arrives from another thread while the boolean is
 		/// genuinely running, and proof that it is honoured before the work finishes.
 		/// </summary>
@@ -763,9 +763,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 		}
 
 		/// <summary>
-		/// A reporter must see the kernel's progress, and attaching one must not change
-		/// the geometry: the progress path runs a pairwise fold rather than BatchBoolean,
-		/// and for two operands those have to be the same boolean.
+		/// A reporter must see progress, and attaching one must not change the geometry.
 		/// </summary>
 		[Test]
 		public async Task ReporterSeesProgressWithoutChangingTheResult()
