@@ -293,6 +293,9 @@ namespace MatterHackers.Agg.UI
 		/// <summary>The wgpu host that owns the device and swapchain.</summary>
 		public MacWebGpuLayer WebGpuLayer => this.webGpuLayer;
 
+		/// <summary>The NSWindow*, for tests that ask AppKit about it (key, visible, occluded).</summary>
+		internal IntPtr NativeWindow => this.window;
+
 		/// <summary>The provider that created this window, set by the provider itself.</summary>
 		public ISystemWindowProvider WindowProvider { get; set; }
 
@@ -448,7 +451,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (this.window != IntPtr.Zero)
 			{
-				MainThreadDispatcher.Invoke(() => Send_v_r(this.window, Sel("orderFront:"), IntPtr.Zero));
+				MainThreadDispatcher.Invoke(() => MacBackgroundWindowPlacement.BringToFront(nsApp, this.window));
 			}
 		}
 
@@ -456,11 +459,7 @@ namespace MatterHackers.Agg.UI
 		{
 			if (this.window != IntPtr.Zero)
 			{
-				MainThreadDispatcher.Invoke(() =>
-				{
-					Send_v_r(this.window, Sel("makeKeyAndOrderFront:"), IntPtr.Zero);
-					Send_v_B(nsApp, Sel("activateIgnoringOtherApps:"), YES);
-				});
+				MainThreadDispatcher.Invoke(() => MacBackgroundWindowPlacement.Show(nsApp, this.window));
 			}
 		}
 
@@ -614,6 +613,7 @@ namespace MatterHackers.Agg.UI
 			systemWindow.PlatformWindow = this;
 			systemWindow.AnchorAll();
 
+			MacBackgroundWindowPlacement.PrepareLaunchForShow(nsApp);
 			this.CreateNativeWindow(systemWindow);
 
 			this.webGpuLayer.UseSoftwareAdapter = ShouldUseSoftwareAdapter(systemWindow);
@@ -641,8 +641,8 @@ namespace MatterHackers.Agg.UI
 				MacMenuBar.Install(systemWindow.MenuBar);
 			}
 
-			Send_v_r(this.window, Sel("makeKeyAndOrderFront:"), IntPtr.Zero);
-			Send_v_B(nsApp, Sel("activateIgnoringOtherApps:"), YES);
+			// Never key or activating under ShowWindowsInBackground; see MacBackgroundWindowPlacement.
+			MacBackgroundWindowPlacement.Show(nsApp, this.window);
 
 			// Activation and window ordering are asynchronous: isKeyWindow and, more importantly for the
 			// renderer, occlusionState are still stale immediately after the calls above. wgpu's Metal
@@ -1012,14 +1012,8 @@ namespace MatterHackers.Agg.UI
 					throw new InvalidOperationException("+[NSApplication sharedApplication] returned nil.");
 				}
 
-				// Regular, not Accessory: a Prohibited/Accessory app cannot become frontmost, and a
-				// non-bundled process defaults to Prohibited.
-				Send_B_q(nsApp, Sel("setActivationPolicy:"), NSApplicationActivationPolicyRegular);
-
-				// finishLaunching does the work [NSApp run] would normally do on entry (posts
-				// NSApplicationWillFinishLaunching, unstalls the launch). Skip it and a pumped app can end
-				// up unable to become frontmost.
-				Send_v(nsApp, Sel("finishLaunching"));
+				// The activation policy and finishLaunching wait for the first show; see
+				// MacBackgroundWindowPlacement.PrepareLaunchForShow.
 
 				distantPast = Retain(Send_r(Class("NSDate"), Sel("distantPast")));
 				defaultRunLoopMode = Retain(NSString("kCFRunLoopDefaultMode"));

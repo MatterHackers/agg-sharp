@@ -250,6 +250,10 @@ namespace MatterHackers.Agg.Platform.Mac
 		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
 		public static extern void Send_v_B(IntPtr receiver, IntPtr selector, byte arg0);
 
+		/// <summary>-(void)selector:(NSInteger) :(NSInteger) - notably -[NSWindow orderWindow:relativeTo:].</summary>
+		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
+		public static extern void Send_v_q_q(IntPtr receiver, IntPtr selector, long arg0, long arg1);
+
 		/// <summary>-(BOOL)selector:(NSInteger)</summary>
 		[DllImport(LibObjC, EntryPoint = "objc_msgSend")]
 		public static extern byte Send_B_q(IntPtr receiver, IntPtr selector, long arg0);

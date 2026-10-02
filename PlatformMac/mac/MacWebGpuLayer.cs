@@ -85,6 +85,12 @@ namespace MatterHackers.Agg.UI
 		private bool isDisposed;
 		private bool frameIsPresentable;
 
+		/// <summary>
+		/// Frames that reached the swapchain rather than the scratch target. Lets a test tell a window that
+		/// really presented from one Metal treated as occluded and gave no drawable.
+		/// </summary>
+		internal int PresentedFrameCount { get; private set; }
+
 		/// <summary>Creates the host for a layer that already exists.</summary>
 		/// <param name="metalLayer">The <c>CAMetalLayer*</c> wgpu will make its surface over.</param>
 		/// <param name="pixelWidth">Initial swapchain width in device pixels.</param>
@@ -286,6 +292,7 @@ namespace MatterHackers.Agg.UI
 					using (FrameProfiler.Time("PresentSwapchain"))
 					{
 						this.compat.Present(this.surface);
+						this.PresentedFrameCount++;
 					}
 				}
 				else

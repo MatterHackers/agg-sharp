@@ -134,6 +134,7 @@
     <Compile Remove="Agg.UI\MacModifierFlagsTests.cs" />
     <Compile Remove="Agg.UI\MacLiveResizePaintTests.cs" />
     <Compile Remove="Agg.UI\MacDragOutsideViewTests.cs" />
+    <Compile Remove="Agg.UI\MacShowInBackgroundTests.cs" />
     <Compile Remove="Agg.UI\MacKeyTranslationTests.cs" />
     <Compile Remove="Agg.UI\MacMenuBarTests.cs" />
     <Compile Remove="Agg.UI\MacCursorMapTests.cs" />
