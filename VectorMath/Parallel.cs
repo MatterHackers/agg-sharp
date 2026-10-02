@@ -1,5 +1,5 @@
 ﻿/*
-Copyright (c) 2020, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -42,7 +42,48 @@ namespace MatterHackers.Agg
     /// </summary>
     public static class Parallel
     {
+        [ThreadStatic]
+        private static bool runInlineOnThisThread;
+
         public static bool Sequential { get; set; }
+
+        /// <summary>
+        /// True when parallel calls made from the calling thread run entirely on that thread. Set by
+        /// <see cref="RunInlineOnCurrentThread"/>; per thread, and stays set for the thread's lifetime.
+        /// </summary>
+        public static bool CurrentThreadRunsInline => runInlineOnThisThread;
+
+        /// <summary>
+        /// Marks the calling thread so every loop routed through this class from it runs on it alone,
+        /// queueing nothing to the thread pool. Gui marks the UI thread (UiThread.MarkCurrentThreadAsUiThread)
+        /// so every agg app gets this.
+        /// </summary>
+        /// <remarks>
+        /// Why: System.Threading.Tasks.Parallel queues loop replicas to the pool's global queue and the calling
+        /// thread waits for them. While a long operation (an exact Dilate) keeps every pool worker busy with its
+        /// own nested parallel work, those replicas sit unscheduled for minutes - and a UI thread that built a
+        /// tiny handle mesh's trace data with a parallel loop froze the whole window that long. Work small enough
+        /// to do on the UI thread at all is small enough to do on it alone; large work already goes to a Task.
+        /// </remarks>
+        public static void RunInlineOnCurrentThread()
+        {
+            runInlineOnThisThread = true;
+        }
+
+        // MaxDegreeOfParallelism = 1 makes System.Threading.Tasks.Parallel run its one replica synchronously on
+        // the calling thread and spawn no others, so exception shape and ParallelLoopState semantics stay the
+        // same as the parallel path. The scheduler is pinned to Default because the replica is started with
+        // RunSynchronously on the options' scheduler, and a custom TaskScheduler.Current that declines inline
+        // execution would queue it and leave this thread waiting again.
+        private static readonly ParallelOptions InlineOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = 1,
+            TaskScheduler = TaskScheduler.Default,
+        };
+
+        private static readonly ParallelOptions DefaultOptions = new ParallelOptions();
+
+        private static ParallelOptions Options => runInlineOnThisThread ? InlineOptions : DefaultOptions;
 
         public static void ForEach<T>(IEnumerable<T> source, Action<T> action)
         {
@@ -55,7 +96,7 @@ namespace MatterHackers.Agg
             }
             else
             {
-                System.Threading.Tasks.Parallel.ForEach<T>(source, action);
+                System.Threading.Tasks.Parallel.ForEach<T>(source, Options, action);
             }
         }
 
@@ -70,7 +111,7 @@ namespace MatterHackers.Agg
             }
             else
             {
-                System.Threading.Tasks.Parallel.For(startInclusive, endExclusive, action);
+                System.Threading.Tasks.Parallel.For(startInclusive, endExclusive, Options, action);
             }
         }
 
@@ -90,7 +131,7 @@ namespace MatterHackers.Agg
             }
             else
             {
-                System.Threading.Tasks.Parallel.Invoke(actions);
+                System.Threading.Tasks.Parallel.Invoke(Options, actions);
             }
         }
 
@@ -99,7 +140,7 @@ namespace MatterHackers.Agg
         // ever needs to run on a single threaded host.
         public static void For<T>(int startInclusive, int endExclusive, Func<T> action, Func<int, ParallelLoopState, T, T> p2, Action<T> p3)
         {
-            System.Threading.Tasks.Parallel.For(startInclusive, endExclusive, action, p2, p3);
+            System.Threading.Tasks.Parallel.For(startInclusive, endExclusive, Options, action, p2, p3);
         }
     }
 }

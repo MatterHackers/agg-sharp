@@ -30,6 +30,8 @@ either expressed or implied, of the FreeBSD Project.
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.ExceptionServices;
+using System.Threading;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Platform.Browser;
 using TUnit.Assertions;
@@ -660,15 +662,39 @@ namespace MatterHackers.Agg.UI.Tests
 			/// <summary>Whether the window has handed over a tick and not taken it back.</summary>
 			public bool IsRunning => this.onFrame != null;
 
-			/// <summary>Runs one frame, the way requestAnimationFrame would.</summary>
+			/// <summary>
+			/// Runs one frame, the way requestAnimationFrame would - on a dedicated thread, never the test's pool
+			/// thread: a tick marks its thread as the UI thread, and that mark makes agg's Parallel run loops
+			/// inline on it for the rest of the process. A frame that throws rethrows here.
+			/// </summary>
 			public void Tick()
 			{
-				if (this.onFrame == null)
+				var frame = this.onFrame;
+				if (frame == null)
 				{
 					throw new InvalidOperationException("No frame loop is running.");
 				}
 
-				this.onFrame();
+				ExceptionDispatchInfo failure = null;
+				var thread = new Thread(() =>
+				{
+					try
+					{
+						frame();
+					}
+					catch (Exception e)
+					{
+						failure = ExceptionDispatchInfo.Capture(e);
+					}
+				})
+				{
+					IsBackground = true,
+					Name = "Browser frame loop test thread",
+				};
+
+				thread.Start();
+				thread.Join();
+				failure?.Throw();
 			}
 
 			public void Start(Action onFrame)
