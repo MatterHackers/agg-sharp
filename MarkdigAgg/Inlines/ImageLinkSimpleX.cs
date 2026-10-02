@@ -34,6 +34,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.Platform;
 using MatterHackers.Agg.UI;
+using MatterHackers.ImageProcessing;
 using MatterHackers.VectorMath;
 
 namespace Markdig.Renderers.Agg.Inlines
@@ -62,7 +63,8 @@ namespace Markdig.Renderers.Agg.Inlines
 				this.Selectable = true;
 			}
 
-			sequenceWidget = new ResponsiveImageSequenceWidget(new ImageSequence(icon.Value))
+			// The icon file is black ink; drawn in the text colour, like the link text beside it, it stays visible on a dark theme
+			sequenceWidget = new ResponsiveImageSequenceWidget(new ImageSequence(icon.Value.GrayToColor(renderer.Theme.TextColor)))
 			{
 				Cursor = Cursors.Hand,
 			};

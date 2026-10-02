@@ -53,6 +53,9 @@ namespace Markdig.Renderers.Agg.Inlines
 		private readonly ImageWidget imageWidget;
 		private bool fetchStarted;
 
+		/// <summary>
+		/// Shows the icon file's own black globe, untinted, until the image arrives.
+		/// </summary>
 		public ImageLinkAdvancedX(string url)
 		{
 			HAnchor = HAnchor.Fit;
