@@ -201,5 +201,51 @@ namespace MatterHackers.Agg.UI.Tests
 			other.Cursor = Cursors.Hand;
 			await Assert.That(root.Applied.Count).IsEqualTo(countAfterEnter);
 		}
+
+		[Test]
+		public async Task CursorSetByACapturedWidgetWhileTheMouseIsOutsideItReachesTheWindow()
+		{
+			var root = new CursorRecorder(200, 200);
+			var dragged = new GuiWidget(50, 50);
+			root.AddChild(dragged);
+
+			root.OnMouseMove(Move(10, 10));
+			root.OnMouseDown(Press(10, 10));
+
+			// a drag out of the widget that holds the capture (the node editor refusing a dropped item)
+			root.OnMouseMove(Move(150, 150));
+			dragged.Cursor = Cursors.No;
+			await Assert.That(root.Applied[^1]).IsEqualTo(Cursors.No);
+
+			// a captured cursor that depends on the mouse position follows moves outside the widget too
+			dragged.Cursor = Cursors.Default;
+			var captured = new EdgeBarWidget(50, 50) { Position = new VectorMath.Vector2(0, 100) };
+			root.AddChild(captured);
+			root.OnMouseUp(Press(150, 150));
+			root.OnMouseMove(Move(20, 120));
+			root.OnMouseDown(Press(20, 120));
+			root.OnMouseMove(Move(5, 190));
+			await Assert.That(root.Applied[^1]).IsEqualTo(Cursors.VSplit);
+		}
+
+		[Test]
+		public async Task ReleasingACapturedDragOverAnotherWidgetShowsThatWidgetsCursor()
+		{
+			var root = new CursorRecorder(200, 200);
+			var dragged = new GuiWidget(50, 50);
+			var sibling = new GuiWidget(50, 50) { Position = new VectorMath.Vector2(100, 100), Cursor = Cursors.Hand };
+			root.AddChild(dragged);
+			root.AddChild(sibling);
+
+			// hover the sibling first, so its own record says Hand is already showing
+			root.OnMouseMove(Move(120, 120));
+			root.OnMouseMove(Move(10, 10));
+			root.OnMouseDown(Press(10, 10));
+			root.OnMouseMove(Move(120, 120));
+			dragged.Cursor = Cursors.No;
+
+			root.OnMouseUp(Press(120, 120));
+			await Assert.That(root.Applied[^1]).IsEqualTo(Cursors.Hand);
+		}
 	}
 }

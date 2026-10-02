@@ -608,9 +608,11 @@ namespace MatterHackers.Agg.UI
 				// A cursor set while this widget is the one showing its cursor - code starting a picking mode
 				// while the mouse rests here, or a move handler that sets it after base.OnMouseMove - must reach
 				// the window now; otherwise it waits for the next mouse move, or never comes if the mouse stops.
-				// Being first under the mouse covers a captured drag too, as long as the mouse is within this
-				// widget. ReapplyCursorIfChanged reads the virtual getter, so getter overrides still win.
-				if (FirstWidgetUnderMouse)
+				// A widget holding the mouse capture owns the window cursor for its drag, inside its bounds or
+				// out (a drop target refusing the dragged item shows No wherever the mouse is).
+				// ReapplyCursorIfChanged reads the virtual getter, so getter overrides still win.
+				if (FirstWidgetUnderMouse
+					|| mouseCapturedState == MouseCapturedState.ThisHasMouseCaptured)
 				{
 					ReapplyCursorIfChanged();
 				}
@@ -3839,6 +3841,8 @@ namespace MatterHackers.Agg.UI
 						OnMouseLeaveBounds(mouseEvent);
 					}
 
+					// the drag still owns the window cursor out here; see Cursor
+					ReapplyCursorIfChanged();
 					UnderMouseState = UI.UnderMouseState.NotUnderMouse;
 				}
 
@@ -3973,6 +3977,7 @@ namespace MatterHackers.Agg.UI
 
 			bool mouseUpOnWidget = PositionWithinLocalBounds(mouseEvent.X, mouseEvent.Y);
 			bool childHasAcceptedThisEvent = false;
+			bool upEndsACapture = mouseCapturedState != MouseCapturedState.NotCaptured;
 
 			if (mouseCapturedState == MouseCapturedState.NotCaptured)
 			{
@@ -4108,6 +4113,11 @@ namespace MatterHackers.Agg.UI
 
 			MouseUp?.Invoke(this, mouseEvent);
 
+			if (upEndsACapture && Parent == null)
+			{
+				ApplyCursorOfWidgetUnderMouse(mouseEvent.X, mouseEvent.Y);
+			}
+
 			// The press is over, so the remembered down no longer describes a live click. Without
 			// this, a single click arriving shortly after a double click could still see the stale
 			// 2 through IsDoubleClick (widgets like ListViewItemBase ask during their own
@@ -4169,6 +4179,36 @@ namespace MatterHackers.Agg.UI
 				lastAppliedCursor = cursor;
 				SetCursor(cursor);
 			}
+		}
+
+		/// <summary>
+		/// A captured drag owns the window cursor until the button comes up (see <see cref="Cursor"/>), and the
+		/// widget the mouse was released over gets no enter event until the mouse next moves. Called on the
+		/// root after the capture ends, this shows that widget's cursor now instead of leaving the drag's.
+		/// </summary>
+		private void ApplyCursorOfWidgetUnderMouse(double x, double y)
+		{
+			// the same pick OnMouseMoveNotCaptured makes: the topmost selectable child under the mouse, recursively
+			var widget = this;
+			bool foundChild = true;
+			while (foundChild)
+			{
+				foundChild = false;
+				foreach (var child in widget.Children.Reverse())
+				{
+					double childX = x;
+					double childY = y;
+					child.ParentToChildTransform.inverse_transform(ref childX, ref childY);
+					if (child.Visible && child.Enabled && child.CanSelect && child.PositionWithinLocalBounds(childX, childY))
+					{
+						(widget, x, y, foundChild) = (child, childX, childY, true);
+						break;
+					}
+				}
+			}
+
+			widget.lastAppliedCursor = widget.Cursor;
+			widget.SetCursor(widget.lastAppliedCursor.Value);
 		}
 
 		/// <summary>
@@ -4547,115 +4587,6 @@ namespace MatterHackers.Agg.UI
 		public bool Equals(GuiWidget other)
 		{
 			return base.Equals(other);
-		}
-	}
-
-	public static class ExtensionMethods
-	{
-		/// <summary>
-		/// Returns all children of the current GuiWiget matching the given type
-		/// </summary>
-		/// <typeparam name="T">The type filter</typeparam>
-		/// <param name="widget">The context widget</param>
-		/// <returns>All matching child widgets</returns>
-		public static IEnumerable<T> Children<T>(this GuiWidget widget) where T : GuiWidget
-		{
-			return widget.Children.OfType<T>();
-		}
-
-		public static IEnumerable<GuiWidget> DescendantsAndSelf(this GuiWidget widget)
-		{
-			return DescendantsAndSelf<GuiWidget>(widget);
-		}
-
-		/// <summary>
-		/// Returns all descendants and this of the current GuiWiget matching the given type
-		/// </summary>
-		/// <typeparam name="T">The type filter</typeparam>
-		/// <param name="widget">The context widget</param>
-		/// <returns>All matching child widgets</returns>
-		public static IEnumerable<T> DescendantsAndSelf<T>(this GuiWidget widget) where T : GuiWidget
-		{
-			var items = new Stack<GuiWidget>();
-			items.Push(widget);
-
-			while (items.Any())
-			{
-				GuiWidget item = items.Pop();
-
-				foreach (var child in item.Children)
-				{
-					items.Push(child);
-				}
-
-				if (item is T itemIsType)
-				{
-					yield return itemIsType;
-				}
-			}
-		}
-
-		public static IEnumerable<GuiWidget> Descendants(this GuiWidget widget)
-		{
-			return Descendants<GuiWidget>(widget);
-		}
-
-		public enum ReturnOrder
-		{
-			BredthFirst,
-			DepthFirst
-		}
-
-		/// <summary>
-		/// Returns all descendants of the current GuiWiget matching the given type
-		/// </summary>
-		/// <typeparam name="T">The type filter</typeparam>
-		/// <param name="widget">The context widget</param>
-		/// <param name="evaluate">Determines if a given child widget should be added or descended.</param>
-		/// <returns>All matching child widgets</returns>
-		public static IEnumerable<T> Descendants<T>(this GuiWidget widget,
-			Func<GuiWidget, bool> evaluate = null) where T : GuiWidget
-		{
-			var items = new Stack<GuiWidget>(widget.Children);
-
-			while (items.Any())
-			{
-				GuiWidget item = items.Pop();
-
-				foreach (var child in item.Children.Reverse())
-				{
-					if (evaluate == null
-						|| evaluate(child))
-					{
-						items.Push(child);
-					}
-				}
-
-				if (item is T itemIsType)
-				{
-					yield return itemIsType;
-				}
-			}
-		}
-
-		/// <summary>
-		/// Returns all ancestors of the current GuiWidget matching the given type
-		/// </summary>
-		/// <typeparam name="T">The type filter</typeparam>
-		/// <param name="widget">The context widget</param>
-		/// <returns>The matching ancestor widgets</returns>
-		public static IEnumerable<T> Parents<T>(this GuiWidget widget) where T : GuiWidget
-		{
-			GuiWidget context = widget.Parent;
-			while (context != null)
-			{
-				if (context is T)
-				{
-					yield return (T)context;
-				}
-
-				context = context.Parent;
-			}
 		}
 	}
 
