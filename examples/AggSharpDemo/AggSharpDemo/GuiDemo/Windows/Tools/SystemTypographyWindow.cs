@@ -82,7 +82,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Tools
 
 		private void OnSettingChanged(object sender, EventArgs e)
 		{
-			// The preview takes its face when built, and the hinting flag has no epoch for a backbuffer to notice.
+			// The preview takes its face when built, so it is rebuilt. The invalidate asks for the next frame;
+			// every other buffered label re-rasters in it on its own, because each setting here (hinting
+			// included) bumps an epoch the backbuffers compare against.
 			this.SampleText.Rebuild();
 			this.Invalidate();
 		}

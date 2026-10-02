@@ -381,6 +381,14 @@ namespace MatterHackers.Agg.Font
 		/// the theoretical ideal, because the per-line snap was computed before this nudge was known.
 		/// Every line does still land on a whole device pixel, which is what the snap is for.
 		/// </para>
+		/// <para>
+		/// Under a scale the snap deliberately stays in local units and no device nudge is made, so a
+		/// whole local pixel can land between device pixels (12.4 x 1.5 = 18.6). That matches agg-gui,
+		/// which snaps the glyph origin in logical units before its transform, and it keeps text in a
+		/// zoomable view (MatterCAD's node editor) from stepping a device pixel at a time while the
+		/// zoom changes smoothly. Display scale does not come through here: the hosts apply it as
+		/// <c>GuiWidget.DeviceScale</c> (sizes in device pixels) under a unit-scale transform.
+		/// </para>
 		/// </remarks>
 		private IVertexSource GetDeviceSnappedSource(Graphics2D graphics2D)
 		{
