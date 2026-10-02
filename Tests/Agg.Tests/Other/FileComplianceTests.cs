@@ -88,7 +88,7 @@ namespace MatterHackers.Agg.Tests
 			["Gui/GUIWidget.cs"] = 3953,
 			["Gui/Menu/PopupMenu.cs"] = 1214,
 			["Gui/TextWidgets/InternalTextEditWidget.cs"] = 1537,
-			["GuiAutomation/AutomationRunner.cs"] = 2023,
+			["GuiAutomation/AutomationRunner.cs"] = 1983,
 			["MarkdigAgg/MarkdownWidget.cs"] = 989,
 			["PlatformBrowser/browser/BrowserSystemWindow.cs"] = 1120,
 			["PlatformLinux/linux/X11Selection.cs"] = 1180,

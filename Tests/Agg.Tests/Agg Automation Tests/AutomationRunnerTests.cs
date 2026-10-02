@@ -199,6 +199,36 @@ namespace MatterHackers.Agg.UI.Tests
 				.Because("a timeout the test is asserting is a result, not a hang to photograph");
 		}
 
+		/// <summary>
+		/// The test's budget measures the test, not the window coming up before it.
+		/// </summary>
+		/// <remarks>
+		/// Bringing a window up creates its GPU device, and on a loaded machine bring-up was measured at up
+		/// to 14s, almost all of it wgpu device creation, while the PopupAnchorTests body it preceded took
+		/// about 3s - so a 25s test that needed 3s timed out in the full suite. The slow Load here stands in for that device creation: the body itself is
+		/// instant, so the only way this run can time out is if the load is charged to the test.
+		/// </remarks>
+		[Test]
+		public async Task WindowLoadTimeIsNotChargedToTheTestBudget()
+		{
+			var systemWindow = new SystemWindow(300, 200);
+			systemWindow.Load += (s, e) => Thread.Sleep(1500);
+
+			var bodyRan = false;
+
+			await AutomationRunner.ShowWindowAndExecuteTests(
+				systemWindow,
+				(testRunner) =>
+				{
+					bodyRan = true;
+					testRunner.MarkTestComplete();
+					return Task.CompletedTask;
+				},
+				secondsToTestFailure: 1);
+
+			await Assert.That(bodyRan).IsTrue();
+		}
+
         [Test]
         public async Task AutomationRunnerTimeoutTest()
 		{

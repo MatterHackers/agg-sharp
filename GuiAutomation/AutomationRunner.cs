@@ -1690,6 +1690,10 @@ namespace MatterHackers.GuiAutomation
 		/// thread - that thread has to become the platform message loop, so this method cannot yield
 		/// before then. The first await is only reached once the loop has exited.
 		/// </remarks>
+		/// <param name="secondsToTestFailure">
+		/// The test body's budget. The clock starts when the window has loaded (its first draw), not when it
+		/// is shown; bring-up has its own budget of at least 30 seconds.
+		/// </param>
 		/// <param name="timeoutIsTheExpectedOutcome">
 		/// True for a test that is <em>about</em> the timeout - one asserting that a run which overstays is
 		/// cut off - rather than one that would only time out if something were wrong. The load watchdog is
@@ -1958,6 +1962,7 @@ namespace MatterHackers.GuiAutomation
 			// Cancelled the moment the window loads, which is what makes the load watchdog below free on a
 			// healthy run: it never wakes up at all.
 			var windowLoaded = new CancellationTokenSource();
+			var windowLoadedSignal = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
 			// On load, release the reset event
 			initialSystemWindow.Load += (s, e) =>
@@ -1965,6 +1970,7 @@ namespace MatterHackers.GuiAutomation
 				DebugLogger.LogMessage("AutomationRunner", $"LOAD EVENT FIRED - Setting resetEvent");
 				resetEvent.Set();
 				windowLoaded.Cancel();
+				windowLoadedSignal.TrySetResult();
 			};
 
 			// Puts a thread dump where the CI artifact upload will find it, and answers with the path. Never
@@ -2034,7 +2040,13 @@ namespace MatterHackers.GuiAutomation
 			}
 
 			int testTimeout = (int)(1000 * secondsToTestFailure);
-			Task delayTask = Task.Delay(testTimeout);
+			// The test's clock starts when its window has loaded, not when it is shown. Bring-up was measured at
+			// up to 14s on a loaded machine, almost all of it wgpu device creation, against a ~3s PopupAnchorTests
+			// body, so one clock for both failed 25s tests that needed 3s. Bring-up has its own budget (the
+			// resetEvent wait below): a machine property, not a test one, so at least 30s - room for GpuStartup's 15s
+			// device budget plus the rest of Show(). A window that never paints still fails, as a TimeoutException.
+			int bringUpTimeout = Math.Max(testTimeout, 30 * 1000);
+			Task delayTask = windowLoadedSignal.Task.ContinueWith(_ => Task.Delay(testTimeout), TaskScheduler.Default).Unwrap();
 			Task uiExceptionTask = uiThreadExceptionSignal.Task;
 
 			// Baseline for the timeout diagnostic below. GuiWidget.DrawCount is process-wide, so only the
@@ -2043,12 +2055,9 @@ namespace MatterHackers.GuiAutomation
 			// not what got drawn (look at its size and its platform window).
 			int drawCountAtShow = GuiWidget.DrawCount;
 
-			// Start two tasks, the timeout and the test method. Block in the test method until the first draw
-			// The load watchdog. It exists because the diagnostics in the timeout branch below cannot be
-			// trusted to run: that branch begins at the same instant delayTask completes, so the WhenAny it
-			// belongs to has already returned and the runner is on its way to teardown - measured, with a
-			// capture that started, wrote nothing and left no file. This fires two seconds earlier, on a task
-			// the runner awaits, so the window is still standing and nothing is racing it.
+			// The load watchdog: the one thread dump for a window that never paints. It fires two seconds before
+			// bringUpTimeout runs out, so the window is still standing while it captures; the reset-event
+			// branch below only logs, as a second dump two seconds later would show the same stuck frame.
 			//
 			// What it is for: a window whose Show() has not returned. Load is raised by the first draw, so a
 			// reset event that never fires means nothing painted, and the UI thread's own frames are the only
@@ -2056,7 +2065,7 @@ namespace MatterHackers.GuiAutomation
 			// the UI thread inside Show()/OnLoad are the shortlist to check first - the form's own handle
 			// creation, Screen.FromControl(this).WorkingArea in PushDisplayUsableSize, and the first touch of
 			// ApplicationIcon.Value - none of which is bounded the way device creation now is.
-			int loadWatchdogDelay = Math.Max(10, testTimeout - 2000);
+			int loadWatchdogDelay = Math.Max(10, bringUpTimeout - 2000);
 			var loadWatchdog = Task.Run(async () =>
 			{
 				if (timeoutIsTheExpectedOutcome)
@@ -2098,11 +2107,13 @@ namespace MatterHackers.GuiAutomation
 				}
 			});
 
+			// Race the test's clock, the test method (which first blocks until the window's first draw) and a UI
+			// thread exception; whichever finishes first ends the run.
 			var task = Task.WhenAny(delayTask, Task.Run(() =>
 			{
 				DebugLogger.LogMessage("AutomationRunner", "TASK STARTED - Waiting for resetEvent");
-				// Wait until the first system window draw before running the test method, up to the timeout
-				bool eventSet = resetEvent.WaitOne(testTimeout);
+				// Wait until the first system window draw before running the test method, up to bringUpTimeout
+				bool eventSet = resetEvent.WaitOne(bringUpTimeout);
 				DebugLogger.LogMessage("AutomationRunner", $"RESET EVENT RESULT - EventSet: {eventSet}");
 
 				if (eventSet)
@@ -2128,45 +2139,7 @@ namespace MatterHackers.GuiAutomation
 						+ $", {DescribeRenderStatus(initialSystemWindow)}"
 						+ $", {IdlePumpPolicy.DescribeDriver?.Invoke() ?? "idle pump: no host published a driver."}");
 
-					// The fields above say what state the window is in; they cannot say what the UI thread is
-					// doing, and that has been the missing half for several rounds of this. If Show() has not
-					// returned, this dump names the frame it is stuck in - which is the difference between
-					// guessing at the init path and reading it. The close watchdog has always dumped; this
-					// path never did, and a window that never opened is at least as worth a dump as one that
-					// never closed.
-					// Through DebugLogger rather than ThreadStackDump.WriteToConsole: this runs inside the
-					// test's own console capture, where a lone Console.WriteLine of a report this size was
-					// observed to vanish while the LogError above - same thread, same instant - came through.
-					// LogError is not [Conditional] and echoes to the console, so it is the sink with a track
-					// record of reaching a CI log. Capture can throw; this must not, because it is decorating
-					// a failure that has to be reported either way.
-					// Skipped for a run whose timeout is the expected outcome, same reasoning as the load
-					// watchdog above: there the timeout is a result being asserted, not evidence of anything.
-					if (!timeoutIsTheExpectedOutcome)
-					{
-						try
-						{
-							// Inline, like the close watchdog's capture, which is the one that demonstrably reaches a
-							// CI log. Written to a file rather than logged: a report this size did not survive the log
-							// from here under either reporter, and TestResults is what the workflow uploads on always().
-							//
-							// Known limit, measured and not yet solved: everything after this point races the test's own
-							// teardown. The outer Task.WhenAny returns the instant delayTask completes - the same instant
-							// this branch starts - so on a short run the process can exit before a capture finishes. The
-							// short log line above always lands; this may not. It costs nothing when it fails.
-							string dumpPath = WriteDumpBeside(
-								ThreadStackDump.Capture("the window's first draw never happened (reset event timed out)"),
-								"load-timeout");
-
-							DebugLogger.LogError("AutomationRunner", $"UI thread stacks written to {dumpPath}");
-					}
-					catch (Exception dumpException)
-					{
-						DebugLogger.LogError(
-							"AutomationRunner",
-							$"Thread stack dump failed: {dumpException.GetType().Name}: {dumpException.Message}");
-					}
-					}
+					// What the UI thread is doing is the load watchdog's dump, taken two seconds before this.
 
 					throw new TimeoutException("Reset event timed out");
 				}
