@@ -187,6 +187,37 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(page.SelectedDemo.Name).IsEqualTo("lion");
 		}
 
+		/// <summary>A phone-width page (360 design units) wraps the demo's description beneath its name and keeps the
+		/// software toggle on screen; a long description once ran the header off the right edge, toggle and all.</summary>
+		[Test]
+		[Arguments(360.0)]
+		[Arguments(1000.0)]
+		public async Task TheAggDemoHeaderFitsTheWindowAndWrapsItsDescription(double width)
+		{
+			AggSharpDemoApp app = LaidOutApp(width, 700, initialDemo: "image_filters");
+			AggDemosPage page = app.AggDemosPage;
+			await Assert.That(page.SelectedDemo.Name).IsEqualTo("image_filters");
+
+			GuiWidget name = page.Content.FindDescendant("AGG Demo Name");
+			GuiWidget toggle = page.Content.FindDescendant("AGG Demo Software Toggle");
+			var description = (WrappedTextWidget)page.Content.FindDescendant("AGG Demo Description");
+			RectangleDouble window = app.LocalBounds;
+			RectangleDouble toggleBounds = BoundsIn(app, toggle);
+			RectangleDouble descriptionBounds = BoundsIn(app, description);
+			RectangleDouble descriptionTextBounds = BoundsIn(app, description.TextWidget);
+
+			await Assert.That(toggleBounds.Left).IsGreaterThanOrEqualTo(window.Left).Because("the toggle should be on screen");
+			await Assert.That(toggleBounds.Right).IsLessThanOrEqualTo(window.Right).Because("the toggle should be on screen");
+			await Assert.That(toggleBounds.Bottom).IsGreaterThanOrEqualTo(BoundsIn(app, name).Bottom - 1).Because("the toggle should share the name's row");
+			await Assert.That(descriptionBounds.Right).IsLessThanOrEqualTo(window.Right).Because("the description should fit the window");
+			await Assert.That(descriptionTextBounds.Right).IsLessThanOrEqualTo(window.Right).Because("the description's text should wrap inside the window");
+			await Assert.That(descriptionBounds.Top).IsLessThanOrEqualTo(Math.Min(toggleBounds.Bottom, BoundsIn(app, name).Bottom)).Because("the description should sit beneath the title row");
+			if (width < 400)
+			{
+				await Assert.That(description.TextWidget.Text).Contains("\n").Because("a phone-width page should wrap image_filters' description");
+			}
+		}
+
 		[Test]
 		public async Task ResizingAcrossTheBreakpointDocksAndHidesTheAggBar()
 		{

@@ -94,6 +94,9 @@ namespace MatterHackers.Agg.UI
 
 		private int selectedIndex = -1;
 
+		/// <summary>The theme the rows' colours are bound to, followed while the list is open.</summary>
+		private readonly ThemeConfig menuTheme;
+
 		public DropDownList(string noSelectionString, Color textColor, Direction direction = Direction.Down, double maxHeight = 0, bool useLeftIcons = false, double pointSize = 12)
 			: base(direction, maxHeight)
 		{
@@ -123,15 +126,17 @@ namespace MatterHackers.Agg.UI
 
 			// The popup rows follow the process theme, as agg-gui's combo popup follows its visuals: the
 			// panel in the theme background, a hovered row in the theme's slight shade. Rows bake these in
-			// as they are added, so a caller that sets them afterwards (MatterCAD's MHDropDownList) wins.
+			// as they are added, so a caller that sets them afterwards (MatterCAD's MHDropDownList) wins. They
+			// are bound (ThemeBindings), and the rows to them, so they follow a theme changed in place.
 			var theme = ThemeConfig.Current;
+			this.menuTheme = theme;
 			this.MenuItemsBorderWidth = 1;
-			this.MenuItemsBackgroundColor = theme.BackgroundColor;
+			ThemeBindings.Bind(this, nameof(MenuItemsBackgroundColor), theme, t => t.BackgroundColor, () => MenuItemsBackgroundColor, c => MenuItemsBackgroundColor = c);
 			this.MenuItemsBorderColor = borderColor;
 			this.MenuItemsPadding = new BorderDouble(10, 3, 7, 3);
-			this.MenuItemsBackgroundHoverColor = theme.SlightShade;
-			this.MenuItemsTextHoverColor = theme.TextColor;
-			this.MenuItemsTextColor = theme.TextColor;
+			ThemeBindings.Bind(this, nameof(MenuItemsBackgroundHoverColor), theme, t => t.SlightShade, () => MenuItemsBackgroundHoverColor, c => MenuItemsBackgroundHoverColor = c);
+			ThemeBindings.Bind(this, nameof(MenuItemsTextHoverColor), theme, t => t.TextColor, () => MenuItemsTextHoverColor, c => MenuItemsTextHoverColor = c);
+			ThemeBindings.Bind(this, nameof(MenuItemsTextColor), theme, t => t.TextColor, () => MenuItemsTextColor, c => MenuItemsTextColor = c);
 			this.HoverColor = whiteSemiTransparent;
 			this.BackgroundColor = new Color(255, 255, 255, 0);
 			this.Border = 1;
@@ -327,18 +332,20 @@ namespace MatterHackers.Agg.UI
 				currentPadding = new BorderDouble(MenuItemsPadding.Left + 20 + 3, MenuItemsPadding.Bottom, MenuItemsPadding.Right, MenuItemsPadding.Top);
 			}
 
-			var menuItem = new MenuItem(new MenuItemColorStatesView(itemName, MenuItemsTextColor, typeFace)
+			var row = new MenuItemColorStatesView(itemName, MenuItemsTextColor, typeFace)
 			{
-				NormalBackgroundColor = MenuItemsBackgroundColor,
-				OverBackgroundColor = MenuItemsBackgroundHoverColor,
-
-				NormalTextColor = MenuItemsTextColor,
-				OverTextColor = MenuItemsTextHoverColor,
 				DisabledTextColor = Color.Gray,
-
 				PointSize = pointSize,
 				Padding = currentPadding,
-			}, itemValue);
+			};
+
+			// Bound to this list's colours, which are bound to the theme unless a caller set its own
+			ThemeBindings.Bind(row, nameof(row.NormalBackgroundColor), menuTheme, t => MenuItemsBackgroundColor, () => row.NormalBackgroundColor, c => { row.NormalBackgroundColor = c; row.ApplyColors(); });
+			ThemeBindings.Bind(row, nameof(row.OverBackgroundColor), menuTheme, t => MenuItemsBackgroundHoverColor, () => row.OverBackgroundColor, c => { row.OverBackgroundColor = c; row.ApplyColors(); });
+			ThemeBindings.Bind(row, nameof(row.NormalTextColor), menuTheme, t => MenuItemsTextColor, () => row.NormalTextColor, c => { row.NormalTextColor = c; row.ApplyColors(); });
+			ThemeBindings.Bind(row, nameof(row.OverTextColor), menuTheme, t => MenuItemsTextHoverColor, () => row.OverTextColor, c => { row.OverTextColor = c; row.ApplyColors(); });
+
+			var menuItem = new MenuItem(row, itemValue);
 			menuItem.Text = itemName;
 
 			// MenuItem is a long lived object that is added and removed to new containers whenever the
@@ -354,8 +361,8 @@ namespace MatterHackers.Agg.UI
 
 		public MenuItem AddItem(ImageBuffer leftImage, string itemName, string itemValue = null, int pointSize = 12)
 		{
-			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundColor, MenuItemsTextColor, pointSize);
-			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, MenuItemsBackgroundHoverColor, MenuItemsTextHoverColor, pointSize);
+			GuiWidget normalTextWithMargin = GetMenuContent(itemName, leftImage, t => MenuItemsBackgroundColor, t => MenuItemsTextColor, pointSize);
+			GuiWidget hoverTextWithMargin = GetMenuContent(itemName, leftImage, t => MenuItemsBackgroundHoverColor, t => MenuItemsTextHoverColor, pointSize);
 
 			var menuItem = new MenuItem(
 				new MenuItemStatesView(normalTextWithMargin, hoverTextWithMargin),
@@ -555,16 +562,44 @@ namespace MatterHackers.Agg.UI
 		{
 		}
 
-		protected virtual void OnMenuOpen()
+		protected override void DropListItems_Closed(object sender, EventArgs e)
 		{
+			menuTheme.Changed -= MenuTheme_Changed;
+			base.DropListItems_Closed(sender, e);
 		}
 
-		protected override void ShowMenu()
+		private void MenuTheme_Changed(object sender, EventArgs e)
 		{
-			menuVisible = true;
+			FollowTheme();
+			MarkSelectedRow();
+		}
 
-			// agg-gui marks the current choice with an accent row and contrasting text, apart from the hover
-			// highlight. The accent is read as the list opens, so it follows ThemeConfig.Current.
+		/// <summary>
+		/// Re-applies the theme bindings: this list's own colours first, then the rows and the open panel, which
+		/// are bound to those. Colours a caller set itself are left alone - see <see cref="ThemeBindings"/>.
+		/// </summary>
+		private void FollowTheme()
+		{
+			ThemeBindings.Refresh(this, menuTheme);
+
+			foreach (var item in MenuItems)
+			{
+				ThemeBindings.Refresh(item, menuTheme);
+			}
+
+			if (DropDownContainer != null)
+			{
+				ThemeBindings.Refresh(DropDownContainer, menuTheme);
+			}
+		}
+
+		/// <summary>
+		/// agg-gui marks the current choice with an accent row and contrasting text, apart from the hover
+		/// highlight. The accent is read as the list opens and as the theme changes, so it follows
+		/// ThemeConfig.Current.
+		/// </summary>
+		private void MarkSelectedRow()
+		{
 			Color accent = ThemeConfig.Current.PrimaryAccentColor;
 			for (int i = 0; i < MenuItems.Count; i++)
 			{
@@ -575,8 +610,26 @@ namespace MatterHackers.Agg.UI
 					row.Selected = i == selectedIndex;
 				}
 			}
+		}
+
+		protected virtual void OnMenuOpen()
+		{
+		}
+
+		protected override void ShowMenu()
+		{
+			menuVisible = true;
+
+			// Rows are built once and kept, so a theme changed since the last open is caught up here
+			FollowTheme();
+			MarkSelectedRow();
 
 			base.ShowMenu();
+			ThemeBindings.BindBackground(DropDownContainer, menuTheme, t => MenuItemsBackgroundColor);
+
+			// And one changed while the list is open (a theme picked from a list that stays open) shows at once
+			menuTheme.Changed -= MenuTheme_Changed;
+			menuTheme.Changed += MenuTheme_Changed;
 
 			if (selectedIndex >= MenuItems.Count - 1)
 			{
@@ -723,21 +776,21 @@ namespace MatterHackers.Agg.UI
 			}
 		}
 
-		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, Color color, Color textColor, int pointSize = 12)
+		private GuiWidget GetMenuContent(string itemName, ImageBuffer leftImage, Func<ThemeConfig, Color> color, Func<ThemeConfig, Color> textColor, int pointSize = 12)
 		{
 			var rowContainer = new FlowLayoutWidget()
 			{
 				HAnchor = HAnchor.Stretch | HAnchor.Fit,
 				VAnchor = VAnchor.Fit,
-				BackgroundColor = color
 			};
+			ThemeBindings.BindBackground(rowContainer, menuTheme, color);
 
 			var textWidget = new TextWidget(itemName, pointSize: pointSize)
 			{
 				Margin = MenuItemsPadding,
-				TextColor = textColor,
 				VAnchor = VAnchor.Center
 			};
+			ThemeBindings.BindTextColor(textWidget, menuTheme, textColor);
 
 			if (UseLeftIcons || leftImage != null)
 			{

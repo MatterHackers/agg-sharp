@@ -66,6 +66,22 @@ namespace MatterHackers.Agg.UI
             set => System.Threading.Volatile.Write(ref current, value);
         }
 
+        /// <summary>
+        /// Raised by <see cref="NotifyChanged"/> after the theme's colours were changed in place. Open popups
+        /// (menus, their sub menus and drop down lists) listen while they are up and restyle the colours they
+        /// copied from this theme when they were built, so a theme picked from an open menu shows on that menu
+        /// at once instead of only on the next one opened.
+        /// </summary>
+        public event EventHandler Changed;
+
+        /// <summary>
+        /// Tells whatever is showing this theme that its colours changed. Call it after changing them in place;
+        /// the properties themselves raise nothing, as a theme is normally built once (or deserialized) whole.
+        /// Replacing <see cref="Current"/> with a new object raises nothing either: what is already built keeps
+        /// the theme object it was built from.
+        /// </summary>
+        public void NotifyChanged() => this.Changed?.Invoke(this, EventArgs.Empty);
+
         public ImageBuffer RestoreNormal { get; private set; }
         public ImageBuffer RestoreHover { get; private set; }
 

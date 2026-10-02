@@ -38,8 +38,8 @@ namespace MatterHackers.Agg.UI
 	/// <remarks>
 	/// <para>The press is held back, because until the finger moves or lifts nobody knows what it is:</para>
 	/// <list type="bullet">
-	/// <item>A tap - lifted within <see cref="Threshold"/> of where it went down - is a press and release where it
-	/// lifts, so it clicks what is under the finger then.</item>
+	/// <item>A tap - lifted within <see cref="ThresholdPoints"/> of where it went down - is a press and release
+	/// where it lifts, so it clicks what is under the finger then.</item>
 	/// <item>A drag past the threshold pans the nearest <see cref="ScrollableWidget"/> under the press that can scroll
 	/// along the drag (agg-gui's middle-drag pan, which an inner view with nothing to scroll leaves to its parent).
 	/// No press is delivered, so a pan never presses or clicks anything.</item>
@@ -51,12 +51,16 @@ namespace MatterHackers.Agg.UI
 	/// </list>
 	/// <para>A press that was delivered is released as <see cref="MouseEventArgs.Cancelled"/>: a gesture that got past
 	/// being a tap never clicks, as in agg-gui. A cancel (the platform taking the pointer) never clicks either.</para>
+	/// <para>The tap tolerance departs from agg-gui on purpose: touch_emulation.rs's TOUCH_SCROLL_THRESHOLD is a fixed
+	/// 8 physical pixels, but on a phone at devicePixelRatio 3.5 that is about 2 CSS pixels, so ordinary finger
+	/// jitter turned taps into drags and buttons outside a scroll area did not click. Here it is 8 points - 8 times
+	/// the window's <see cref="SystemWindow.DisplayScale"/> in device pixels - which is still 8 on a 1x desktop.</para>
 	/// </remarks>
 	internal class TouchPressDeferral
 	{
-		/// <summary>How far, in device pixels, a finger travels before it stops being a possible tap - agg-gui's
-		/// TOUCH_SCROLL_THRESHOLD, also in physical pixels.</summary>
-		internal const double Threshold = 8;
+		/// <summary>How far, in points, a finger travels before it stops being a possible tap. See
+		/// <see cref="Threshold"/> for the device pixels that is.</summary>
+		internal const double ThresholdPoints = 8;
 
 		private enum Phase
 		{
@@ -67,7 +71,7 @@ namespace MatterHackers.Agg.UI
 			Ignored
 		}
 
-		private readonly GuiWidget root;
+		private readonly SystemWindow root;
 		private readonly Action<MouseEventArgs> deliverDown;
 		private readonly Action<MouseEventArgs> deliverMove;
 		private readonly Action<MouseEventArgs> deliverUp;
@@ -83,13 +87,22 @@ namespace MatterHackers.Agg.UI
 		/// <param name="deliverDown">Hands a press to the widget tree, bypassing this.</param>
 		/// <param name="deliverMove">Hands a move to the widget tree, bypassing this.</param>
 		/// <param name="deliverUp">Hands a release to the widget tree, bypassing this.</param>
-		public TouchPressDeferral(GuiWidget root, Action<MouseEventArgs> deliverDown, Action<MouseEventArgs> deliverMove, Action<MouseEventArgs> deliverUp)
+		public TouchPressDeferral(SystemWindow root, Action<MouseEventArgs> deliverDown, Action<MouseEventArgs> deliverMove, Action<MouseEventArgs> deliverUp)
 		{
 			this.root = root;
 			this.deliverDown = deliverDown;
 			this.deliverMove = deliverMove;
 			this.deliverUp = deliverUp;
 		}
+
+		/// <summary>
+		/// <see cref="ThresholdPoints"/> in device pixels, the space touch positions arrive in. Scaled by the window's
+		/// <see cref="SystemWindow.DisplayScale"/> - the monitor's device pixels per point, which the browser host sets
+		/// from devicePixelRatio (the same ratio BrowserPointer multiplies CSS positions by), the Windows host from
+		/// DPI / 96 and the mac host from backingScaleFactor. Not <see cref="GuiWidget.DeviceScale"/>: that also carries
+		/// the application's text-size multiplier, which should not change how still a finger has to be.
+		/// </summary>
+		private double Threshold => ThresholdPoints * root.DisplayScale;
 
 		public void Down(MouseEventArgs mouseEvent)
 		{

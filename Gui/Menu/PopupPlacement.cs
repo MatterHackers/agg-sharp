@@ -147,6 +147,10 @@ namespace MatterHackers.Agg.UI
 		{
 			var hookedParents = new HashSet<GuiWidget>();
 
+			// A menu row can change the theme and leave the menu open (View > Color), so the open popup restyles
+			// with it. A menu follows the theme it was built from, which is the one its colours were copied out of.
+			ThemeBindings.FollowWhileOpen(popup.Widget, popup.Widget is PopupMenu popupMenu ? popupMenu.Theme : theme);
+
 			List<IIgnoredPopupChild> ignoredWidgets = popup.Widget.Children.OfType<IIgnoredPopupChild>().ToList();
 
 			void Widget_Draw(object sender, DrawEventArgs e)
@@ -321,11 +325,18 @@ namespace MatterHackers.Agg.UI
 
 			screenPosition = anchorLeft + xPosition;
 
+			bool FitsAcross(Vector2 offset)
+			{
+				double left = anchorLeft.X + offset.X;
+				return left >= 0 && left + popup.Widget.Width <= systemWindow.Width;
+			}
+
 			// Constrain
-			if (screenPosition.X + popup.Widget.Width > systemWindow.Width
-				|| screenPosition.X < 0)
+			bool fitsEitherSide = true;
+			if (!FitsAcross(xPosition))
 			{
 				xPosition = PopupMenu.GetXAnchor(anchor.AltMate, popup.AltMate, popup.Widget, bounds);
+				fitsEitherSide = FitsAcross(xPosition);
 			}
 
 			popupPosition += xPosition;
@@ -376,7 +387,47 @@ namespace MatterHackers.Agg.UI
 				popupPosition.X = Math.Max(0, Math.Min(popupPosition.X, systemWindow.Width - popup.Widget.Width));
 			}
 
+			// A popup that fits on neither side of its anchor (a sub menu on a phone-width window) has just been
+			// clamped back across the anchor, and if it is level with it too it covers the row the user opened it
+			// from - only the row's arrow showed. Move it off the anchor vertically instead: below it, else above
+			// it. DIVERGES from agg-gui, whose stack_layout clamps a sub menu back over its parent row too.
+			if (!fitsEitherSide)
+			{
+				popupPosition.Y = ClearOfAnchorY(systemWindow, popup.Widget, drawnBounds, popupPosition);
+			}
+
 			popup.Widget.Position = popupPosition;
+		}
+
+		/// <summary>
+		/// The bottom for <paramref name="popup"/> that keeps it off <paramref name="anchorBounds"/>: unchanged
+		/// when it already clears the anchor, else hanging below the anchor, else standing on top of it, else
+		/// (no room on either side) unchanged.
+		/// </summary>
+		private static double ClearOfAnchorY(SystemWindow systemWindow, GuiWidget popup, RectangleDouble anchorBounds, Vector2 position)
+		{
+			bool overlapsAnchor = position.X < anchorBounds.Right
+				&& position.X + popup.Width > anchorBounds.Left
+				&& position.Y < anchorBounds.Top
+				&& position.Y + popup.Height > anchorBounds.Bottom;
+			if (!overlapsAnchor)
+			{
+				return position.Y;
+			}
+
+			double below = anchorBounds.Bottom - popup.Height;
+			if (below >= 0)
+			{
+				return below;
+			}
+
+			double above = anchorBounds.Top;
+			if (above + popup.Height <= systemWindow.Height)
+			{
+				return above;
+			}
+
+			return position.Y;
 		}
 	}
 }
