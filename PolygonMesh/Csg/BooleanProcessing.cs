@@ -327,28 +327,22 @@ namespace MatterHackers.PolygonMesh.Csg
 					{
 						if (processingMode == ProcessingModes.Dual_Contouring)
 						{
-							var subtract = new ImplicitNaryIntersection3d()
-							{
-								Children = implicitMeshs
-							};
+							var subtract = NaryDifference(implicitMeshs);
 							var bounds = subtract.Bounds();
+							var size = bounds.Max - bounds.Min;
 							var root = Octree.BuildOctree((pos) =>
 							{
 								var pos2 = new Vector3d(pos.X, pos.Y, pos.Z);
 								return subtract.Value(ref pos2);
 							}, new Vector3(bounds.Min.x, bounds.Min.y, bounds.Min.z),
-							new Vector3(bounds.Width, bounds.Depth, bounds.Height),
+							new Vector3(size.x, size.y, size.z),
 							(int)outputResolution,
 							.001);
 							implicitResult = Octree.GenerateMeshFromOctree(root);
 						}
 						else
 						{
-							implicitResult = GenerateMeshF(new ImplicitNaryDifference3d()
-							{
-								A = implicitMeshs.First(),
-								BSet = implicitMeshs.GetRange(0, implicitMeshs.Count - 1)
-							}, 1 << (int)outputResolution).ToMesh();
+							implicitResult = GenerateMeshF(NaryDifference(implicitMeshs), 1 << (int)outputResolution).ToMesh();
 						}
 					}
 					break;
@@ -361,12 +355,13 @@ namespace MatterHackers.PolygonMesh.Csg
 							Children = implicitMeshs
 						};
 						var bounds = intersect.Bounds();
+						var size = bounds.Max - bounds.Min;
 						var root = Octree.BuildOctree((pos) =>
 						{
 							var pos2 = new Vector3d(pos.X, pos.Y, pos.Z);
 							return intersect.Value(ref pos2);
 						}, new Vector3(bounds.Min.x, bounds.Min.y, bounds.Min.z),
-						new Vector3(bounds.Width, bounds.Depth, bounds.Height),
+						new Vector3(size.x, size.y, size.z),
 						(int)outputResolution,
 						.001);
 						implicitResult = Octree.GenerateMeshFromOctree(root);
@@ -382,6 +377,19 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 
 			return implicitResult;
+		}
+
+		/// <summary>
+		/// The first operand with every later one removed - the n-ary Subtract's meaning in every
+		/// processing mode.
+		/// </summary>
+		private static ImplicitNaryDifference3d NaryDifference(List<BoundedImplicitFunction3d> implicitMeshs)
+		{
+			return new ImplicitNaryDifference3d()
+			{
+				A = implicitMeshs[0],
+				BSet = implicitMeshs.GetRange(1, implicitMeshs.Count - 1)
+			};
 		}
 
 		/// <summary>
@@ -439,8 +447,9 @@ namespace MatterHackers.PolygonMesh.Csg
 					return meshA;
 				}
 
-				var implicitA = GetImplicitFunction(meshA, processingMode == ProcessingModes.Polygons, (int)inputResolution);
-				var implicitB = GetImplicitFunction(meshB, processingMode == ProcessingModes.Polygons, (int)inputResolution);
+				// The resolution enum holds the exponent (_64 = 6), so the cell count is 1 << it, as in DoArray.
+				var implicitA = GetImplicitFunction(meshA, processingMode == ProcessingModes.Polygons, 1 << (int)inputResolution);
+				var implicitB = GetImplicitFunction(meshB, processingMode == ProcessingModes.Polygons, 1 << (int)inputResolution);
 
 				DMesh3 GenerateMeshF(BoundedImplicitFunction3d root, int numCells)
 				{
