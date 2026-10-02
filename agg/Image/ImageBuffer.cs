@@ -105,6 +105,13 @@ namespace MatterHackers.Agg.Image
 
 		public int ChangedCount { get; private set; }
 
+		/// <summary>
+		/// LCD subpixel coverage of this image when it was drawn from vectors (an SVG icon), or null. A whole
+		/// image copy and the colour-only edits made through one keep it; anything that changes the geometry
+		/// produces a new image without it. See <see cref="LcdCoverage.LcdImageComposite"/> for when it is used.
+		/// </summary>
+		public LcdCoverage.LcdCoverageSidecar LcdCoverage { get; set; }
+
 		public void MarkImageChanged()
 		{
 			// mark this unchecked as we don't want to throw an exception if this rolls over.
@@ -145,6 +152,7 @@ namespace MatterHackers.Agg.Image
 			Util.memcpy(newBuffer, offset, buffer, offset, buffer.Length - offset);
 			SetBuffer(newBuffer, offset);
 			SetRecieveBlender(sourceImage.GetRecieveBlender());
+			LcdCoverage = sourceImage.LcdCoverage;
 		}
 
 		public ImageBuffer(int width, int height, int bitsPerPixel = 32)
@@ -217,6 +225,8 @@ namespace MatterHackers.Agg.Image
 
 		public void AttachBuffer(byte[] buffer, int bufferOffset, int width, int height, int strideInBytes, int bitDepth, int distanceInBytesBetweenPixelsInclusive)
 		{
+			// New geometry or new pixels: whatever coverage this carried no longer lines up with them.
+			LcdCoverage = null;
 			m_ByteBuffer = null;
 			SetDimmensionAndFormat(width, height, strideInBytes, bitDepth, distanceInBytesBetweenPixelsInclusive, false);
 			SetBuffer(buffer, bufferOffset);
@@ -224,6 +234,8 @@ namespace MatterHackers.Agg.Image
 
 		public void Attach(IImageByte sourceImage, IRecieveBlenderByte recieveBlender, int distanceBetweenPixelsInclusive, int bufferOffset, int bitsPerPixel)
 		{
+			// New geometry or new pixels: whatever coverage this carried no longer lines up with them.
+			LcdCoverage = null;
 			SetDimmensionAndFormat(sourceImage.Width, sourceImage.Height, sourceImage.StrideInBytes(), bitsPerPixel, distanceBetweenPixelsInclusive, false);
 			int offset = sourceImage.GetBufferOffsetXY(0, 0);
 			byte[] buffer = sourceImage.GetBuffer();
@@ -247,6 +259,8 @@ namespace MatterHackers.Agg.Image
 		/// <exception cref="Exception">x1 &gt; x2 or y1 &gt; y2.</exception>
 		public bool Attach(IImageByte sourceImage, int x1, int y1, int x2, int y2)
 		{
+			// New geometry or new pixels: whatever coverage this carried no longer lines up with them.
+			LcdCoverage = null;
 			m_ByteBuffer = null;
 			DettachBuffer();
 
@@ -294,6 +308,8 @@ namespace MatterHackers.Agg.Image
 
 		public void Allocate(int inWidth, int inHeight, int inScanWidthInBytes, int bitsPerPixel)
 		{
+			// New geometry or new pixels: whatever coverage this carried no longer lines up with them.
+			LcdCoverage = null;
 			if (bitsPerPixel != 32 && bitsPerPixel != 24 && bitsPerPixel != 16 && bitsPerPixel != 8)
 			{
 				throw new Exception("Unsupported bits per pixel.");
@@ -343,6 +359,9 @@ namespace MatterHackers.Agg.Image
 
 			// then set the blender to what we expect
 			SetRecieveBlender(sourceImage.GetRecieveBlender());
+
+			// The copy is the source's pixels, so it has the source's coverage - or none, rather than a stale one.
+			LcdCoverage = (sourceImage as ImageBuffer)?.LcdCoverage;
 		
 			// and finally let anything that cares know we change the image
 			MarkImageChanged();
@@ -423,6 +442,8 @@ namespace MatterHackers.Agg.Image
 
 		public void CopyFrom(IImageByte sourceImage, RectangleInt sourceImageRect, int destXOffset, int destYOffset)
 		{
+			// New geometry or new pixels: whatever coverage this carried no longer lines up with them.
+			LcdCoverage = null;
 			RectangleInt sourceImageBounds = sourceImage.GetBounds();
 			var clippedSourceImageRect = default(RectangleInt);
 			if (clippedSourceImageRect.IntersectRectangles(sourceImageRect, sourceImageBounds))
@@ -523,6 +544,8 @@ namespace MatterHackers.Agg.Image
 		/// </summary>
 		public void FlipY()
 		{
+			// New geometry or new pixels: whatever coverage this carried no longer lines up with them.
+			LcdCoverage = null;
 			byte[] buffer = GetBuffer();
 			for (int y = 0; y < Height / 2; y++)
 			{
@@ -542,6 +565,8 @@ namespace MatterHackers.Agg.Image
 		/// </summary>
 		public void FlipX()
 		{
+			// New geometry or new pixels: whatever coverage this carried no longer lines up with them.
+			LcdCoverage = null;
 			byte[] buffer = GetBuffer();
 
 			// Iterate each row, swapping pixels in x from outer to midpoint

@@ -395,6 +395,13 @@ namespace MatterHackers.Agg.LcdCoverage
 				throw new ArgumentNullException(nameof(imageSource));
 			}
 
+			// The one image that does carry coverage - an SVG icon with its LcdCoverageSidecar - merges it per
+			// channel when it lands 1:1 on whole pixels, rather than flattening it to one alpha as below.
+			if (LcdImageComposite.TryRender(this, imageSource, x, y, angleRadians, scaleX, scaleY))
+			{
+				return;
+			}
+
 			if (imageSource.BitDepth != 32
 				|| imageSource.Width <= 0
 				|| imageSource.Height <= 0)

@@ -204,6 +204,11 @@ namespace MatterHackers.Agg
 		/// before compositing and a partially scrolled-out widget must not paint over its siblings. Like <see cref="LcdComposite"/>, the placement is in raw buffer pixels and takes
 		/// no account of <see cref="ImageBuffer.OriginOffset"/>.
 		/// </para>
+		/// <para>
+		/// The premultiplied-or-opaque precondition is the caller's to keep. A widget backbuffer flush keeps it
+		/// by construction; an SVG icon's composite from <see cref="Render(IImageByte, double, double, double, double, double)"/>
+		/// checks it per draw (<see cref="TakesLcdImageOver"/>), since an icon can be drawn into any image.
+		/// </para>
 		/// </remarks>
 		public override void CompositeLcdBuffer(LcdBuffer buffer, int destX, int destY)
 		{
@@ -222,6 +227,55 @@ namespace MatterHackers.Agg
 
 			buffer.CompositeOnto(destination, destX, destY, 1.0, LcdBuffer.ToPixelClip(GetClippingRect()));
 			destImageByte.MarkImageChanged();
+		}
+
+		/// <summary>
+		/// Whether an image's LCD composite may land on <paramref name="footprint"/> of this destination: it must
+		/// hold premultiplied colour, or be opaque everywhere the image lands.
+		/// </summary>
+		/// <remarks>
+		/// This checks, for images, the precondition <see cref="CanCompositeLcdBuffer"/> leaves unchecked.
+		/// <see cref="LcdBuffer.CompositeOnto"/> is premultiplied source-over, so on a straight-alpha
+		/// destination with partial alpha - an ad-hoc <c>new ImageBuffer(w, h)</c> an icon is being drawn into -
+		/// it would bake premultiplied, fringed edges into pixels that are later blended as straight alpha. A
+		/// widget backbuffer is <see cref="BlenderPreMultBGRA"/> and passes on the blender. The software window
+		/// surface (<c>WindowsFormsDXBackedGui</c>) is straight <see cref="BlenderBGRA"/> but opaque once its
+		/// background is painted, where the two conventions coincide; a blender-only gate would cost it its LCD
+		/// icons, so a straight destination passes when every pixel under the image is fully opaque. That scan
+		/// is the image's own size, the size of the composite it guards.
+		/// </remarks>
+		private bool TakesLcdImageOver(RectangleInt footprint)
+		{
+			ImageBuffer destination = ResolveLcdDestination();
+			if (destination == null)
+			{
+				return false;
+			}
+
+			if (destination.GetRecieveBlender() is BlenderPreMultBGRA)
+			{
+				return true;
+			}
+
+			if (!footprint.IntersectWithRectangle(new RectangleInt(0, 0, destination.Width, destination.Height)))
+			{
+				// Entirely off the destination: nothing to composite, and the plain blit draws nothing either.
+				return false;
+			}
+
+			byte[] buffer = destination.GetBuffer();
+			for (int y = footprint.Bottom; y < footprint.Top; y++)
+			{
+				for (int x = footprint.Left; x < footprint.Right; x++)
+				{
+					if (buffer[destination.GetBufferOffsetXY(x, y) + ImageBuffer.OrderA] != 255)
+					{
+						return false;
+					}
+				}
+			}
+
+			return true;
 		}
 
 		/// <summary>
@@ -315,6 +369,16 @@ namespace MatterHackers.Agg
 			double inScaleY)
 		{
 			this.FlushDeferredDraws();
+
+			// An SVG icon landing 1:1 on whole pixels composites with its subpixel coverage, as text does. Only
+			// with no destination origin offset: the LCD composite places in raw buffer pixels and ignores it.
+			if (destImageByte.OriginOffset.X == 0
+				&& destImageByte.OriginOffset.Y == 0
+				&& LcdImageComposite.TryRender(this, source, destX, destY, angleRadians, inScaleX, inScaleY, this.TakesLcdImageOver))
+			{
+				return;
+			}
+
 			Affine graphicsTransform = GetTransform();
 
 			double scaleX = inScaleX;

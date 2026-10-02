@@ -757,6 +757,13 @@ namespace MatterHackers.RenderGl
         public override void Render(IImageByte source, double x, double y, double angleRadians, double scaleX, double scaleY)
         {
             this.FlushDeferredDraws();
+
+            // An SVG icon landing 1:1 on whole pixels composites with its subpixel coverage, as text does.
+            if (LcdImageComposite.TryRender(this, source, x, y, angleRadians, scaleX, scaleY))
+            {
+                return;
+            }
+
             var transform = GetTransform();
 
             var sourceAsImageBuffer = (ImageBuffer)source;
@@ -778,7 +785,7 @@ namespace MatterHackers.RenderGl
             // vertices): scale, turn, place, transform - the contract on Graphics2D.Render.
             if (!transform.is_identity())
             {
-                gl.MultMatrix(AffineToMatrix(transform).GetAsFloatArray());
+                gl.MultMatrix(GpuAffineMatrix.ToModelview(transform).GetAsFloatArray());
             }
 
             gl.Translate(x, y, 0);
@@ -789,19 +796,6 @@ namespace MatterHackers.RenderGl
             glPlugin.DrawToGL();
 
             PopOrthoProjection();
-        }
-
-        /// <summary>
-        /// The 2D affine as a modelview matrix: these stacks multiply row vectors, so x' = x*sx + y*shx + tx
-        /// puts sx and shx down column 0 and the translation in row 3.
-        /// </summary>
-        private static Matrix4X4 AffineToMatrix(Affine affine)
-        {
-            return new Matrix4X4(
-                affine.sx, affine.shy, 0, 0,
-                affine.shx, affine.sy, 0, 0,
-                0, 0, 1, 0,
-                affine.tx, affine.ty, 0, 1);
         }
 
         public override void Render(IImageFloat imageSource, double x, double y, double angleDegrees, double scaleX, double scaleY)

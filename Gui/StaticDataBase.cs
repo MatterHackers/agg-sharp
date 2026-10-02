@@ -33,6 +33,7 @@ using System.IO;
 using System.Linq;
 using MatterHackers.Agg.Image;
 using MatterHackers.Agg.ImageProcessing;
+using MatterHackers.Agg.LcdCoverage;
 using MatterHackers.Agg.Svg;
 using MatterHackers.Agg.UI;
 using MatterHackers.ImageProcessing;
@@ -327,12 +328,19 @@ namespace MatterHackers.Agg.Platform
 		/// Icons go through the full agg/Svg renderer rather than the older SvgTools.SvgParser, which ignores
 		/// fill/stroke opacity, caps, joins and attributes inherited from a group, and draws circles after paths
 		/// regardless of document order - app icons rely on all of those.
+		/// <para>
+		/// The image also carries the icon's LCD subpixel coverage (<see cref="ImageBuffer.LcdCoverage"/>), so
+		/// drawn 1:1 it gets the same subpixel edges text does rather than plain gray anti-aliasing.
+		/// </para>
 		/// </remarks>
 		private ImageBuffer RenderSvg(string assetPath, int width, int height)
 		{
 			using (var stream = OpenStream(assetPath))
 			{
-				return SvgRenderer.RenderToImage(SvgDocument.Parse(stream), width, height);
+				SvgDocument document = SvgDocument.Parse(stream);
+				ImageBuffer image = SvgRenderer.RenderToImage(document, width, height);
+				image.LcdCoverage = LcdCoverageSidecar.FromSvg(document, image);
+				return image;
 			}
 		}
 	}

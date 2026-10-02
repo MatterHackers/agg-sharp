@@ -141,6 +141,9 @@ namespace MatterHackers.ImageProcessing
 
             GrayToColor(destImage, sourceImage, color, destIntensity);
 
+            // Colour only, with every alpha kept, so an SVG icon's LCD coverage still lines up with the result.
+            destImage.LcdCoverage = sourceImage.LcdCoverage;
+
             return destImage;
         }
     }
