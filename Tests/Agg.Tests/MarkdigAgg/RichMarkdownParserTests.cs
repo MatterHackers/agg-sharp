@@ -32,6 +32,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Markdig.Agg.Editing;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Core;
 
 namespace Markdig.Agg.Tests
@@ -120,7 +121,7 @@ namespace Markdig.Agg.Tests
 			var document = RichMarkdownParser.Parse("---\ntitle: Notes\n---\n# Heading\n\nBody\n");
 			await Assert.That(document.Frontmatter).IsEqualTo("---\ntitle: Notes\n---\n");
 			await Assert.That(document.Blocks.Select(b => b.Kind).ToArray())
-				.IsEquivalentTo(new[] { RichBlockKind.Heading, RichBlockKind.Paragraph });
+				.IsEquivalentTo(new[] { RichBlockKind.Heading, RichBlockKind.Paragraph }, CollectionOrdering.Matching);
 			await Assert.That(document.Blocks[1].SeparatorBefore).IsEqualTo("\n\n");
 			await Assert.That(document.TrailingText).IsEqualTo("\n");
 		}
@@ -223,7 +224,7 @@ namespace Markdig.Agg.Tests
 				InlineAtomKind.Autolink,
 				InlineAtomKind.Autolink,
 				InlineAtomKind.HardBreak,
-			});
+			}, CollectionOrdering.Matching);
 			await Assert.That(atoms[0].RawMarkdown).IsEqualTo("![a](b.png)");
 			await Assert.That(atoms[1].RawMarkdown).IsEqualTo("<span>");
 			await Assert.That(atoms[2].RawMarkdown).IsEqualTo("</span>");

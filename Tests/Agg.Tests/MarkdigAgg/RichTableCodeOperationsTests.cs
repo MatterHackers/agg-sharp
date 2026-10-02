@@ -31,6 +31,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Markdig.Agg.Editing;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Core;
 
 namespace Markdig.Agg.Tests
@@ -315,25 +316,25 @@ namespace Markdig.Agg.Tests
 			var table = document.Blocks[0];
 			var caret = RichTableCodeOperations.InsertColumn(document, T(1, 1, 0), right: false).Caret;
 			await Assert.That(Grid(table)).IsEqualTo("h1,,h2/a,,b");
-			await Assert.That(table.ColumnAlignments).IsEquivalentTo(new RichAlignment?[] { null, null, RichAlignment.Center });
+			await Assert.That(table.ColumnAlignments).IsEquivalentTo(new RichAlignment?[] { null, null, RichAlignment.Center }, CollectionOrdering.Matching);
 			await Assert.That(caret).IsEqualTo(T(1, 1, 0));
 			await Assert.That(table.Dirty).IsTrue();
 
 			caret = RichTableCodeOperations.InsertColumn(document, T(0, 2, 0), right: true).Caret;
 			await Assert.That(Grid(table)).IsEqualTo("h1,,h2,/a,,b,");
-			await Assert.That(table.ColumnAlignments).IsEquivalentTo(new RichAlignment?[] { null, null, RichAlignment.Center, null });
+			await Assert.That(table.ColumnAlignments).IsEquivalentTo(new RichAlignment?[] { null, null, RichAlignment.Center, null }, CollectionOrdering.Matching);
 			await Assert.That(caret).IsEqualTo(T(0, 3, 0));
 
 			caret = RichTableCodeOperations.DeleteColumn(document, T(1, 0, 0)).Caret;
 			await Assert.That(Grid(table)).IsEqualTo(",h2,/,b,");
-			await Assert.That(table.ColumnAlignments).IsEquivalentTo(new RichAlignment?[] { null, RichAlignment.Center, null });
+			await Assert.That(table.ColumnAlignments).IsEquivalentTo(new RichAlignment?[] { null, RichAlignment.Center, null }, CollectionOrdering.Matching);
 			await Assert.That(caret).IsEqualTo(T(1, 0, 0));
 
 			caret = RichTableCodeOperations.DeleteColumn(document, T(1, 2, 0)).Caret;
 			await Assert.That(caret).IsEqualTo(T(1, 1, 1));
 			RichTableCodeOperations.DeleteColumn(document, T(0, 0, 0));
 			await Assert.That(Grid(table)).IsEqualTo("h2/b");
-			await Assert.That(table.ColumnAlignments).IsEquivalentTo(new RichAlignment?[] { RichAlignment.Center });
+			await Assert.That(table.ColumnAlignments).IsEquivalentTo(new RichAlignment?[] { RichAlignment.Center }, CollectionOrdering.Matching);
 
 			// The only column is refused.
 			var refused = RichTableCodeOperations.DeleteColumn(document, T(1, 0, 1));
@@ -349,7 +350,7 @@ namespace Markdig.Agg.Tests
 			var table = document.Blocks[1];
 			await Assert.That(table.Kind).IsEqualTo(RichBlockKind.Table);
 			await Assert.That(Grid(table)).IsEqualTo(",,/,,/,,");
-			await Assert.That(table.ColumnAlignments).IsEquivalentTo(new RichAlignment?[] { null, null, null });
+			await Assert.That(table.ColumnAlignments).IsEquivalentTo(new RichAlignment?[] { null, null, null }, CollectionOrdering.Matching);
 			await Assert.That(table.Dirty).IsTrue();
 			await Assert.That(selection.Caret).IsEqualTo(new DocPosition(1, 0, 0, 0));
 			await Assert.That(IsValid(document, selection.Caret)).IsTrue();

@@ -207,6 +207,52 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
+		/// The fade's layers must stay inside the outline band. Run to the field's outer edge, each of the
+		/// stacked layers re-covered the fill's anti-aliased edge pixels at a fractional top, so on a dark field
+		/// with a light outline (a hovered dropdown under MatterCAD's theme) the outline went dark over the fade.
+		/// The outline over the fade must look like the outline beside it.
+		/// </summary>
+		[Test]
+		public async Task ArrowFadeLeavesTheOutlineAloneOnADarkField()
+		{
+			var parent = new GuiWidget(400, 200) { BackgroundColor = Color.White };
+			var dropDown = new DropDownList("", Color.White)
+			{
+				BackgroundColor = new Color(4, 4, 4),
+				BorderColor = new Color(200, 200, 200),
+				MinimumSize = new Vector2(140, 0),
+				Border = new BorderDouble(1),
+			};
+			parent.AddChild(dropDown);
+			dropDown.OriginRelativeParent = new Vector2(10.5, 10.37);
+
+			var image = new ImageBuffer(400, 200);
+			var graphics = image.NewGraphics2D();
+			graphics.Clear(Color.White);
+			parent.OnDraw(graphics);
+
+			var field = dropDown.BoundsRelativeToParent;
+			int referenceX = (int)field.Left + 12;
+			int fadeLeft = (int)(field.Right - 70);
+			int fadeRight = (int)(field.Right - 12);
+			for (int y = (int)Math.Floor(field.Bottom); y <= (int)Math.Ceiling(field.Top); y++)
+			{
+				if (Math.Abs(y - field.Center.Y) < 8)
+				{
+					continue;
+				}
+
+				int reference = image.GetPixel(referenceX, y).Red0To255;
+				for (int x = fadeLeft; x <= fadeRight; x++)
+				{
+					int shown = image.GetPixel(x, y).Red0To255;
+					await Assert.That(Math.Abs(shown - reference)).IsLessThanOrEqualTo(8)
+						.Because($"the fade at ({x}, {y}) shows {shown} where the field beside it shows {reference}");
+				}
+			}
+		}
+
+		/// <summary>
 		/// A two text row plus one icon row list, opened, so everything has real bounds to measure.
 		/// </summary>
 		private static (SystemWindow systemWindow, DropDownList dropDown) OpenDropDown()

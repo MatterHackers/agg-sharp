@@ -451,17 +451,23 @@ namespace MatterHackers.Agg.UI
 		/// coverage at its left edge to (i + 1)/n. It used to be a pre-rendered gradient image, which a field placed
 		/// at a fractional position (a centred toolbar dropdown) resampled against the transparent black around
 		/// it, leaving a dark line along the image's top edge, just inside the field's top border.
+		/// <para>
+		/// The layers stay inside the outline band. Run to the field's outer edge, each one re-covered the fill's
+		/// anti-aliased edge pixels at a fractional position, so the outline went dark over the fade on a dark
+		/// field with a light outline; the text being hidden never reaches that band anyway.
+		/// </para>
 		/// </summary>
 		private void DrawArrowOccluder(Graphics2D graphics2D, Color background)
 		{
 			const int Layers = 8;
-			double radius = FieldInnerRadius;
+			var border = DeviceBorder;
+			double radius = RoundedFieldChrome.InnerRadius(FieldInnerRadius, border.Right);
 			double ramp = gradientDistance * DeviceScale;
-			double solidLeft = LocalBounds.Right - radius - (dropArrowBounds.Width - Border.Width);
+			double solidLeft = LocalBounds.Right - FieldInnerRadius - (dropArrowBounds.Width - Border.Width);
 			for (int i = 0; i < Layers; i++)
 			{
 				double left = solidLeft - ramp + ramp * i / Layers;
-				var layer = new RectangleDouble(left, LocalBounds.Bottom, LocalBounds.Right, LocalBounds.Top);
+				var layer = new RectangleDouble(left, LocalBounds.Bottom + border.Bottom, LocalBounds.Right - border.Right, LocalBounds.Top - border.Top);
 				// The ramp ends fully opaque whatever the fill's own alpha, as the gradient image it replaced did.
 				int alpha = (int)Math.Round(255 / (double)(Layers - i));
 				graphics2D.Render(new RoundedRect(layer, radius), background.WithAlpha(alpha));

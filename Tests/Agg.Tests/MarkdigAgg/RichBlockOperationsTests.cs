@@ -31,6 +31,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Markdig.Agg.Editing;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Core;
 
 namespace Markdig.Agg.Tests
@@ -130,7 +131,7 @@ namespace Markdig.Agg.Tests
 			var document = RichMarkdownParser.Parse("one\n\ntwo\n\nthree\n");
 			RichBlockOperations.SetBlockKind(document, Caret(1), 2);
 			await Assert.That(Shape(document)).IsEqualTo("p,h2,p");
-			await Assert.That(document.Blocks.Select(b => b.Dirty)).IsEquivalentTo(new[] { false, true, false });
+			await Assert.That(document.Blocks.Select(b => b.Dirty)).IsEquivalentTo(new[] { false, true, false }, CollectionOrdering.Matching);
 
 			RichBlockOperations.SetBlockKind(document, Blocks(document, 0, 2), 1);
 			await Assert.That(Shape(document)).IsEqualTo("h1,h1,h1");
@@ -382,7 +383,7 @@ namespace Markdig.Agg.Tests
 			RichBlockOperations.SetAlignment(document, Blocks(document, 0, 3), RichAlignment.Center);
 
 			await Assert.That(document.Blocks.Select(b => b.Alignment)).IsEquivalentTo(
-				new[] { RichAlignment.Center, RichAlignment.Center, RichAlignment.Left, RichAlignment.Left });
+				new[] { RichAlignment.Center, RichAlignment.Center, RichAlignment.Left, RichAlignment.Left }, CollectionOrdering.Matching);
 			await Assert.That(document.Blocks[2].Dirty || document.Blocks[3].Dirty).IsFalse();
 
 			var state = RichBlockOperations.BlockStateAt(document, Caret(2));

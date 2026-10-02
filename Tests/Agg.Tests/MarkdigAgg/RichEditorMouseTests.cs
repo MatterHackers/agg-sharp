@@ -35,6 +35,7 @@ using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Core;
 
 namespace Markdig.Agg.Tests
@@ -253,7 +254,7 @@ namespace Markdig.Agg.Tests
 
 			h.Held.Add(Keys.Control);
 			h.Click(onLink);
-			await Assert.That(urls).IsEquivalentTo(new[] { "https://example.test/x" });
+			await Assert.That(urls).IsEquivalentTo(new[] { "https://example.test/x" }, CollectionOrdering.Matching);
 
 			// Off the link, a modifier click is an ordinary click.
 			h.Click(h.At(0, new RichCaret(1)));
@@ -291,7 +292,7 @@ namespace Markdig.Agg.Tests
 
 			h.Held.Add(Keys.Control);
 			h.Click(onLink);
-			await Assert.That(urls).IsEquivalentTo(new[] { "https://raw.test/y" });
+			await Assert.That(urls).IsEquivalentTo(new[] { "https://raw.test/y" }, CollectionOrdering.Matching);
 		}
 
 		[Test]

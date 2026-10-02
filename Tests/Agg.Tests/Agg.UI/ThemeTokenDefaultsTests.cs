@@ -55,6 +55,12 @@ namespace MatterHackers.Agg.UI.Tests
 	/// lines were captured from the code before the refactor and must never change; the "default" lines pin
 	/// DefaultTheme's own look, which moved to the approved design on purpose (see DefaultThemeLookTests). Keyless <c>[NotInParallel]</c> because it
 	/// writes the process-wide <see cref="ThemeConfig.Current"/> and <see cref="GuiWidget.DeviceScale"/>.
+	/// <para>
+	/// The two "dropdown hover" lines are the one deliberate exception to "must never change": the arrow fade
+	/// became stacked vector layers inside the outline band, replacing a gradient image plus a rounded end fill
+	/// run to the outer edge, which darkened the outline's top-right corner (see DropDownListChromeTests). Only
+	/// those corner pixels moved; the rest of each field is unchanged.
+	/// </para>
 	/// </remarks>
 	[NotInParallel]
 	public class ThemeTokenDefaultsTests
@@ -72,7 +78,7 @@ namespace MatterHackers.Agg.UI.Tests
 			+ "new textedit hover 86x20.667 97573CF572D6EFAC\n"
 			+ "new textedit-empty hover 86x20.667 2C7B244FF6615DCC\n"
 			+ "new numberedit hover 78.004x20.667 163E4D4CCFE4C9FE\n"
-			+ "new dropdown hover 100x20.667 1660E80326218678\n"
+			+ "new dropdown hover 100x20.667 9751799AD6B70B22\n"
 			+ "new segmented hover 231x24 4CD5832C8A47DDEF\n"
 			+ "default button 70.403x36 21012BBD794DF517\n"
 			+ "default textedit 86x34 301914D2267AD22B\n"
@@ -84,7 +90,7 @@ namespace MatterHackers.Agg.UI.Tests
 			+ "default textedit hover 86x34 AC3E91868A2F3F3F\n"
 			+ "default textedit-empty hover 86x34 1DC54208371569B4\n"
 			+ "default numberedit hover 78.004x34 2C6D88503806649C\n"
-			+ "default dropdown hover 100x34 6FD6550B52C408C0\n"
+			+ "default dropdown hover 100x34 AB502DCCEAFDEAD5\n"
 			+ "default segmented hover 240x40 134203BEE48F8ED3";
 
 		[Test]
