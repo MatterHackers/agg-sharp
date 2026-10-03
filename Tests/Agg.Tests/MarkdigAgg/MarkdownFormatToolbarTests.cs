@@ -3,10 +3,14 @@ Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 */
 
+using System.Linq;
 using System.Threading.Tasks;
 using Markdig.Agg.Editing;
+using MatterHackers.Agg;
+using MatterHackers.Agg.Image;
 using MatterHackers.Agg.UI;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Core;
 
 namespace Markdig.Agg.Tests
@@ -330,6 +334,128 @@ namespace Markdig.Agg.Tests
 
 			toolbar.SizeList.SelectedIndex = 3;
 			await Assert.That(Markdown(commands)).IsEqualTo("#### Deep\n\n### Body\n");
+		}
+
+		/// <summary>
+		/// Related buttons share one outlined group, in reading order; the size list stands alone between the first
+		/// two. Each group is one item of the wrapping strip (its direct child row), which is what a host sizing its
+		/// window to the strip's ContentWidth relies on.
+		/// </summary>
+		[Test]
+		public async Task TheGroupsHoldTheirButtonsInOrder()
+		{
+			var (toolbar, _) = Make("Hello world\n", Caret(0, 1));
+			var expected = new[]
+			{
+				new[] { toolbar.BoldButton, toolbar.ItalicButton, toolbar.StrikeButton, toolbar.CodeButton },
+				new[] { toolbar.AlignLeftButton, toolbar.AlignCenterButton, toolbar.AlignRightButton },
+				new[] { toolbar.BulletListButton, toolbar.NumberedListButton, toolbar.QuoteButton },
+				new[] { toolbar.LinkButton, toolbar.CodeBlockButton, toolbar.TableButton },
+			};
+
+			await Assert.That(toolbar.Groups.Count).IsEqualTo(expected.Length);
+			for (int i = 0; i < expected.Length; i++)
+			{
+				await Assert.That(toolbar.Groups[i].Buttons.ToArray()).IsEquivalentTo(expected[i], CollectionOrdering.Matching);
+				await Assert.That(toolbar.Groups[i].Children.Count).IsEqualTo(expected[i].Length);
+			}
+
+			// Laid out wide enough for one row, so the strip has placed its items in a row.
+			var host = new GuiWidget(1200 * GuiWidget.DeviceScale, 200 * GuiWidget.DeviceScale);
+			host.AddChild(toolbar);
+			host.PerformLayout();
+			var strip = toolbar.Children.OfType<FlowLeftRightWithWrapping>().Single();
+			var stripItems = toolbar.Groups.Cast<GuiWidget>().Append(toolbar.SizeList);
+			foreach (var item in stripItems)
+			{
+				await Assert.That(item.Parent?.Parent).IsSameReferenceAs(strip);
+			}
+
+			await Assert.That(toolbar.SizeList.Parent).IsSameReferenceAs(toolbar.Groups[0].Parent);
+			await Assert.That(toolbar.SizeList.Parent.Children.IndexOf(toolbar.SizeList))
+				.IsEqualTo(toolbar.SizeList.Parent.Children.IndexOf(toolbar.Groups[0]) + 1);
+		}
+
+		/// <summary>
+		/// Every icon is drawn in an em box of one height on one baseline across the whole toolbar, so B, the list
+		/// glyphs and the wide link and code glyphs read as one row; the ink each button draws lands inside its box.
+		/// The groups and the size list share one centre line and one height. Checked at 1x and 2x.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		[Arguments(1.0)]
+		[Arguments(2.0)]
+		public async Task EveryIconIsDrawnAtOneSizeOnOneBaseline(double scale)
+		{
+			double savedDeviceScale = GuiWidget.DeviceScale;
+			try
+			{
+				GuiWidget.DeviceScale = scale;
+				var (toolbar, _) = Make("Hello world\n", Caret(0, 1));
+				var host = new GuiWidget(1200 * scale, 200 * scale);
+				host.AddChild(toolbar);
+				host.PerformLayout();
+
+				var buttons = toolbar.Groups.SelectMany(g => g.Buttons).ToList();
+				await Assert.That(buttons.Count).IsEqualTo(13);
+				var first = buttons[0].TransformToParentSpace(toolbar, buttons[0].IconEmBox);
+				// The box is the face's ascent to descent, which Font Awesome sets a little taller than its em.
+				await Assert.That(first.Height).IsEqualTo(MarkdownFormatButton.IconDesignSize * scale).Within(.1 * MarkdownFormatButton.IconDesignSize * scale);
+				foreach (var button in buttons)
+				{
+					var box = button.TransformToParentSpace(toolbar, button.IconEmBox);
+					await Assert.That(box.Height).IsEqualTo(first.Height).Because(button.ToolTipText);
+					await Assert.That(box.Bottom).IsEqualTo(first.Bottom).Because(button.ToolTipText);
+					await Assert.That(button.Width).IsEqualTo(MarkdownFormatButton.DesignWidth * scale);
+					await Assert.That(button.Height).IsEqualTo(MarkdownFormatToolbar.GroupHeight - 2 * scale);
+
+					var ink = InkBounds(button);
+					await Assert.That(ink.Width).IsGreaterThan(0).Because(button.ToolTipText + " draws its icon");
+					var local = button.IconEmBox;
+					await Assert.That(ink.Bottom >= local.Bottom - 1 && ink.Top <= local.Top + 1
+						&& ink.Left >= local.Left - 1 && ink.Right <= local.Right + 1).IsTrue()
+						.Because($"{button.ToolTipText}'s ink {ink} lands in its em box {local}");
+				}
+
+				var centre = toolbar.Groups[0].TransformToParentSpace(toolbar, toolbar.Groups[0].LocalBounds).Center.Y;
+				foreach (var group in toolbar.Groups)
+				{
+					var bounds = group.TransformToParentSpace(toolbar, group.LocalBounds);
+					await Assert.That(bounds.Center.Y).IsEqualTo(centre).Within(.5);
+					await Assert.That(bounds.Height).IsEqualTo(MarkdownFormatToolbar.GroupHeight);
+				}
+
+				var list = toolbar.SizeList;
+				var listOuter = list.TransformToParentSpace(toolbar, list.LocalBounds);
+				listOuter.Inflate(list.DeviceBorder);
+				await Assert.That(listOuter.Height).IsEqualTo(MarkdownFormatToolbar.GroupHeight);
+				await Assert.That(listOuter.Center.Y).IsEqualTo(centre).Within(.5);
+			}
+			finally
+			{
+				GuiWidget.DeviceScale = savedDeviceScale;
+			}
+		}
+
+		/// <summary>The bounds of every pixel <paramref name="button"/> draws, in its local pixels.</summary>
+		private static RectangleDouble InkBounds(GuiWidget button)
+		{
+			var image = new ImageBuffer((int)button.Width, (int)button.Height);
+			button.OnDraw(image.NewGraphics2D());
+			var ink = RectangleDouble.ZeroIntersection;
+			for (int y = 0; y < image.Height; y++)
+			{
+				for (int x = 0; x < image.Width; x++)
+				{
+					if (image.GetPixel(x, y).alpha > 0)
+					{
+						ink.ExpandToInclude(x, y);
+						ink.ExpandToInclude(x + 1, y + 1);
+					}
+				}
+			}
+
+			return ink;
 		}
 	}
 }

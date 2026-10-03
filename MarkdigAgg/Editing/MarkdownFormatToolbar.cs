@@ -28,6 +28,7 @@ either expressed or implied, of the FreeBSD Project.
 */
 
 using System;
+using System.Collections.Generic;
 using MatterHackers.Agg;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
@@ -49,7 +50,8 @@ namespace Markdig.Agg.Editing
 
 	/// <summary>
 	/// The rich markdown editor's formatting strip: character styles, text size, alignment, lists and quote,
-	/// then link, code block and table. It wraps onto more rows when narrow. Every button acts through
+	/// then link, code block and table, each run of related buttons an outlined <see cref="MarkdownFormatGroup"/> of
+	/// Font Awesome icons. It wraps onto more rows when narrow, a whole group at a time. Every button acts through
 	/// <see cref="IRichEditCommands"/> (see that interface for the seam) and shows the state at the caret or
 	/// selection: a style button is pressed when all the selection has the style and shaded when only part does,
 	/// the size list is blank over mixed sizes, and alignment is disabled in lists and quotes, where it is not
@@ -62,6 +64,8 @@ namespace Markdig.Agg.Editing
 		private readonly ThemeConfig theme;
 
 		private readonly FlowLeftRightWithWrapping strip;
+
+		private readonly List<MarkdownFormatGroup> groups = new List<MarkdownFormatGroup>();
 
 		private IRichEditCommands commands;
 
@@ -102,24 +106,29 @@ namespace Markdig.Agg.Editing
 				RowMargin = new BorderDouble(0),
 			});
 
-			BoldButton = AddStyleButton("B", MarkdownFormatGlyph.None, RichInlineStyle.Bold, "Bold (" + Shortcut("B") + ")", boldLabel: true);
-			ItalicButton = AddStyleButton("I", MarkdownFormatGlyph.None, RichInlineStyle.Italic, "Italic (" + Shortcut("I") + ")", italicLabel: true);
-			StrikeButton = AddStyleButton("S", MarkdownFormatGlyph.Strike, RichInlineStyle.Strike, "Strikethrough");
-			CodeButton = AddStyleButton("</>", MarkdownFormatGlyph.None, RichInlineStyle.Code, "Inline code");
-			AddSeparator();
+			var styles = AddGroup();
+			BoldButton = AddStyleButton(styles, IconFont.Bold, RichInlineStyle.Bold, "Bold (" + Shortcut("B") + ")");
+			ItalicButton = AddStyleButton(styles, IconFont.Italic, RichInlineStyle.Italic, "Italic (" + Shortcut("I") + ")");
+			StrikeButton = AddStyleButton(styles, IconFont.Strikethrough, RichInlineStyle.Strike, "Strikethrough");
+			CodeButton = AddStyleButton(styles, IconFont.Code, RichInlineStyle.Code, "Inline code");
 
-			// Blank when the selection spans different sizes, rather than claiming one of them.
+			// Blank when the selection spans different sizes, rather than claiming one of them. It stands on its own
+			// between the groups, as tall as they are (its border included) and spaced like them.
 			SizeList = new DropDownList("", theme.TextColor, pointSize: theme.DefaultFontSize)
 			{
 				ToolTipText = "Text size",
-				MinimumSize = new Vector2(100 * DeviceScale, 0),
 				VAnchor = VAnchor.Center,
-				Margin = new BorderDouble(2, 0),
+				Margin = new BorderDouble(MarkdownFormatGroup.DesignSpacing / 2, 0),
 			};
 			foreach (var name in SizeNames)
 			{
 				SizeList.AddItem(name);
 			}
+
+			// As tall as a group, border included. Set after the items: adding one raises the list's minimum to its
+			// size at the time, which starts out a few units taller than a group.
+			SizeList.MinimumSize = new Vector2(100 * DeviceScale, GroupHeight - SizeList.DeviceBorder.Height);
+			SizeList.Height = SizeList.MinimumSize.Y;
 
 			SizeList.SelectionChanged += (s, e) =>
 			{
@@ -134,24 +143,26 @@ namespace Markdig.Agg.Editing
 				}
 			};
 			strip.AddChild(SizeList);
-			AddSeparator();
 
-			AlignLeftButton = AddAlignButton(MarkdownFormatGlyph.AlignLeft, RichAlignment.Left, "Align left");
-			AlignCenterButton = AddAlignButton(MarkdownFormatGlyph.AlignCenter, RichAlignment.Center, "Center");
-			AlignRightButton = AddAlignButton(MarkdownFormatGlyph.AlignRight, RichAlignment.Right, "Align right");
-			AddSeparator();
+			var alignment = AddGroup();
+			AlignLeftButton = AddAlignButton(alignment, IconFont.AlignLeft, RichAlignment.Left, "Align left");
+			AlignCenterButton = AddAlignButton(alignment, IconFont.AlignCenter, RichAlignment.Center, "Center");
+			AlignRightButton = AddAlignButton(alignment, IconFont.AlignRight, RichAlignment.Right, "Align right");
 
-			BulletListButton = AddBlockButton(MarkdownFormatGlyph.BulletList, "Bulleted list", (d, s) => RichBlockOperations.ToggleList(d, s, ordered: false));
-			NumberedListButton = AddBlockButton(MarkdownFormatGlyph.NumberedList, "Numbered list", (d, s) => RichBlockOperations.ToggleList(d, s, ordered: true));
-			QuoteButton = AddBlockButton(MarkdownFormatGlyph.Quote, "Quote", RichBlockOperations.ToggleQuote);
-			AddSeparator();
+			var blocks = AddGroup();
+			BulletListButton = AddBlockButton(blocks, IconFont.ListUl, "Bulleted list", (d, s) => RichBlockOperations.ToggleList(d, s, ordered: false));
+			NumberedListButton = AddBlockButton(blocks, IconFont.ListOl, "Numbered list", (d, s) => RichBlockOperations.ToggleList(d, s, ordered: true));
+			QuoteButton = AddBlockButton(blocks, IconFont.QuoteLeft, "Quote", RichBlockOperations.ToggleQuote);
 
-			LinkButton = AddButton(new MarkdownFormatButton(theme, "Link", MarkdownFormatGlyph.None, "Add or edit a link"), ShowLinkEditor);
+			var inserts = AddGroup();
+			LinkButton = AddButton(inserts, new MarkdownFormatButton(theme, IconFont.Link, "Add or edit a link"), ShowLinkEditor);
 			CodeBlockButton = AddButton(
-				new MarkdownFormatButton(theme, "{ }", MarkdownFormatGlyph.None, "Code block"),
+				inserts,
+				new MarkdownFormatButton(theme, IconFont.FileCode, "Code block"),
 				() => Edit(RichCodeBlockOperations.ToggleCodeBlock));
 			TableButton = AddButton(
-				new MarkdownFormatButton(theme, "", MarkdownFormatGlyph.Table, "Insert a table"),
+				inserts,
+				new MarkdownFormatButton(theme, IconFont.Table, "Insert a table"),
 				() => Edit((d, s) => RichTableCodeOperations.InsertTable(d, s.End, bodyRows: 1, columns: 2)));
 
 			AddChild(LinkEditor = new MarkdownLinkEditor(theme)
@@ -171,6 +182,12 @@ namespace Markdig.Agg.Editing
 		/// toolbar shows its own <see cref="LinkEditor"/> row instead.
 		/// </summary>
 		public event EventHandler<MarkdownLinkRequestEventArgs> LinkRequested;
+
+		/// <summary>
+		/// The outlined button groups, left to right: character styles, alignment, lists and quote, then link, code
+		/// block and table. The size list stands alone between the first two.
+		/// </summary>
+		public IReadOnlyList<MarkdownFormatGroup> Groups => groups;
 
 		public MarkdownFormatButton BoldButton { get; }
 
@@ -501,44 +518,54 @@ namespace Markdig.Agg.Editing
 			Edit((d, s) => RichStyleOperations.ToggleStyle(d, s, style));
 		}
 
-		private MarkdownFormatButton AddStyleButton(string text, MarkdownFormatGlyph glyph, RichInlineStyle style, string toolTip, bool boldLabel = false, bool italicLabel = false)
+		/// <summary>
+		/// A group's outer height in device pixels: a button plus the outline above and below it, or the theme's
+		/// field height when that is taller. The size list is at least that field height whatever it is asked
+		/// for (DropDownList reads it from ThemeConfig.Current), so the groups grow to it to stay level with the
+		/// list; their icons stay the same size, centred in the taller buttons.
+		/// </summary>
+		public static double GroupHeight => Math.Max(MarkdownFormatButton.DesignHeight + 2, ThemeConfig.Current.FieldDesignHeight) * DeviceScale;
+
+		private MarkdownFormatButton AddStyleButton(MarkdownFormatGroup group, string icon, RichInlineStyle style, string toolTip)
 		{
-			return AddButton(new MarkdownFormatButton(theme, text, glyph, toolTip, boldLabel, italicLabel), () => ToggleStyle(style));
+			return AddButton(group, new MarkdownFormatButton(theme, icon, toolTip), () => ToggleStyle(style));
 		}
 
-		private MarkdownFormatButton AddAlignButton(MarkdownFormatGlyph glyph, RichAlignment alignment, string toolTip)
+		private MarkdownFormatButton AddAlignButton(MarkdownFormatGroup group, string icon, RichAlignment alignment, string toolTip)
 		{
-			return AddButton(new MarkdownFormatButton(theme, "", glyph, toolTip), () => Edit((d, s) =>
+			return AddButton(group, new MarkdownFormatButton(theme, icon, toolTip), () => Edit((d, s) =>
 			{
 				RichBlockOperations.SetAlignment(d, s, alignment);
 				return s;
 			}));
 		}
 
-		private MarkdownFormatButton AddBlockButton(MarkdownFormatGlyph glyph, string toolTip, Action<RichDocument, RichSelection> op)
+		private MarkdownFormatButton AddBlockButton(MarkdownFormatGroup group, string icon, string toolTip, Action<RichDocument, RichSelection> op)
 		{
-			return AddButton(new MarkdownFormatButton(theme, "", glyph, toolTip), () => Edit((d, s) =>
+			return AddButton(group, new MarkdownFormatButton(theme, icon, toolTip), () => Edit((d, s) =>
 			{
 				op(d, s);
 				return s;
 			}));
 		}
 
-		private MarkdownFormatButton AddButton(MarkdownFormatButton button, Action click)
+		private MarkdownFormatButton AddButton(MarkdownFormatGroup group, MarkdownFormatButton button, Action click)
 		{
 			button.Click += (s, e) => click();
-			strip.AddChild(button);
-			return button;
+			button.Height = GroupHeight - 2 * DeviceScale;
+			return group.AddButton(button);
 		}
 
-		private void AddSeparator()
+		/// <summary>
+		/// A new outlined group at the end of the strip. Each group is one item of the wrapping strip, so it wraps
+		/// whole and the strip's ContentWidth (which a host sizes its window by) counts it as one.
+		/// </summary>
+		private MarkdownFormatGroup AddGroup()
 		{
-			strip.AddChild(new GuiWidget(1, theme.ButtonHeight * .6)
-			{
-				BackgroundColor = theme.TextColor.WithAlpha(50),
-				VAnchor = VAnchor.Center,
-				Margin = new BorderDouble(4, 0),
-			});
+			var group = new MarkdownFormatGroup(theme);
+			groups.Add(group);
+			strip.AddChild(group);
+			return group;
 		}
 	}
 }
