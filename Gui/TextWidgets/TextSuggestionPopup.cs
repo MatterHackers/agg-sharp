@@ -24,6 +24,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 using System;
+using System.Collections.Generic;
 using MatterHackers.Agg.Font;
 using MatterHackers.Agg.VertexSource;
 using MatterHackers.VectorMath;
@@ -58,8 +59,12 @@ namespace MatterHackers.Agg.UI
 		{
 			this.controller = controller;
 			this.theme = theme;
+			this.Name = "Text Suggestions";
 			this.Visible = false;
 		}
+
+		/// <summary>The name a row showing <paramref name="label"/> answers to in a widget search: "[red] Suggestion".</summary>
+		public static string RowName(string label) => label + " Suggestion";
 
 		/// <summary>Never focusable, so a press on the list does not take the focus off the field.</summary>
 		public override bool CanFocus => false;
@@ -195,6 +200,40 @@ namespace MatterHackers.Agg.UI
 					return;
 				}
 			}
+		}
+
+		/// <summary>
+		/// Reports each row in view under its <see cref="RowName"/>, positioned at the row's center: the rows are
+		/// drawn rather than widgets, and this is how an automation test finds one to click.
+		/// </summary>
+		public override List<WidgetAndPosition> FindDescendants(IEnumerable<string> widgetNames, List<WidgetAndPosition> foundChildren, RectangleDouble touchingBounds, SearchType searchType, bool allowDisabledOrHidden = true)
+		{
+			if (this.Visible)
+			{
+				var suggestions = this.controller.Suggestions.Suggestions;
+				for (int i = this.firstVisibleRow; i < this.firstVisibleRow + this.VisibleRowCount; i++)
+				{
+					string rowName = RowName(suggestions[i].Label);
+					foreach (var widgetName in widgetNames)
+					{
+						if (searchType == SearchType.Exact ? rowName == widgetName : rowName.Contains(widgetName))
+						{
+							var row = this.RowBounds(i);
+
+							// IntersectWithRectangle clips the rectangle it is called on, so it gets a copy.
+							var touching = touchingBounds;
+							if (touching.IntersectWithRectangle(row))
+							{
+								foundChildren.Add(new WidgetAndPosition(this, new Point2D((int)row.Center.X, (int)row.Center.Y), rowName, suggestions[i]));
+							}
+
+							break;
+						}
+					}
+				}
+			}
+
+			return base.FindDescendants(widgetNames, foundChildren, touchingBounds, searchType, allowDisabledOrHidden);
 		}
 
 		public override void OnMouseWheel(MouseEventArgs mouseEvent)
