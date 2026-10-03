@@ -29,6 +29,7 @@ using System.Threading.Tasks;
 using MatterHackers.GuiAutomation;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
+using TUnit.Assertions.Enums;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
 
@@ -70,7 +71,7 @@ namespace MatterHackers.Agg.UI.Tests
 			harness.Type('a');
 			await Assert.That(harness.Controller.IsOpen).IsTrue();
 			await Assert.That(harness.Controller.Popup.Visible).IsTrue();
-			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "apple", "apricot", "avocado" });
+			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "apple", "apricot", "avocado" }, CollectionOrdering.Matching);
 			await Assert.That(harness.Controller.HighlightIndex).IsEqualTo(0);
 		}
 
@@ -176,11 +177,11 @@ namespace MatterHackers.Agg.UI.Tests
 			harness.Type('p');
 
 			await Assert.That(harness.Provider.Calls.Last()).IsEqualTo(("ap", 2));
-			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "apple", "apricot" });
+			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "apple", "apricot" }, CollectionOrdering.Matching);
 
 			harness.Key(Keys.Back);
 			await Assert.That(harness.Provider.Calls.Last()).IsEqualTo(("a", 1));
-			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "apple", "apricot", "avocado" });
+			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "apple", "apricot", "avocado" }, CollectionOrdering.Matching);
 
 			harness.Key(Keys.Home);
 			await Assert.That(harness.Controller.IsOpen).IsFalse().Because("no word before the caret, so nothing to offer");
@@ -207,7 +208,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(harness.Field.Text).IsEqualTo("obj.");
 			await Assert.That(harness.Provider.Calls.Last()).IsEqualTo(("obj.", 4));
 			await Assert.That(harness.Controller.IsOpen).IsTrue().Because("an insert ending in '.' shows the members next");
-			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "width", "height" });
+			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "width", "height" }, CollectionOrdering.Matching);
 		}
 
 		/// <summary>
@@ -223,7 +224,7 @@ namespace MatterHackers.Agg.UI.Tests
 			harness.Type('s');
 			harness.Type('e');
 			harness.Type('l');
-			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "self." });
+			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "self." }, CollectionOrdering.Matching);
 			harness.Key(Keys.Enter);
 			await Assert.That(harness.Field.Text).IsEqualTo("=self.");
 
@@ -394,7 +395,7 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(harness.Controller.IsOpen).IsFalse();
 			harness.Key(Keys.Control | Keys.Space);
 			await Assert.That(harness.Controller.IsOpen).IsTrue();
-			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "apple", "apricot", "avocado" });
+			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "apple", "apricot", "avocado" }, CollectionOrdering.Matching);
 			await Assert.That(harness.Field.Text).IsEqualTo("a");
 		}
 
