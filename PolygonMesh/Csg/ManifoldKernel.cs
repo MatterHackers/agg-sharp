@@ -540,6 +540,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			else
 			{
 				var progress = BatchProgressFor(reporter, amountPerOperation, ratioCompleted);
+				ManifoldKernelCallCounts.CountOperandCombine();
 				boolResult = BatchBoolean(batch.Manifolds, operationType, cancellationToken);
 				progress?.CompleteOperation(CombineCompletePhase);
 			}
@@ -592,6 +593,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				cancellationToken.ThrowIfCancellationRequested();
 				await (reporter?.YieldToUi() ?? default);
 
+				ManifoldKernelCallCounts.CountOperandCombine();
 				boolResult = BatchBoolean(batch.Manifolds, operationType, cancellationToken);
 
 				progress?.CompleteOperation(CombineCompletePhase);
@@ -959,6 +961,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			RustProgressReporter progress,
 			CancellationToken cancellationToken)
 		{
+			ManifoldKernelCallCounts.CountPairwiseStep();
 			if (!cancellationToken.CanBeCanceled)
 			{
 				return a.BooleanWithEngineRuleAndProgress(b, operationType, engine, windingRule, null, progress);
@@ -1352,6 +1355,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				//
 				// Cancellable, and on a heavily coloured model this union is most of the wall
 				// time - one boolean per colour group before the real operation even starts.
+				ManifoldKernelCallCounts.CountColorGroupUnion();
 				return BatchBoolean(subManifolds, RustOpType.Add, cancellationToken);
 			}
 			catch (OperationCanceledException)

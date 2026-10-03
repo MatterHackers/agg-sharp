@@ -56,6 +56,9 @@
          point directly, so a rejected input can be observed at the point it is rejected as
          well as through the public dispatcher. -->
     <InternalsVisibleTo Include="Agg.Tests" />
+    <!-- MatterCAD's tests read ManifoldKernelCallCounts to pin that a scene's booleans each reach
+         the kernel as one call. -->
+    <InternalsVisibleTo Include="MatterCADTests" />
   </ItemGroup>
 
   <ItemGroup>
