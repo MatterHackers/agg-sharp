@@ -437,6 +437,42 @@ namespace Markdig.Agg.Tests
 			}
 		}
 
+		/// <summary>
+		/// The groups do not sit tight under whatever is above the toolbar (a host's tab bar): there are at least
+		/// <see cref="MarkdownFormatToolbar.DesignEdgeSpace"/> units above them, and as many below, so the row is
+		/// balanced. Checked at 1x and 2x.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		[Arguments(1.0)]
+		[Arguments(2.0)]
+		public async Task TheGroupsHaveRoomAboveAndBelowThem(double scale)
+		{
+			double savedDeviceScale = GuiWidget.DeviceScale;
+			try
+			{
+				GuiWidget.DeviceScale = scale;
+				var (toolbar, _) = Make("Hello world\n", Caret(0, 1));
+				var host = new GuiWidget(1200 * scale, 200 * scale);
+				host.AddChild(toolbar);
+				host.PerformLayout();
+
+				await Assert.That(MarkdownFormatToolbar.DesignEdgeSpace).IsGreaterThanOrEqualTo(6);
+				foreach (var group in toolbar.Groups)
+				{
+					var bounds = group.TransformToParentSpace(toolbar, group.LocalBounds);
+					double above = toolbar.LocalBounds.Top - bounds.Top;
+					double below = bounds.Bottom - toolbar.LocalBounds.Bottom;
+					await Assert.That(above).IsGreaterThanOrEqualTo(6 * scale - .5).Because($"{above} px above the groups");
+					await Assert.That(below).IsEqualTo(above).Within(.5);
+				}
+			}
+			finally
+			{
+				GuiWidget.DeviceScale = savedDeviceScale;
+			}
+		}
+
 		/// <summary>The bounds of every pixel <paramref name="button"/> draws, in its local pixels.</summary>
 		private static RectangleDouble InkBounds(GuiWidget button)
 		{

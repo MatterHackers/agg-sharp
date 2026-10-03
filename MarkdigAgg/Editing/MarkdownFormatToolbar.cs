@@ -102,8 +102,9 @@ namespace Markdig.Agg.Editing
 			AddChild(strip = new FlowLeftRightWithWrapping
 			{
 				HAnchor = HAnchor.Stretch,
-				RowPadding = new BorderDouble(0, 1),
+				RowPadding = new BorderDouble(0, RowDesignPadding),
 				RowMargin = new BorderDouble(0),
+				Padding = new BorderDouble(0, DesignEdgeSpace - RowDesignPadding),
 			});
 
 			var styles = AddGroup();
@@ -525,6 +526,17 @@ namespace Markdig.Agg.Editing
 		/// list; their icons stay the same size, centred in the taller buttons.
 		/// </summary>
 		public static double GroupHeight => Math.Max(MarkdownFormatButton.DesignHeight + 2, ThemeConfig.Current.FieldDesignHeight) * DeviceScale;
+
+		/// <summary>
+		/// Design units of space above the groups and, matching it, below them, so the row does not sit tight
+		/// under a host's tab bar or rest on the text. One unit is each row's own padding (which also keeps
+		/// wrapped rows apart); the rest is the strip's vertical padding, which leaves the strip's width - and a
+		/// host sizing its window to ContentWidth plus the row and strip padding - unchanged.
+		/// </summary>
+		public const double DesignEdgeSpace = 6;
+
+		/// <summary>Design units of padding above and below each row of the wrapping strip.</summary>
+		private const double RowDesignPadding = 1;
 
 		private MarkdownFormatButton AddStyleButton(MarkdownFormatGroup group, string icon, RichInlineStyle style, string toolTip)
 		{
