@@ -172,6 +172,23 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			base.OnClosed(e);
 		}
 
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			base.OnDraw(graphics2D);
+			DrawBottomHairline(this, graphics2D, this.demoTheme.Palette.Separator);
+		}
+
+		/// <summary>One device pixel of <paramref name="color"/> along <paramref name="bar"/>'s bottom, on a whole
+		/// pixel row (the bar's origin can be fractional at a fractional DeviceScale), as the app's TabView draws
+		/// its strip's separator: the menu row is set off from the content under it in the tabs' own line colour.</summary>
+		internal static void DrawBottomHairline(GuiWidget bar, Graphics2D graphics2D, Color color)
+		{
+			RectangleDouble bounds = bar.LocalBounds;
+			double ty = graphics2D.GetTransform().ty;
+			double bottom = Math.Ceiling(bounds.Bottom + ty - 1e-6) - ty;
+			graphics2D.FillRectangle(bounds.Left, bottom, bounds.Right, bottom + 1, color);
+		}
+
 		private void DemoTheme_ThemeChanged(object sender, EventArgs e) => this.ApplyTheme();
 
 		/// <summary>The bar's titles copied the text colour when they were built, so they are recoloured here;

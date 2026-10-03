@@ -137,6 +137,12 @@ namespace MatterHackers.AggSharpDemo
 				.ToList();
 		}
 
+		public override void OnDraw(Graphics2D graphics2D)
+		{
+			base.OnDraw(graphics2D);
+			DemoTopBar.DrawBottomHairline(this, graphics2D, this.demoTheme.Palette.Separator);
+		}
+
 		private void DemoTheme_ThemeChanged(object sender, EventArgs e) => this.ApplyTheme();
 
 		/// <summary>As <see cref="DemoTopBar"/>: the titles copied the text colour when they were built.</summary>

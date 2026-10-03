@@ -61,16 +61,19 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			page.PerformLayout();
 
 			await Assert.That(shell.LocalBounds).IsEqualTo(new RectangleDouble(0, 0, 1000, 700));
-			await Assert.That(BoundsInShell(shell.TopBar, shell)).IsEqualTo(new RectangleDouble(0, 674, 1000, 700));
-			await Assert.That(BoundsInShell(shell.Sidebar, shell)).IsEqualTo(new RectangleDouble(780, 0, 1000, 674));
-			await Assert.That(BoundsInShell(shell.Canvas, shell)).IsEqualTo(new RectangleDouble(0, 0, 780, 674));
+			// The bar is TopBarHeight tall across the top; the sidebar and canvas share what is under it.
+			double bar = 700 - GuiDemoShell.TopBarHeight;
+			await Assert.That(BoundsInShell(shell.TopBar, shell)).IsEqualTo(new RectangleDouble(0, bar, 1000, 700));
+			await Assert.That(BoundsInShell(shell.Sidebar, shell)).IsEqualTo(new RectangleDouble(780, 0, 1000, bar));
+			await Assert.That(BoundsInShell(shell.Canvas, shell)).IsEqualTo(new RectangleDouble(0, 0, 780, bar));
 
 			// Resizing the page keeps the bar and sidebar fixed and gives the change to the canvas.
 			page.Size = new VectorMath.Vector2(1400, 900);
 			page.PerformLayout();
-			await Assert.That(BoundsInShell(shell.TopBar, shell)).IsEqualTo(new RectangleDouble(0, 874, 1400, 900));
-			await Assert.That(BoundsInShell(shell.Sidebar, shell)).IsEqualTo(new RectangleDouble(1180, 0, 1400, 874));
-			await Assert.That(BoundsInShell(shell.Canvas, shell)).IsEqualTo(new RectangleDouble(0, 0, 1180, 874));
+			bar = 900 - GuiDemoShell.TopBarHeight;
+			await Assert.That(BoundsInShell(shell.TopBar, shell)).IsEqualTo(new RectangleDouble(0, bar, 1400, 900));
+			await Assert.That(BoundsInShell(shell.Sidebar, shell)).IsEqualTo(new RectangleDouble(1180, 0, 1400, bar));
+			await Assert.That(BoundsInShell(shell.Canvas, shell)).IsEqualTo(new RectangleDouble(0, 0, 1180, bar));
 		}
 
 		// View > Window Snapping is agg-gui's global snap flag: it turns the canvas's window snapping on and off.

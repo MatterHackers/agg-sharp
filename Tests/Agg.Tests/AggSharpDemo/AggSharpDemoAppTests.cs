@@ -63,6 +63,10 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(BoundsIn(app, app.Tabs.Tabs[0]).Left).IsEqualTo(app.LocalBounds.Left + TabView.TabInset * GuiWidget.DeviceScale).Within(1);
 			await Assert.That(BoundsIn(app, app.Tabs.Tabs[1]).Right).IsLessThan(app.LocalBounds.Right - TabView.TabInset * GuiWidget.DeviceScale);
 
+			// The menu row starts right under the tab strip, where the selected tab joins it, and centres its menu bar
+			// in its TopBarHeight so the menu text has room under the tab's bottom edge.
+			await AssertMenuRowUnderTheTabs(app, app.AggDemosPage.TopBar, app.AggDemosPage.TopBar.MenuBar);
+
 			// The first visit opens on AGG drawing, as the site always has.
 			await Assert.That(app.SelectedTab).IsEqualTo(AggSharpDemoApp.AggDemosTab);
 			await Assert.That(app.AggDemosPage.SelectedDemo.Name).IsEqualTo(DemoRegistry.DefaultDemoName);
@@ -85,6 +89,7 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			GuiDemoShell shell = app.GuiDemoShell;
 			await Assert.That(shell).IsNotNull();
 			await AssertBarOnTheRight(app, shell.Sidebar, shell.Canvas);
+			await AssertMenuRowUnderTheTabs(app, shell.TopBar, shell.TopBar.MenuBar);
 
 			app.SelectTab(AggSharpDemoApp.AggDemosTab);
 			app.PerformLayout();
@@ -457,6 +462,22 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(barBounds.Top).IsLessThan(app.LocalBounds.Top).Because($"{bar.Name} should sit below the tab strip");
 			await Assert.That(contentBounds.Right).IsLessThanOrEqualTo(barBounds.Left).Because($"{content.Name} should be left of the bar");
 			await Assert.That(contentBounds.Left).IsEqualTo(app.LocalBounds.Left).Because($"{content.Name} should fill the area to the bar's left");
+		}
+
+		/// <summary>The page's menu row is <see cref="GuiDemoShell.TopBarHeight"/> tall, directly under the
+		/// <see cref="AggSharpDemoApp.TabBarHeight"/> tab strip, with its menu bar centred in it.</summary>
+		private static async Task AssertMenuRowUnderTheTabs(AggSharpDemoApp app, GuiWidget row, GuiWidget menuBar)
+		{
+			double scale = GuiWidget.DeviceScale;
+			RectangleDouble rowBounds = BoundsIn(app, row);
+			RectangleDouble menuBounds = BoundsIn(app, menuBar);
+			await Assert.That(rowBounds.Top).IsEqualTo(app.LocalBounds.Top - AggSharpDemoApp.TabBarHeight * scale).Within(1)
+				.Because($"{row.Name} should start where the tab strip ends");
+			await Assert.That(rowBounds.Height).IsEqualTo(GuiDemoShell.TopBarHeight * scale).Within(0.5);
+			double above = rowBounds.Top - menuBounds.Top;
+			double below = menuBounds.Bottom - rowBounds.Bottom;
+			await Assert.That(above).IsEqualTo(below).Within(1).Because($"{menuBar.Name} should be centred in its row");
+			await Assert.That(above).IsGreaterThanOrEqualTo(6 * scale).Because("the menu needs room under the tab's bottom edge");
 		}
 
 		/// <summary>Builds every demo window and leaves all but one of them kept by the host but not shown.</summary>

@@ -39,8 +39,11 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		// The sizes below are design units, as agg-gui's are logical pixels: each is multiplied by
 		// GuiWidget.DeviceScale where it becomes a Width or Height, so at 2x the frame grows with its text.
 
-		/// <summary>agg-gui's menu BAR_H (menu/geometry.rs); its MenuBarStrip takes the bar's natural height.</summary>
-		public const double TopBarHeight = 26;
+		/// <summary>The menu row under the app's folder tabs, its last device pixel a hairline (see
+		/// <see cref="DemoTopBar.DrawBottomHairline"/>). agg-gui's BAR_H (menu/geometry.rs) is 26, but under a folder
+		/// tab that crowds the menu text against the tab's bottom edge; 36 centres the 20-unit menu bar with 8 units
+		/// above and below it. Both pages' bars use it, so switching tabs never moves the content.</summary>
+		public const double TopBarHeight = 36;
 
 		/// <summary>agg-gui's SidebarPane PANEL_W (shell.rs).</summary>
 		public const double SidebarWidth = 220;
