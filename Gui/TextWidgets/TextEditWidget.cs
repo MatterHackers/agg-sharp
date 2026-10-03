@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2014, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -333,6 +333,25 @@ namespace MatterHackers.Agg.UI
 		public static void OnKeyboardCollapsed()
 		{
 			KeyboardCollapsed?.Invoke(null, null);
+		}
+
+		/// <summary>
+		/// Raised before the field, or anything inside it, sees a key. A handler that sets Handled takes the key
+		/// outright - the field does not edit, submit, tab away or scroll for it. This is how a
+		/// <see cref="TextSuggestionController"/> gets Up, Down, Enter, Tab and Escape while its list is open
+		/// without the keyboard focus ever leaving the field.
+		/// </summary>
+		public event KeyEventHandler PreviewKeyDown;
+
+		public override void OnKeyDown(KeyEventArgs keyEvent)
+		{
+			PreviewKeyDown?.Invoke(this, keyEvent);
+			if (keyEvent.Handled)
+			{
+				return;
+			}
+
+			base.OnKeyDown(keyEvent);
 		}
 
 		private void InternalTextEditWidget_EnterPressed(object sender, KeyEventArgs keyEvent)
