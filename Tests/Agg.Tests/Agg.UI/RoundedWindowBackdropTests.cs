@@ -141,17 +141,24 @@ namespace MatterHackers.Agg.UI.Tests
 		/// The body's corner is anti-aliased once - by the rounded clip the panel's buffer is composited
 		/// through - not by an anti-aliased fill and then the clip again, which faded the corner edge.
 		/// </summary>
+		/// <remarks>
+		/// Run on a premultiplied-labelled destination (a parent backbuffer or snapshot) and a straight one (the
+		/// software window surface). Both read the buffer straight, so a clip that faded the corner's colour as well
+		/// as its alpha shows a dark rim on either; the straight one shows it at once (corner red 203 for 241).
+		/// </remarks>
 		[Test]
-		public async Task TheBodyCornerIsAntiAliasedOnce()
+		[Arguments(true)]
+		[Arguments(false)]
+		public async Task TheBodyCornerIsAntiAliasedOnce(bool premultipliedDestination)
 		{
 			double wasScale = GuiWidget.DeviceScale;
 			try
 			{
 				GuiWidget.DeviceScale = 1;
 				var (root, window, _) = Build();
-				// A premultiplied destination, as a real window surface is: the buffer's clipped corner is
-				// premultiplied, and a straight-alpha test image would darken it by a second multiply.
-				var image = new ImageBuffer((int)root.Width, (int)root.Height, 32, new BlenderPreMultBGRA());
+				// The buffer's clipped corner is straight (only its alpha is cut) and the composite reads it
+				// straight-over, whichever blender labels the destination.
+				var image = new ImageBuffer((int)root.Width, (int)root.Height, 32, premultipliedDestination ? new BlenderPreMultBGRA() : new BlenderBGRA());
 				Graphics2D graphics2D = image.NewGraphics2D();
 				graphics2D.Clear(Color.White);
 				root.OnDraw(graphics2D);

@@ -69,10 +69,12 @@ namespace MatterHackers.Agg
 		}
 
 		/// <summary>
-		/// Scales every pixel of a premultiplied 32 bit <paramref name="image"/> by its <see cref="Coverage"/>
-		/// at the pixel's centre - all four channels, which is what fading a premultiplied pixel means.
+		/// Scales the alpha of every pixel of a 32 bit <paramref name="image"/> by its <see cref="Coverage"/> at the
+		/// pixel's centre. A widget backbuffer is labelled premultiplied but holds straight colour, which is how every
+		/// consumer reads it (see ImageGraphics2D.StraightOverDestination), so fading a pixel is fading its alpha;
+		/// scaling the colour too darkened the clipped corner once the composite read it straight.
 		/// </summary>
-		/// <param name="image">A premultiplied BGRA image (a widget backbuffer).</param>
+		/// <param name="image">A straight-colour BGRA image (a widget backbuffer).</param>
 		/// <param name="bounds">The clip rectangle, in the image's pixels.</param>
 		/// <param name="radius">Corner radius in the image's pixels.</param>
 		public static void Apply(ImageBuffer image, RectangleDouble bounds, double radius)
@@ -113,11 +115,8 @@ namespace MatterHackers.Agg
 					continue;
 				}
 
-				int offset = rowOffset + (x * 4);
-				for (int channel = 0; channel < 4; channel++)
-				{
-					buffer[offset + channel] = (byte)((buffer[offset + channel] * coverage) + 0.5);
-				}
+				int offset = rowOffset + (x * 4) + ImageBuffer.OrderA;
+				buffer[offset] = (byte)((buffer[offset] * coverage) + 0.5);
 			}
 		}
 	}

@@ -67,7 +67,9 @@ namespace MatterHackers.Agg.Image
 			rasterizer.add_path(new VertexSourceApplyTransform(path, graphics.GetTransform()));
 
 			IImageByte destination = graphics.DestImage;
-			new ScanlineRenderer().GenerateAndRender(rasterizer, new scanline_unpacked_8(), new ImageClippingProxy(destination), new span_allocator(), spanGenerator);
+			// Straight span colours blend straight-over into a backbuffer; see ImageGraphics2D.StraightOverDestination.
+			IImageByte target = graphics.StraightOverDestination() ?? new ImageClippingProxy(destination);
+			new ScanlineRenderer().GenerateAndRender(rasterizer, new scanline_unpacked_8(), target, new span_allocator(), spanGenerator);
 			destination.MarkImageChanged();
 		}
 

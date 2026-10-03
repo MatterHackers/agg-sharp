@@ -16,13 +16,14 @@
 namespace MatterHackers.Agg.Image
 {
 	/// <summary>
-	/// A 32 bit <see cref="ImageBuffer"/> whose solid blends use <see cref="BlenderStraightOverBGRA"/> whatever the
-	/// buffer's own blender is - without touching the buffer, so nothing else drawing into it is affected. Everything
-	/// else (copies, colour spans, reads) goes to the buffer as usual.
+	/// A 32 bit <see cref="ImageBuffer"/> whose solid and colour-span blends use <see cref="BlenderStraightOverBGRA"/>
+	/// whatever the buffer's own blender is - without touching the buffer, so nothing else drawing into it is affected.
+	/// Everything else (copies, reads) goes to the buffer as usual: a copy stores the colour as given, which is already
+	/// straight.
 	/// </summary>
 	/// <remarks>
-	/// ImageGraphics2D puts it under a clipping proxy for a solid fill onto a buffer labelled premultiplied that
-	/// holds straight colour (see ImageGraphics2D.StraightOverDestination). Offsets match ImageBuffer's own solid
+	/// ImageGraphics2D puts it under a clipping proxy for a solid fill, an image draw, a gradient or a pattern fill
+	/// onto a buffer labelled premultiplied that holds straight colour (see ImageGraphics2D.StraightOverDestination). Offsets match ImageBuffer's own solid
 	/// blends: raw buffer pixels, with no <see cref="ImageBuffer.OriginOffset"/> applied.
 	/// </remarks>
 	internal sealed class StraightOverImageProxy : ImageProxy
@@ -88,6 +89,32 @@ namespace MatterHackers.Agg.Image
 			for (int i = 0; i < len; i++)
 			{
 				Blend(offset, c, covers[coversIndex++]);
+				offset += buffer.StrideInBytes();
+			}
+		}
+
+		/// <summary>
+		/// A span generator's colours (image samples, gradient and pattern colours) are straight, as Graphics2D colours
+		/// are, so each blends straight-over at its own cover - what ImageBuffer.blend_color_hspan does with a straight
+		/// blender.
+		/// </summary>
+		public override void blend_color_hspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		{
+			int offset = buffer.GetBufferOffsetXY(x, y);
+			for (int i = 0; i < len; i++)
+			{
+				Blend(offset, colors[colorsIndex++], firstCoverForAll ? covers[coversIndex] : covers[coversIndex++]);
+				offset += BytesPerPixel;
+			}
+		}
+
+		/// <inheritdoc cref="blend_color_hspan(int, int, int, Color[], int, byte[], int, bool)"/>
+		public override void blend_color_vspan(int x, int y, int len, Color[] colors, int colorsIndex, byte[] covers, int coversIndex, bool firstCoverForAll)
+		{
+			int offset = buffer.GetBufferOffsetXY(x, y);
+			for (int i = 0; i < len; i++)
+			{
+				Blend(offset, colors[colorsIndex++], firstCoverForAll ? covers[coversIndex] : covers[coversIndex++]);
 				offset += buffer.StrideInBytes();
 			}
 		}

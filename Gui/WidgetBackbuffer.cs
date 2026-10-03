@@ -645,32 +645,21 @@ namespace MatterHackers.Agg.UI
 		/// capability today, so it is a type test.
 		/// </para>
 		/// <para>
-		/// True for the two that consume the source's alpha convention as premultiplied. A CPU blit hands raw
-		/// source pixels to the <i>destination</i> image's blender, so a destination carrying
-		/// <see cref="BlenderPreMultBGRA"/> - which every widget backbuffer and every image snapshot does -
-		/// wants premultiplied colour. <see cref="LcdBufferGraphics2D"/> instead reads the convention off the
-		/// <i>source's</i> blender and handles premultiplied bytes exactly, so it is served by the same
-		/// encoding and the stamp <see cref="BuildFadedBuffer"/> puts on the copy tells it so.
+		/// True only for <see cref="LcdBufferGraphics2D"/>, which reads the convention off the <i>source's</i>
+		/// blender and handles premultiplied bytes exactly, so the stamp <see cref="BuildFadedBuffer"/> puts on
+		/// the copy tells it so.
 		/// </para>
 		/// <para>
-		/// False is everything else, and in practice means the GL path, where the fade is applied by the
-		/// SrcAlpha / OneMinusSrcAlpha blend Graphics2DGpu.Render documents - which needs straight colour, or
-		/// it multiplies by the opacity a second time and the widget composites visibly dark.
+		/// False is everything else: the GL path, where the fade is applied by the SrcAlpha / OneMinusSrcAlpha
+		/// blend Graphics2DGpu.Render documents, and the CPU blit, which blends an image straight-over even onto a
+		/// destination labelled <see cref="BlenderPreMultBGRA"/> (ImageGraphics2D.StraightOverDestination). Both
+		/// need straight colour, or they multiply by the opacity a second time and the widget composites visibly
+		/// dark (FadedBackbufferCompositeTests; MatterCAD's BackbufferOpacityTests).
 		/// </para>
 		/// </remarks>
 		private static bool DestinationBlendsPremultiplied(Graphics2D graphics2D)
 		{
-			if (graphics2D is LcdBufferGraphics2D)
-			{
-				return true;
-			}
-
-			// Asked through IImageByte rather than by casting to ImageBuffer: a graphics' DestImage is normally
-			// an ImageClippingProxy wrapping the buffer, and it forwards the blender.
-			// Gated on ImageGraphics2D first because Graphics2DGpu.DestImage builds a CPU buffer on demand, and
-			// nothing here is worth allocating a screen sized image for.
-			return graphics2D is ImageGraphics2D imageGraphics
-				&& imageGraphics.DestImage?.GetRecieveBlender() is BlenderPreMultBGRA;
+			return graphics2D is LcdBufferGraphics2D;
 		}
 
 		/// <summary>
@@ -721,23 +710,23 @@ namespace MatterHackers.Agg.UI
 		/// </summary>
 		/// <remarks>
 		/// <para>
-		/// The premultiplied encoding scales colour and alpha together, which is exact for every pixel. The
-		/// straight encoding scales alpha alone, which is exact only for pixels that started out opaque - an
-		/// already translucent pixel would have to be un-premultiplied first, and it is not worth a divide per
-		/// pixel for content that is, in the case this exists for, an opaque window pane.
+		/// The straight encoding scales alpha alone. A widget backbuffer holds straight colour (see
+		/// ImageGraphics2D.StraightOverDestination), so that is exact for every pixel, translucent ones included.
+		/// The premultiplied encoding, for the one destination that reads the source as premultiplied
+		/// (<see cref="LcdBufferGraphics2D"/>, see <see cref="DestinationBlendsPremultiplied"/>), scales colour
+		/// and alpha together, which is exact only for pixels that started out opaque - straight colour scaled is
+		/// premultiplied colour only when its alpha was 1.
 		/// </para>
 		/// <para>
 		/// <b>The copy is stamped <see cref="BlenderPreMultBGRA"/> either way, including when its pixels are
-		/// straight</b>, and that is deliberate. The stamp is not a description anybody reads in the straight
-		/// case - the destination that asked for straight colour is the GL one, which applies the fade in its
-		/// own SrcAlpha blend - but the uploader on the way there does read it: RenderGl's
-		/// <c>ImageTexturePlugin.CreateGlDataForImage</c> copies the image into a fresh (possibly power of two)
-		/// buffer carrying the <i>source's</i> blender before handing the bytes to the driver. Stamped
-		/// premultiplied that copy is an identity pass over a transparent destination and the pixels reach the
-		/// texture as written; stamped <see cref="BlenderBGRA"/> the same copy multiplies colour by alpha, and
-		/// the GL blend then multiplies by it again - the whole widget lands visibly dark. A CPU destination
-		/// that wanted straight colour is unaffected either way, because it blends through its own blender and
-		/// never looks at the source's.
+		/// straight</b>, and that is deliberate. It is the label every widget backbuffer carries, and both straight
+		/// readers take it that way: the CPU blit, which blends straight-over onto a premultiplied-labelled
+		/// destination, and the GL path, which applies the fade in its own SrcAlpha blend. The GL uploader does read
+		/// the stamp: RenderGl's <c>ImageTexturePlugin.CreateGlDataForImage</c> copies the image into a fresh
+		/// (possibly power of two) buffer carrying the <i>source's</i> blender before handing the bytes to the
+		/// driver. Stamped premultiplied that copy is an identity pass over a transparent destination and the pixels
+		/// reach the texture as written; stamped <see cref="BlenderBGRA"/> the same copy multiplies colour by alpha,
+		/// and the GL blend then multiplies by it again - the whole widget lands visibly dark.
 		/// </para>
 		/// </remarks>
 		private void BuildFadedBuffer(double opacity, bool premultiplied)

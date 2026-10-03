@@ -103,7 +103,7 @@ namespace MatterHackers.Agg
 		}
 
 		/// <summary>
-		/// The destination to fill a solid colour into when it is a 32 bit <see cref="ImageBuffer"/> labelled
+		/// The destination to fill a solid colour, an image, a gradient or a pattern into when it is a 32 bit <see cref="ImageBuffer"/> labelled
 		/// <see cref="BlenderPreMultBGRA"/>: a clipping proxy with the destination's clip box over a
 		/// <see cref="StraightOverImageProxy"/> on that buffer. Null - fill through the destination as is - otherwise.
 		/// </summary>
@@ -111,7 +111,8 @@ namespace MatterHackers.Agg
 		/// <b>The rule: a widget backbuffer (and any image labelled premultiplied that the app draws into) holds
 		/// straight colour.</b> Every consumer reads it that way - the GPU image blit (see the note in
 		/// Graphics2DGpu.Render(IImageByte, ...)), the CPU blit onto a straight surface, and MatterCAD's icons - so
-		/// a solid fill blends into it with straight source-over (<see cref="BlenderStraightOverBGRA"/>, C++
+		/// a solid fill - and an image draw, gradient or pattern fill, whose span colours are straight too - blends into
+		/// it with straight source-over (<see cref="BlenderStraightOverBGRA"/>, C++
 		/// <c>blender_rgba_plain</c>): (c, a) over a transparent pixel, the straight lerp over an opaque one.
 		/// Graphics2D colours are straight. Handing one to the label's premultiplied blender added the whole colour
 		/// on top of the background, so a translucent fill over opaque content came out too light - a faint one
@@ -126,7 +127,7 @@ namespace MatterHackers.Agg
 		/// into one; any other proxy (an <see cref="ImageMultiClipProxy"/>) keeps the labelled blend rather than
 		/// lose its clipping.
 		/// </remarks>
-		private IImageByte StraightOverDestination()
+		internal IImageByte StraightOverDestination()
 		{
 			int left = int.MinValue, bottom = int.MinValue, right = int.MaxValue, top = int.MaxValue;
 			IImageByte image = destImageByte;
@@ -428,7 +429,8 @@ namespace MatterHackers.Agg
 			var transformedRect = new VertexSourceApplyTransform(drawImageRectPath, destRectTransform);
 			Rasterizer.add_path(transformedRect);
 			{
-				var destImageWithClipping = new ImageClippingProxy(destImageByte);
+				// See StraightOverDestination: an image's pixels are straight, so a backbuffer takes them straight-over.
+				IImageByte destImageWithClipping = StraightOverDestination() ?? new ImageClippingProxy(destImageByte);
 				scanlineRenderer.GenerateAndRender(Rasterizer, drawImageScanlineCache, destImageWithClipping, destImageSpanAllocatorCache, spanImageFilter);
 			}
 		}
