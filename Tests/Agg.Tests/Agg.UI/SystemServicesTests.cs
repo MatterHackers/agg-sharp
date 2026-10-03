@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.UI.Tests
 				UrlLauncher.Provider = opened.Add;
 				await Assert.That(UrlLauncher.Open("https://example.com")).IsTrue();
 				await Assert.That(UrlLauncher.Open(string.Empty)).IsFalse();
-				await Assert.That(string.Join("|", opened)).IsEqualTo("https://example.com");
+				await Assert.That(string.Join("|", opened)).IsEqualTo("https://example.com/");
 			}
 			finally
 			{
@@ -84,19 +84,23 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		[Test]
-		[Arguments("http://example.com", true)]
-		[Arguments("https://example.com/a?b=c", true)]
-		[Arguments("  https://example.com/padded \n", true)]
-		[Arguments("mailto:someone@example.com", true)]
-		[Arguments("file:///etc/passwd", false)]
-		[Arguments("/Applications/Calculator.app", false)]
-		[Arguments("C:\\Windows\\System32\\calc.exe", false)]
-		[Arguments("calc.exe", false)]
-		[Arguments("vscode://open?file=x", false)]
-		[Arguments("javascript:alert(1)", false)]
-		[Arguments("", false)]
-		[Arguments(null, false)]
-		public async Task OnlyWebAndMailAddressesReachTheProvider(string url, bool expected)
+		[Arguments("http://example.com", "http://example.com/")]
+		[Arguments("https://example.com/a?b=c", "https://example.com/a?b=c")]
+		[Arguments("  https://example.com/padded \n", "https://example.com/padded")]
+		[Arguments("https://example.com/already%20escaped", "https://example.com/already%20escaped")]
+		[Arguments("mailto:someone@example.com", "mailto:someone@example.com")]
+		// ShellExecute puts the url on the browser's command line: a raw quote or space would end it there and
+		// let the rest of the link add browser switches, so the provider only ever sees the escaped form.
+		[Arguments("http://x/\" --gpu-launcher=calc \"", "http://x/%22%20--gpu-launcher=calc%20%22")]
+		[Arguments("file:///etc/passwd", null)]
+		[Arguments("/Applications/Calculator.app", null)]
+		[Arguments("C:\\Windows\\System32\\calc.exe", null)]
+		[Arguments("calc.exe", null)]
+		[Arguments("vscode://open?file=x", null)]
+		[Arguments("javascript:alert(1)", null)]
+		[Arguments("", null)]
+		[Arguments(null, null)]
+		public async Task OnlyWebAndMailAddressesReachTheProvider(string url, string expectedOpened)
 		{
 			var saved = UrlLauncher.Provider;
 			try
@@ -104,9 +108,9 @@ namespace MatterHackers.Agg.UI.Tests
 				string opened = null;
 				UrlLauncher.Provider = u => opened = u;
 
-				await Assert.That(UrlLauncher.Open(url)).IsEqualTo(expected);
-				// The provider gets the trimmed address, never raw link text
-				await Assert.That(opened).IsEqualTo(expected ? url.Trim() : null);
+				await Assert.That(UrlLauncher.Open(url)).IsEqualTo(expectedOpened != null);
+				// The provider gets the escaped address, never raw link text
+				await Assert.That(opened).IsEqualTo(expectedOpened);
 			}
 			finally
 			{

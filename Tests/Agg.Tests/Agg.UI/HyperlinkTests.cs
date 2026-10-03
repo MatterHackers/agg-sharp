@@ -94,7 +94,7 @@ namespace MatterHackers.Agg.UI.Tests
 				link.Activate();
 
 				await Assert.That(activations).IsEqualTo(1);
-				await Assert.That(string.Join("|", launched)).IsEqualTo("https://example.com");
+				await Assert.That(string.Join("|", launched)).IsEqualTo("https://example.com/");
 
 				// With no platform launcher either (headless), activation still just raises Activated
 				UrlLauncher.Provider = null;

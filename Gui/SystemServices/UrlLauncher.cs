@@ -56,9 +56,10 @@ namespace MatterHackers.Agg.UI
 				return false;
 			}
 
-			// The trimmed original: link text often carries stray whitespace, and AbsoluteUri would re-escape
-			// an address its author had already written out.
-			provider(uri.OriginalString.Trim());
+			// Escaped, never the link text as written: the shell provider puts the url on the browser's command
+			// line, where a raw quote or space would end it and let the rest add browser switches. AbsoluteUri
+			// keeps escapes the author already wrote (%20 stays %20).
+			provider(uri.AbsoluteUri);
 			return true;
 		}
 
