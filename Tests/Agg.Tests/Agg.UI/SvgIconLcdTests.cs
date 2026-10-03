@@ -405,6 +405,129 @@ namespace MatterHackers.Agg.UI.Tests
 			});
 		}
 
+		/// <summary>
+		/// A widget backbuffer is labelled premultiplied but holds straight colour, and every consumer reads it
+		/// straight (ImageGraphics2D.StraightOverDestination). An LCD icon drawn into its transparent or
+		/// half-transparent pixels and then composited onto an opaque surface must look like the icon drawn
+		/// straight onto that surface. The per-channel composite is premultiplied source-over, so it stored
+		/// premultiplied colour (a white icon's edge at alpha a as grey a) that the straight read darkened again.
+		/// </summary>
+		/// <remarks>
+		/// The expected image is the plain blit straight onto the surface, so the buffered result has to have
+		/// left the LCD path: a single alpha per pixel cannot carry three channel coverages, which is why a
+		/// non-opaque destination takes the plain blit. The tolerance of 2 per channel is two byte roundings
+		/// (into the buffer, then onto the surface); measured worst 1 with the fix (both this test and the LCD
+		/// buffer one below), against 64 to 92 when the per-channel composite wrote into these pixels.
+		/// </remarks>
+		[Test]
+		[NotInParallel]
+		[Arguments(0)]
+		[Arguments(128)]
+		public async Task AnLcdIconInAStraightBackbufferCompositesLikeADirectDraw(int backbufferAlpha)
+		{
+			await WithLcd(true, async () =>
+			{
+				ImageBuffer icon = LoadSvgIcon(Corner, invert: true);
+				var under = new Color(40, 60, 200, backbufferAlpha);
+
+				var backbuffer = new ImageBuffer(CanvasSize, CanvasSize, 32, new BlenderPreMultBGRA());
+				Graphics2D backbufferGraphics = backbuffer.NewGraphics2D();
+				backbufferGraphics.Clear(under);
+				backbufferGraphics.Render(icon, 8, 8);
+				ImageBuffer buffered = Opaque(Surface);
+				buffered.NewGraphics2D().Render(backbuffer, 0, 0);
+
+				ImageBuffer direct = Opaque(Surface);
+				Graphics2D directGraphics = direct.NewGraphics2D();
+				directGraphics.FillRectangle(0, 0, CanvasSize, CanvasSize, under);
+				directGraphics.Render(WithoutCoverage(icon), 8, 8);
+
+				await Assert.That(PaintedBounds(direct, direct.GetPixel(0, 0)).Width).IsGreaterThan(0)
+					.Because("the icon has to have painted, or the comparison proves nothing");
+				int worst = WorstChannelDifference(buffered, direct);
+				await Assert.That(worst).IsLessThanOrEqualTo(2).Because($"worst channel difference {worst}");
+			});
+		}
+
+		/// <summary>
+		/// The same rule for a whole LCD buffer (a nested LCD widget backbuffer) composited into a transparent
+		/// straight-held backbuffer: the composite onto an opaque surface matches the buffer's collapsed
+		/// single-alpha draw onto that surface, which is what a pixel with one alpha can hold.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		public async Task AnLcdBufferInAStraightBackbufferCompositesLikeItsCollapsedDraw()
+		{
+			await WithLcd(true, async () =>
+			{
+				var lcd = new LcdBuffer(CanvasSize, CanvasSize);
+				var lcdGraphics = new LcdBufferGraphics2D(lcd);
+				lcdGraphics.Clear(new Color(0, 0, 0, 0));
+				lcdGraphics.Render(new VertexSource.Ellipse(24, 24, 15.3, 11.7), new Color(255, 230, 40));
+
+				var backbuffer = new ImageBuffer(CanvasSize, CanvasSize, 32, new BlenderPreMultBGRA());
+				backbuffer.NewGraphics2D().CompositeLcdBuffer(lcd, 0, 0);
+				ImageBuffer buffered = Opaque(Color.Black);
+				buffered.NewGraphics2D().Render(backbuffer, 0, 0);
+
+				ImageBuffer direct = Opaque(Color.Black);
+				direct.NewGraphics2D().Render(lcd.ToImageBufferCollapsed(), 0, 0);
+
+				await Assert.That(PaintedBounds(direct, Color.Black).Width).IsGreaterThan(0);
+				int worst = WorstChannelDifference(buffered, direct);
+				await Assert.That(worst).IsLessThanOrEqualTo(2).Because($"worst channel difference {worst}");
+			});
+		}
+
+		/// <summary>
+		/// The opacity check covers only the pixels the clip leaves: a destination opaque inside the clipping
+		/// rect but transparent outside it (a scrolled panel inside a transparent surround) keeps the
+		/// per-channel composite, and nothing lands outside the clip.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		public async Task AnLcdBufferOpaqueInsideTheClipKeepsItsChroma()
+		{
+			await WithLcd(true, async () =>
+			{
+				var lcd = new LcdBuffer(CanvasSize, CanvasSize);
+				var lcdGraphics = new LcdBufferGraphics2D(lcd);
+				lcdGraphics.Clear(Color.White);
+				lcdGraphics.Render(new VertexSource.Ellipse(24, 24, 15.3, 11.7), Color.Black);
+
+				// Transparent everywhere except the left half, which is opaque white and is the clip.
+				var destination = new ImageBuffer(CanvasSize, CanvasSize, 32, new BlenderPreMultBGRA());
+				Graphics2D graphics = destination.NewGraphics2D();
+				graphics.FillRectangle(0, 0, CanvasSize / 2, CanvasSize, Color.White);
+				graphics.SetClippingRect(new RectangleDouble(0, 0, CanvasSize / 2, CanvasSize));
+				graphics.CompositeLcdBuffer(lcd, 0, 0);
+
+				await Assert.That(CountChromaPixels(destination)).IsGreaterThan(0)
+					.Because("pixels outside the clip are never touched, so their transparency must not refuse the LCD path");
+				await Assert.That(destination.GetPixel(CanvasSize - 1, CanvasSize / 2).alpha).IsEqualTo((byte)0)
+					.Because("nothing lands outside the clip");
+			});
+		}
+
+		/// <summary>Mid grey, so a white icon shows on it whether the backbuffer under it is transparent or not.</summary>
+		private static readonly Color Surface = new Color(128, 128, 128);
+
+		private static int WorstChannelDifference(ImageBuffer actual, ImageBuffer expected)
+		{
+			int worst = 0;
+			for (int y = 0; y < actual.Height; y++)
+			{
+				for (int x = 0; x < actual.Width; x++)
+				{
+					Color a = actual.GetPixel(x, y);
+					Color e = expected.GetPixel(x, y);
+					worst = Math.Max(worst, Math.Max(Math.Abs(a.red - e.red), Math.Max(Math.Abs(a.green - e.green), Math.Abs(a.blue - e.blue))));
+				}
+			}
+
+			return worst;
+		}
+
 		private static async Task WithLcd(bool enabled, Func<Task> test)
 		{
 			bool wasEnabled = LcdRenderSettings.Enabled;

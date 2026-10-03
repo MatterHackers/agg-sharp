@@ -78,14 +78,11 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// What <see cref="fadedBackBuffer"/> was built from: the source buffer's
-		/// <see cref="ImageBuffer.ChangedCount"/>, the opacity, and the alpha convention the destination wanted.
-		/// Any of the three differing is what makes the copy stale.
+		/// <see cref="ImageBuffer.ChangedCount"/> and the opacity. Either differing is what makes the copy stale.
 		/// </summary>
 		private int fadedSourceChangedCount = -1;
 
 		private double fadedOpacity = -1;
-
-		private bool fadedIsPremultiplied;
 
 		/// <summary>
 		/// The rounded clip the pixels were last rastered under (see <see cref="IRoundedBackbuffer"/>): the
@@ -630,55 +627,25 @@ namespace MatterHackers.Agg.UI
 			}
 			else
 			{
-				graphics2D.Render(this.GetFadedBuffer(opacity, DestinationBlendsPremultiplied(graphics2D)), 0, 0, 0, scaleX, scaleY);
+				graphics2D.Render(this.GetFadedBuffer(opacity), 0, 0, 0, scaleX, scaleY);
 			}
 		}
 
 		/// <summary>
-		/// Whether <paramref name="graphics2D"/>'s <see cref="Graphics2D.Render(IImageByte, double, double,
-		/// double, double, double)"/> reads an image source's colour channels as already multiplied by its
-		/// alpha, which decides how <see cref="BuildFadedBuffer"/> has to encode the fade.
+		/// <see cref="backBuffer"/> faded by <paramref name="opacity"/>, rebuilt only when the pixels behind it or
+		/// the opacity have changed.
 		/// </summary>
-		/// <remarks>
-		/// <para>
-		/// The destinations genuinely disagree, and the disagreement is not reachable through a shared
-		/// capability today, so it is a type test.
-		/// </para>
-		/// <para>
-		/// True only for <see cref="LcdBufferGraphics2D"/>, which reads the convention off the <i>source's</i>
-		/// blender and handles premultiplied bytes exactly, so the stamp <see cref="BuildFadedBuffer"/> puts on
-		/// the copy tells it so.
-		/// </para>
-		/// <para>
-		/// False is everything else: the GL path, where the fade is applied by the SrcAlpha / OneMinusSrcAlpha
-		/// blend Graphics2DGpu.Render documents, and the CPU blit, which blends an image straight-over even onto a
-		/// destination labelled <see cref="BlenderPreMultBGRA"/> (ImageGraphics2D.StraightOverDestination). Both
-		/// need straight colour, or they multiply by the opacity a second time and the widget composites visibly
-		/// dark (FadedBackbufferCompositeTests; MatterCAD's BackbufferOpacityTests).
-		/// </para>
-		/// </remarks>
-		private static bool DestinationBlendsPremultiplied(Graphics2D graphics2D)
-		{
-			return graphics2D is LcdBufferGraphics2D;
-		}
-
-		/// <summary>
-		/// <see cref="backBuffer"/> faded by <paramref name="opacity"/>, rebuilt only when the pixels behind it,
-		/// the opacity, or the destination's alpha convention have changed.
-		/// </summary>
-		private ImageBuffer GetFadedBuffer(double opacity, bool premultiplied)
+		private ImageBuffer GetFadedBuffer(double opacity)
 		{
 			if (this.fadedBackBuffer == null
 				|| this.fadedBackBuffer.Width != this.backBuffer.Width
 				|| this.fadedBackBuffer.Height != this.backBuffer.Height
 				|| this.fadedOpacity != opacity
-				|| this.fadedIsPremultiplied != premultiplied
 				|| this.fadedSourceChangedCount != this.backBuffer.ChangedCount)
 			{
-				this.BuildFadedBuffer(opacity, premultiplied);
+				this.BuildFadedBuffer(opacity);
 
 				this.fadedOpacity = opacity;
-				this.fadedIsPremultiplied = premultiplied;
 				this.fadedSourceChangedCount = this.backBuffer.ChangedCount;
 			}
 
@@ -706,30 +673,23 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// Writes <see cref="backBuffer"/> into <see cref="fadedBackBuffer"/> with <paramref name="opacity"/>
-		/// baked into its alpha, in the encoding <paramref name="premultiplied"/> asks for.
+		/// baked into its alpha.
 		/// </summary>
 		/// <remarks>
 		/// <para>
-		/// The straight encoding scales alpha alone. A widget backbuffer holds straight colour (see
-		/// ImageGraphics2D.StraightOverDestination), so that is exact for every pixel, translucent ones included.
-		/// The premultiplied encoding, for the one destination that reads the source as premultiplied
-		/// (<see cref="LcdBufferGraphics2D"/>, see <see cref="DestinationBlendsPremultiplied"/>), scales colour
-		/// and alpha together, which is exact only for pixels that started out opaque - straight colour scaled is
-		/// premultiplied colour only when its alpha was 1.
+		/// Alpha alone is scaled. A widget backbuffer holds straight colour (ImageGraphics2D.StraightOverDestination)
+		/// and every destination reads it straight - the CPU blit, the GPU SrcAlpha blend and an LCD-coverage parent
+		/// (LcdBufferGraphics2D.IsStraightBgraSource) - so that is exact for every pixel, translucent ones included;
+		/// scaling the colour too would apply the opacity twice and composite visibly dark.
 		/// </para>
 		/// <para>
-		/// <b>The copy is stamped <see cref="BlenderPreMultBGRA"/> either way, including when its pixels are
-		/// straight</b>, and that is deliberate. It is the label every widget backbuffer carries, and both straight
-		/// readers take it that way: the CPU blit, which blends straight-over onto a premultiplied-labelled
-		/// destination, and the GL path, which applies the fade in its own SrcAlpha blend. The GL uploader does read
-		/// the stamp: RenderGl's <c>ImageTexturePlugin.CreateGlDataForImage</c> copies the image into a fresh
-		/// (possibly power of two) buffer carrying the <i>source's</i> blender before handing the bytes to the
-		/// driver. Stamped premultiplied that copy is an identity pass over a transparent destination and the pixels
-		/// reach the texture as written; stamped <see cref="BlenderBGRA"/> the same copy multiplies colour by alpha,
-		/// and the GL blend then multiplies by it again - the whole widget lands visibly dark.
+		/// The copy carries the <see cref="BlenderPreMultBGRA"/> label every widget backbuffer carries, though its
+		/// colour is straight. The GPU uploader reads the label: RenderGl's <c>ImageTexturePlugin.CreateGlDataForImage</c>
+		/// copies the image into a fresh buffer carrying the source's blender, an identity pass under this label but
+		/// a multiply of colour by alpha under <see cref="BlenderBGRA"/>, which the GPU blend would then repeat.
 		/// </para>
 		/// </remarks>
-		private void BuildFadedBuffer(double opacity, bool premultiplied)
+		private void BuildFadedBuffer(double opacity)
 		{
 			if (this.fadedBackBuffer == null
 				|| this.fadedBackBuffer.Width != this.backBuffer.Width
@@ -750,21 +710,12 @@ namespace MatterHackers.Agg.UI
 
 				for (int x = 0; x < width; x++)
 				{
-					if (premultiplied)
-					{
-						// Rounded rather than truncated: a whole-widget fade is a flat multiply over a large
-						// area, and truncation there shows up as a visible shift of the whole pane, not noise.
-						destination[destinationOffset + 0] = (byte)((source[sourceOffset + 0] * opacity) + 0.5);
-						destination[destinationOffset + 1] = (byte)((source[sourceOffset + 1] * opacity) + 0.5);
-						destination[destinationOffset + 2] = (byte)((source[sourceOffset + 2] * opacity) + 0.5);
-					}
-					else
-					{
-						destination[destinationOffset + 0] = source[sourceOffset + 0];
-						destination[destinationOffset + 1] = source[sourceOffset + 1];
-						destination[destinationOffset + 2] = source[sourceOffset + 2];
-					}
+					destination[destinationOffset + 0] = source[sourceOffset + 0];
+					destination[destinationOffset + 1] = source[sourceOffset + 1];
+					destination[destinationOffset + 2] = source[sourceOffset + 2];
 
+					// Rounded rather than truncated: a whole-widget fade is a flat multiply over a large area, and
+					// truncation there shows up as a visible shift of the whole pane, not noise.
 					destination[destinationOffset + 3] = (byte)((source[sourceOffset + 3] * opacity) + 0.5);
 
 					sourceOffset += 4;

@@ -494,12 +494,6 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// premultiplied colors are tiny there, so the lift never binds and the collapse stays
 		/// luminance-exact.
 		/// </para>
-		/// <para>
-		/// A <b>premultiplied</b> consumer must not apply the lift - see
-		/// <see cref="CollapseLcdPixelPremultiplied"/>. Keeping the two rules in one place is deliberate: in
-		/// the reference the two CPU collapse sites drifted apart, and the drift is what let the bolder-text
-		/// bug survive in one path after being fixed in the other.
-		/// </para>
 		/// </remarks>
 		public static Color CollapseLcdPixel(
 			byte colorRed,
@@ -532,40 +526,6 @@ namespace MatterHackers.Agg.LcdCoverage
 		}
 
 		/// <summary>
-		/// Collapses one pixel's per-channel triple into a single <b>premultiplied</b> color: the same
-		/// Rec.709 luminance-weighted alpha as <see cref="CollapseLcdPixel"/>, but the color plane passes
-		/// through untouched and there is <b>no lift</b>.
-		/// </summary>
-		/// <remarks>
-		/// CPU twin of the reference's <c>lcb_flatten</c> shader (<c>demo-wgpu\src\shaders.rs</c>), used
-		/// wherever the consumer stays premultiplied end to end - a premultiplied layer texture or a
-		/// premultiplied source-over blit.
-		/// <para>
-		/// The missing lift is not an inconsistency with <see cref="CollapseLcdPixel"/>, it is the point:
-		/// the lift exists only because a straight-alpha consumer has to divide the color by the alpha and
-		/// that division can clamp. A premultiplied consumer never divides, so it has no clamp to protect
-		/// against - and the lift would cost it a <c>destination * (a - weighted)</c> luminance error it
-		/// does not otherwise have.
-		/// </para>
-		/// </remarks>
-		public static Color CollapseLcdPixelPremultiplied(
-			byte colorRed,
-			byte colorGreen,
-			byte colorBlue,
-			byte alphaRed,
-			byte alphaGreen,
-			byte alphaBlue)
-		{
-			float weighted = WeightedAlpha(alphaRed, alphaGreen, alphaBlue);
-
-			return new Color(
-				colorRed,
-				colorGreen,
-				colorBlue,
-				(byte)Math.Clamp(weighted + 0.5f, 0.0f, 255.0f));
-		}
-
-		/// <summary>
 		/// Flattens both planes into a single 32 bit-per-pixel <b>straight-alpha</b> image, so an LCD buffer
 		/// can go through the ordinary blit path (one texture, one alpha, standard source-over).
 		/// </summary>
@@ -586,8 +546,7 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// </remarks>
 		public ImageBuffer ToImageBufferCollapsed()
 		{
-			// A straight-alpha blender, because that is what the collapse produces; a premultiplied
-			// destination wants CollapseLcdPixelPremultiplied instead.
+			// A straight-alpha blender, because that is what the collapse produces.
 			var image = new ImageBuffer(this.Width, this.Height, 32, new BlenderBGRA());
 			byte[] destination = image.GetBuffer();
 			int bytesPerPixel = image.GetBytesBetweenPixelsInclusive();

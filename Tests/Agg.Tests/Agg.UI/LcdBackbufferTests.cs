@@ -372,26 +372,25 @@ namespace MatterHackers.Agg.UI.Tests
 		}
 
 		/// <summary>
-		/// The same pixel described two ways - straight alpha and premultiplied - has to land as the same ink.
-		/// The blit reads the convention off the source's blender, and getting it wrong for a premultiplied
-		/// source means multiplying by alpha twice, which paints every anti-aliased glyph edge at half its
-		/// weight. Both of the callers this blit actually has (the hinted glyph cache, and a nested widget's
-		/// RGBA backbuffer) hand it premultiplied data.
+		/// The same straight pixel under either 32 bit label has to land as the same ink. A buffer labelled
+		/// premultiplied - a nested widget's RGBA backbuffer, the hinted glyph cache - holds straight colour
+		/// (ImageGraphics2D.StraightOverDestination), and every other consumer reads it straight; read as
+		/// premultiplied, a translucent pixel added its whole colour and came out too bright.
+		/// (LcdParentStraightChildTests covers the widget case.)
 		/// </summary>
 		[Test]
 		[NotInParallel]
-		public async Task PremultipliedAndStraightImageSourcesBlitToTheSameInk()
+		public async Task PremultipliedLabelledAndStraightImageSourcesBlitToTheSameInk()
 		{
 			bool wasEnabled = LcdRenderSettings.Enabled;
 			try
 			{
 				LcdRenderSettings.Enabled = true;
 
-				// Half-covered white, written both ways: premultiplied colour bytes are already scaled by the
-				// alpha, straight ones are the colour at full opacity. CopyPixels writes what it is given, so
-				// these are the exact bytes on both paths.
+				// Half-covered white, the same straight bytes under both labels. CopyPixels writes what it is
+				// given, so these are the exact bytes on both paths.
 				var premultiplied = new ImageBuffer(1, 1, 32, new BlenderPreMultBGRA());
-				premultiplied.SetPixel(0, 0, new Color(128, 128, 128, 128));
+				premultiplied.SetPixel(0, 0, new Color(255, 255, 255, 128));
 
 				var straight = new ImageBuffer(1, 1, 32, new BlenderBGRA());
 				straight.SetPixel(0, 0, new Color(255, 255, 255, 128));
@@ -402,7 +401,7 @@ namespace MatterHackers.Agg.UI.Tests
 				await AssertImagesEqual(fromStraight, fromPremultiplied, "the same pixel written both ways");
 
 				// The exact bytes, pinned: half-covered white over black is 128, and the rest of the buffer
-				// stays black. Reading the premultiplied bytes as straight would give 64 here.
+				// stays black. Reading the premultiplied-labelled bytes as premultiplied would give 255 here.
 				Color painted = fromPremultiplied.GetPixel(1, 1);
 				await Assert.That(painted.red).IsEqualTo((byte)128).Because("red of the composited pixel");
 				await Assert.That(painted.green).IsEqualTo((byte)128).Because("green of the composited pixel");

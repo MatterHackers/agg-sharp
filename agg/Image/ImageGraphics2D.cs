@@ -243,24 +243,18 @@ namespace MatterHackers.Agg
 		/// than producing chroma that would be collapsed - or worse, composited against unknown pixels - on
 		/// the way to the screen.
 		/// <para>
-		/// <b>Unchecked precondition: the destination must hold premultiplied colour.</b> Saying true here is
-		/// what routes a widget's buffer into <see cref="LcdBuffer.CompositeOnto"/>, whose per-channel
-		/// <c>color_c + dest_c * (1 - alpha_c)</c> is source-over only against a premultiplied destination -
-		/// a straight-alpha one (<see cref="BlenderBGRA"/>) blends visibly wrong. Nothing verifies it, and a
-		/// blender test here would be wrong rather than merely absent: it would refuse the opaque final
-		/// surface, where the two conventions coincide and the composite is correct either way. The two
-		/// destinations this is reached on both satisfy it - a widget backbuffer is
-		/// <see cref="BlenderPreMultBGRA"/> by construction, and an opaque window surface has no partial
-		/// alpha to get wrong.
+		/// <b>True here does not promise the per-channel composite.</b> <see cref="LcdBuffer.CompositeOnto"/>'s
+		/// per-channel <c>color_c + dest_c * (1 - alpha_c)</c> is source-over only against premultiplied
+		/// colour, and a widget backbuffer, though labelled <see cref="BlenderPreMultBGRA"/>, holds straight
+		/// colour. A blender test here would be wrong either way - it would refuse the opaque final surface,
+		/// where the two conventions coincide - so <see cref="CompositeLcdBuffer"/> checks per draw that the
+		/// pixels it lands on are opaque and takes the collapsed blit where they are not.
 		/// </para>
 		/// <para>
-		/// The precondition became load-bearing when <c>GuiWidget.ResolveBackbufferMode</c> stopped requiring
-		/// the widget to be opaque: while every channel alpha was 255 the <c>dest_c * (1 - alpha_c)</c> term
-		/// vanished and the destination's convention could not matter. The same change exposed a divergence in
-		/// the other direction - the buffered path writes <c>dest.alpha := max(alpha_c)</c> where the
-		/// unbuffered <see cref="LcdComposite"/> leaves destination alpha untouched. Harmless on the opaque
-		/// surfaces above, and the reason a buffered render is compared to a direct one within a tolerance
-		/// rather than byte for byte.
+		/// The buffered path writes <c>dest.alpha := max(alpha_c)</c> where the unbuffered
+		/// <see cref="LcdComposite"/> leaves destination alpha untouched. On the opaque pixels the composite is
+		/// limited to that changes nothing, but it is why a buffered render is compared to a direct one within a
+		/// tolerance rather than byte for byte.
 		/// </para>
 		/// </remarks>
 		public override bool CanCompositeLcdBuffer => !this.IsTransparentCompositingLayer && ResolveLcdDestination() != null;
@@ -268,19 +262,26 @@ namespace MatterHackers.Agg
 		/// <inheritdoc/>
 		/// <remarks>
 		/// The per-channel override of the base class's collapsing default: each subpixel's alpha drives its
-		/// own source-over, so a cached LCD backbuffer keeps its chroma all the way onto this surface. The
-		/// destination is treated as premultiplied, which it is where this is reached - a widget backbuffer
-		/// (<see cref="BlenderPreMultBGRA"/>), or an opaque final surface, where premultiplied and straight
-		/// coincide.
+		/// own source-over, so a cached LCD backbuffer keeps its chroma all the way onto this surface - on opaque
+		/// pixels only (see "Only onto opaque pixels" below).
 		/// <para>
 		/// The clipping rect is honoured, because the widget layer sets it to the child's screen clipping
 		/// before compositing and a partially scrolled-out widget must not paint over its siblings. Like <see cref="LcdComposite"/>, the placement is in raw buffer pixels and takes
 		/// no account of <see cref="ImageBuffer.OriginOffset"/>.
 		/// </para>
 		/// <para>
-		/// The premultiplied-or-opaque precondition is the caller's to keep. A widget backbuffer flush keeps it
-		/// by construction; an SVG icon's composite from <see cref="Render(IImageByte, double, double, double, double, double)"/>
-		/// checks it per draw (<see cref="TakesLcdImageOver"/>), since an icon can be drawn into any image.
+		/// <b>Only onto opaque pixels.</b> <see cref="LcdBuffer.CompositeOnto"/> is per-channel premultiplied
+		/// source-over, and no destination this class draws holds premultiplied colour where it is not opaque:
+		/// a widget backbuffer is labelled <see cref="BlenderPreMultBGRA"/> but holds straight colour, which is
+		/// how every consumer reads it (<see cref="StraightOverDestination"/>). Nor could a straight-over
+		/// variant be right there - one alpha per pixel cannot carry three channel coverages, the same reason a
+		/// transparent compositing layer refuses LCD outright. So the composite runs only when every
+		/// destination pixel it can touch is opaque, where premultiplied and straight coincide (the window
+		/// surface, a backbuffer under an opaque backdrop); otherwise the buffer takes the collapsed,
+		/// single-alpha blit of the base class, which blends straight-over and is exact. The scan is the
+		/// size of the composite it guards, and only the pixels the clip leaves are scanned: a destination
+		/// opaque inside the clip keeps its chroma whatever lies outside. A composite the clip or the
+		/// destination removes entirely draws nothing and builds no collapsed copy.
 		/// </para>
 		/// </remarks>
 		public override void CompositeLcdBuffer(LcdBuffer buffer, int destX, int destY)
@@ -298,41 +299,56 @@ namespace MatterHackers.Agg
 				return;
 			}
 
-			buffer.CompositeOnto(destination, destX, destY, 1.0, LcdBuffer.ToPixelClip(GetClippingRect()));
+			RectangleInt? clip = LcdBuffer.ToPixelClip(GetClippingRect());
+			RectangleInt footprint = new RectangleInt(destX, destY, destX + buffer.Width, destY + buffer.Height);
+			if ((clip != null && !footprint.IntersectWithRectangle(clip.Value))
+				|| !footprint.IntersectWithRectangle(new RectangleInt(0, 0, destination.Width, destination.Height)))
+			{
+				// Nothing of it lands: neither path would draw anything.
+				return;
+			}
+
+			if (!IsOpaqueUnder(destination, footprint))
+			{
+				base.CompositeLcdBuffer(buffer, destX, destY);
+				return;
+			}
+
+			buffer.CompositeOnto(destination, destX, destY, 1.0, clip);
 			destImageByte.MarkImageChanged();
 		}
 
 		/// <summary>
+		/// <see cref="TakesLcdImageOver"/> as a delegate, made once on the first image draw rather than on every one.
+		/// </summary>
+		private Func<RectangleInt, bool> takesLcdImageOver;
+
+		/// <summary>
 		/// Whether an image's LCD composite may land on <paramref name="footprint"/> of this destination: it must
-		/// hold premultiplied colour, or be opaque everywhere the image lands.
+		/// be opaque everywhere the image lands.
 		/// </summary>
 		/// <remarks>
-		/// This checks, for images, the precondition <see cref="CanCompositeLcdBuffer"/> leaves unchecked.
-		/// <see cref="LcdBuffer.CompositeOnto"/> is premultiplied source-over, so on a straight-alpha
-		/// destination with partial alpha - an ad-hoc <c>new ImageBuffer(w, h)</c> an icon is being drawn into -
-		/// it would bake premultiplied, fringed edges into pixels that are later blended as straight alpha. A
-		/// widget backbuffer is <see cref="BlenderPreMultBGRA"/> and passes on the blender. The software window
-		/// surface (<c>WindowsFormsDXBackedGui</c>) is straight <see cref="BlenderBGRA"/> but opaque once its
-		/// background is painted, where the two conventions coincide; a blender-only gate would cost it its LCD
-		/// icons, so a straight destination passes when every pixel under the image is fully opaque. That scan
-		/// is the image's own size, the size of the composite it guards.
+		/// The same rule <see cref="CompositeLcdBuffer"/> applies, asked before the icon's LCD buffer is built so
+		/// a refused draw costs no conversion. Whatever the blender label: an ad-hoc <c>new ImageBuffer(w, h)</c>
+		/// is straight, and a widget backbuffer is labelled <see cref="BlenderPreMultBGRA"/> yet holds straight
+		/// colour, so on either a non-opaque pixel would take premultiplied, darkened edges. A window surface is
+		/// opaque once its background is painted and keeps its LCD icons.
 		/// </remarks>
 		private bool TakesLcdImageOver(RectangleInt footprint)
 		{
 			ImageBuffer destination = ResolveLcdDestination();
-			if (destination == null)
-			{
-				return false;
-			}
+			return destination != null && IsOpaqueUnder(destination, footprint);
+		}
 
-			if (destination.GetRecieveBlender() is BlenderPreMultBGRA)
-			{
-				return true;
-			}
-
+		/// <summary>
+		/// True when every pixel of <paramref name="destination"/> inside <paramref name="footprint"/> has alpha
+		/// 255; false when any does not, or when the footprint misses the destination entirely (nothing to
+		/// composite, and the fallback draws nothing either).
+		/// </summary>
+		private static bool IsOpaqueUnder(ImageBuffer destination, RectangleInt footprint)
+		{
 			if (!footprint.IntersectWithRectangle(new RectangleInt(0, 0, destination.Width, destination.Height)))
 			{
-				// Entirely off the destination: nothing to composite, and the plain blit draws nothing either.
 				return false;
 			}
 
@@ -448,7 +464,7 @@ namespace MatterHackers.Agg
 			// with no destination origin offset: the LCD composite places in raw buffer pixels and ignores it.
 			if (destImageByte.OriginOffset.X == 0
 				&& destImageByte.OriginOffset.Y == 0
-				&& LcdImageComposite.TryRender(this, source, destX, destY, angleRadians, inScaleX, inScaleY, this.TakesLcdImageOver))
+				&& LcdImageComposite.TryRender(this, source, destX, destY, angleRadians, inScaleX, inScaleY, this.takesLcdImageOver ??= this.TakesLcdImageOver))
 			{
 				return;
 			}

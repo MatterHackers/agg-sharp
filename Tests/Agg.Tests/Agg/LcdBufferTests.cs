@@ -326,7 +326,7 @@ namespace Agg.Tests.Agg
 
 		/// <summary>
 		/// The collapse to a single alpha uses the <b>Rec.709 luminance-weighted mean</b> of the three
-		/// channel alphas, and the lift to <c>max(color)</c> applies on the <b>straight-alpha path only</b>.
+		/// channel alphas, and the straight-alpha result is lifted to <c>max(color)</c>.
 		/// Both were real bugs in the reference:
 		/// <list type="bullet">
 		/// <item><description>collapsing with <c>max</c> over-weights the two channels below the max and
@@ -340,7 +340,7 @@ namespace Agg.Tests.Agg
 		/// - would leave every expected byte here unchanged and the test would pass against the swap.
 		/// </summary>
 		[Test]
-		public async Task CollapseWeightsAlphaByRec709AndLiftsOnlyOnTheStraightPath()
+		public async Task CollapseWeightsAlphaByRec709AndLiftsForLightInk()
 		{
 			// Opaque white ink through coverage (200, 60, 150): premultiplied color equals coverage, so
 			// color = alpha = (200, 60, 150) - the light-on-dark case where the lift binds.
@@ -354,20 +354,15 @@ namespace Agg.Tests.Agg
 			Color straight = LcdBuffer.CollapseLcdPixel(200, 60, 150, 200, 60, 150);
 			await AssertColor(new Color(255, 77, 191, 200), straight, "straight-alpha collapse");
 
-			// max would have been 200 on both paths; the premultiplied path must land on the weighted 96,
-			// and must not lift (its color passes through unchanged, because it never divides by alpha).
-			// Transposing the red and blue weights would give 0.0722*200 + 0.7152*60 + 0.2126*150 = 89.
-			Color premultiplied = LcdBuffer.CollapseLcdPixelPremultiplied(200, 60, 150, 200, 60, 150);
-			await AssertColor(new Color(200, 60, 150, 96), premultiplied, "premultiplied collapse");
-
 			// The lift's purpose, asserted directly: the straight color must round trip back to the
 			// premultiplied color it came from, i.e. nothing was lost to the unpremultiply clamp.
 			await Assert.That((int)System.Math.Round(straight.red * (straight.alpha / 255.0))).IsEqualTo(200);
 			await Assert.That((int)System.Math.Round(straight.green * (straight.alpha / 255.0))).IsEqualTo(60);
 			await Assert.That((int)System.Math.Round(straight.blue * (straight.alpha / 255.0))).IsEqualTo(150);
 
-			// Dark ink on the same coverage: premultiplied color is zero, so the lift cannot bind and both
-			// paths land on the weighted alpha - which is what keeps dark-on-light luminance exact.
+			// Dark ink on the same coverage: premultiplied color is zero, so the lift cannot bind and the
+			// collapse lands on the weighted alpha - which is what keeps dark-on-light luminance exact. max
+			// would give 200, and transposing the red and blue weights 0.0722*200 + 0.7152*60 + 0.2126*150 = 89.
 			var dark = new LcdBuffer(1, 1);
 			dark.CompositeMask(new LcdMask(new byte[] { 200, 60, 150 }, 1, 1), new Color(0, 0, 0, 255), 0, 0);
 			await AssertPixel(dark, 0, 0, new byte[] { 0, 0, 0 }, new byte[] { 200, 60, 150 });

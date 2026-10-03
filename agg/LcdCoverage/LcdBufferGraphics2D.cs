@@ -152,8 +152,8 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// <para>
 		/// The refusal falls through to the base collapse, which does paint here rather than silently doing
 		/// nothing: it blits <see cref="LcdBuffer.ToImageBufferCollapsed"/>, whose image is built with a
-		/// <see cref="BlenderBGRA"/>, and that is one of the two alpha conventions this class's image blit
-		/// recognizes (see <see cref="SourceIsPremultiplied"/>).
+		/// <see cref="BlenderBGRA"/> and holds straight colour - the one convention this class's image blit reads,
+		/// under either of the two labels it accepts (see <see cref="IsStraightBgraSource"/>).
 		/// </para>
 		/// </remarks>
 		public override void CompositeLcdBuffer(LcdBuffer buffer, int destX, int destY)
@@ -353,15 +353,11 @@ namespace MatterHackers.Agg.LcdCoverage
 		/// path this exists for is axis-aligned at unit scale by construction (see
 		/// <c>GuiWidget.ResolveBackbufferMode</c>), so a rotated image blit cannot reach here from a widget.
 		/// <para>
-		/// <b>The source's alpha convention is read off its blender</b>, in agg-sharp's B, G, R, A byte order:
-		/// <see cref="BlenderPreMultBGRA"/> means the colour bytes are already multiplied by their alpha and
-		/// are used as they are, <see cref="BlenderBGRA"/> means they are straight and get multiplied here.
-		/// Getting this wrong is not subtle in the direction that matters - treating premultiplied bytes as
-		/// straight multiplies by alpha twice and paints anti-aliased edges at half their ink - and both of
-		/// the callers this method actually has hand it premultiplied data: the hinted glyph images
-		/// <c>TypeFacePrinter</c> blits out of its cache, and a nested widget's RGBA backbuffer. The
-		/// <see cref="ImageBuffer"/> destinations reached through <see cref="ImageGraphics2D"/> key on the
-		/// same distinction, in their blender rather than by hand.
+		/// <b>The source is read as straight colour</b>, in agg-sharp's B, G, R, A byte order, whether it is
+		/// labelled <see cref="BlenderBGRA"/> or <see cref="BlenderPreMultBGRA"/>: the callers this method has -
+		/// the hinted glyph images <c>TypeFacePrinter</c> blits out of its cache, and a nested widget's RGBA
+		/// backbuffer - are labelled premultiplied but hold straight colour, as every other consumer reads
+		/// them (see <see cref="IsStraightBgraSource"/>).
 		/// </para>
 		/// <para>
 		/// A source whose blender is neither of those, or whose bit depth is not 32, is skipped rather than
@@ -409,14 +405,11 @@ namespace MatterHackers.Agg.LcdCoverage
 				return;
 			}
 
-			bool? premultipliedSource = SourceIsPremultiplied(imageSource);
-			if (premultipliedSource == null)
+			if (!IsStraightBgraSource(imageSource))
 			{
 				// An unrecognized blender - see the remarks. Skipped on the same grounds as a non-32bpp source.
 				return;
 			}
-
-			bool sourceIsPremultiplied = premultipliedSource.Value;
 
 			Affine transform = GetTransform();
 
@@ -486,9 +479,8 @@ namespace MatterHackers.Agg.LcdCoverage
 						continue;
 					}
 
-					// Premultiplied colour bytes are already this pixel's contribution; straight ones are the
-					// colour it would have at full opacity, so they take the alpha here.
-					float colorScale = sourceIsPremultiplied ? 1.0f : sourceAlpha;
+					// Straight colour bytes are the colour at full opacity, so they take the alpha here.
+					float colorScale = sourceAlpha;
 					float sourceRed = (source[sourceOffset + ImageBuffer.OrderR] / 255.0f) * colorScale;
 					float sourceGreen = (source[sourceOffset + ImageBuffer.OrderG] / 255.0f) * colorScale;
 					float sourceBlue = (source[sourceOffset + ImageBuffer.OrderB] / 255.0f) * colorScale;
@@ -528,29 +520,27 @@ namespace MatterHackers.Agg.LcdCoverage
 		}
 
 		/// <summary>
-		/// Whether <paramref name="imageSource"/>'s colour bytes are already multiplied by their own alpha
-		/// (true), are straight alpha (false), or say nothing either way (null, which the blit treats as a
-		/// refusal).
+		/// Whether <paramref name="imageSource"/> is 32 bit BGRA data this blit reads, which it reads as straight
+		/// colour; false (an unrecognized blender) refuses the blit.
 		/// </summary>
 		/// <remarks>
 		/// An <see cref="ImageBuffer"/> carries its alpha convention only in the blender it was built with,
-		/// which is why this is a type test rather than a property read: the two blenders the library uses for
-		/// 32 bit BGRA data are the two answers, and anything else - a gamma blender, an exact-copy blender, a
-		/// caller's own - has no documented convention this composite could rely on.
+		/// and anything other than the library's two 32 bit BGRA blenders - a gamma blender, an exact-copy
+		/// blender, a caller's own - has no documented convention this composite could rely on.
+		/// <para>
+		/// <b>A <see cref="BlenderPreMultBGRA"/> source is read straight too.</b> The label does not describe
+		/// the bytes: <see cref="ImageGraphics2D"/> fills and blits every buffer so labelled straight-over
+		/// (its StraightOverDestination), so a widget's RGBA backbuffer, a cached glyph image and an icon all
+		/// hold straight colour, and every other consumer - the CPU blit and the GPU texture blend - reads them
+		/// straight. Read as premultiplied here, a translucent pixel (a rounded child's corner, a faded child,
+		/// an anti-aliased edge) added its whole colour on top of the parent and came out too bright. The
+		/// genuinely premultiplied data in this pipeline is an <see cref="LcdBuffer"/>'s planes, which arrive
+		/// through <see cref="CompositeLcdBuffer"/>, not here.
+		/// </para>
 		/// </remarks>
-		private static bool? SourceIsPremultiplied(IImageByte imageSource)
+		private static bool IsStraightBgraSource(IImageByte imageSource)
 		{
-			switch (imageSource.GetRecieveBlender())
-			{
-				case BlenderPreMultBGRA _:
-					return true;
-
-				case BlenderBGRA _:
-					return false;
-
-				default:
-					return null;
-			}
+			return imageSource.GetRecieveBlender() is BlenderPreMultBGRA or BlenderBGRA;
 		}
 
 		/// <summary>
