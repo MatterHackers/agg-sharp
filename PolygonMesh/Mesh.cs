@@ -460,7 +460,7 @@ namespace MatterHackers.PolygonMesh
 		/// <para>
 		/// It is not the answer to "this face's colour could not be worked out". A boolean result whose
 		/// triangles cannot be traced back to an operand comes back with no FaceColors at all - see
-		/// ManifoldKernel.ExtractFaceColorsFromRuns - so the object's own colour shows. Painting this
+		/// ManifoldResultReader.ExtractFaceColorsFromRuns - so the object's own colour shows. Painting this
 		/// grey there does not read as "unknown" to a user, it reads as the part having turned grey,
 		/// because it is a colour nothing in their scene is wearing.
 		/// </para>

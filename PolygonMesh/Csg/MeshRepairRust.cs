@@ -75,7 +75,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				return rewound;
 			}
 
-			var welded = ManifoldKernel.WeldSeams(sourceMesh);
+			var welded = ManifoldImport.WeldSeams(sourceMesh);
 			return welded == null ? null : ConsistentWinding.Rewind(welded);
 		}
 

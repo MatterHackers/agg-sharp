@@ -63,7 +63,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// welds: a mesh whose seams are split (triangle soup, or a box with a vertex set per side)
 		/// is one surface to it, and read by index a backward side bounded by split seams would be
 		/// an island that never flips. Seams apart by a rounding step are the caller's to weld first
-		/// (<see cref="ManifoldKernel.WeldSeams"/>).
+		/// (<see cref="ManifoldImport.WeldSeams"/>).
 		/// <para>
 		/// Only edges with exactly two faces link; one shared by more (or fewer) is not a place where
 		/// two sides' windings can be compared. Faces that collapse onto a repeated position are

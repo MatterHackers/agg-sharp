@@ -128,9 +128,9 @@ namespace MatterHackers.PolygonMesh.UnitTests
 			var insideOut = PlatonicSolids.CreateCube(OuterSide, OuterSide, OuterSide);
 			insideOut.ReverseFaces();
 
-			await Assert.That(MinkowskiShellOrientation.MayHaveInvertedShell(ManifoldKernel.Import(PlatonicSolids.CreateCube(OuterSide, OuterSide, OuterSide), false))).IsFalse();
-			await Assert.That(MinkowskiShellOrientation.MayHaveInvertedShell(ManifoldKernel.Import(insideOut, false))).IsTrue();
-			await Assert.That(MinkowskiShellOrientation.MayHaveInvertedShell(ManifoldKernel.Import(HollowBox(), false))).IsTrue()
+			await Assert.That(MinkowskiShellOrientation.MayHaveInvertedShell(ManifoldImport.Import(PlatonicSolids.CreateCube(OuterSide, OuterSide, OuterSide), false))).IsFalse();
+			await Assert.That(MinkowskiShellOrientation.MayHaveInvertedShell(ManifoldImport.Import(insideOut, false))).IsTrue();
+			await Assert.That(MinkowskiShellOrientation.MayHaveInvertedShell(ManifoldImport.Import(HollowBox(), false))).IsTrue()
 				.Because("a cavity winds inward; the repair has to see it to judge its nesting");
 		}
 
@@ -161,7 +161,7 @@ namespace MatterHackers.PolygonMesh.UnitTests
 					ratios.Add(ratio);
 				}
 			});
-			await MinkowskiProcessing.MinkowskiSumAsync(ManifoldKernel.ToMesh(solid, "solid"), MinkowskiProcessing.SphereMesh(1, 8), bar, CancellationToken.None);
+			await MinkowskiProcessing.MinkowskiSumAsync(ManifoldResultReader.ToMesh(solid, "solid"), MinkowskiProcessing.SphereMesh(1, 8), bar, CancellationToken.None);
 
 			int leafReports = 0;
 			foreach (double ratio in ratios)

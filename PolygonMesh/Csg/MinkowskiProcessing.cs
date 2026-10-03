@@ -239,7 +239,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <exception cref="OperationCanceledException">
 		/// <paramref name="cancellationToken"/> was signalled and the kernel observed it. The
 		/// kernel reports a cancelled run as an empty result with a status; this is the same
-		/// translation <c>ManifoldKernel</c> performs for a boolean, completion included -
+		/// translation <c>ManifoldCancellableBoolean</c> performs for a boolean, completion included -
 		/// a run that finished before it saw the flag returns its result.
 		/// </exception>
 		/// <inheritdoc cref="MinkowskiSum"/>
@@ -385,7 +385,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				throw new ArgumentOutOfRangeException(nameof(segments), segments, "A sphere needs a non-negative segment count; 0 asks the kernel to choose.");
 			}
 
-			return ManifoldKernel.ToMesh(RustManifold.Sphere(radius, segments), "sphere");
+			return ManifoldResultReader.ToMesh(RustManifold.Sphere(radius, segments), "sphere");
 		}
 
 		/// <summary>
@@ -406,7 +406,7 @@ namespace MatterHackers.PolygonMesh.Csg
 			ArgumentNullException.ThrowIfNull(solid);
 			ThrowIfEmpty(solid, nameof(solid));
 			var oriented = MinkowskiShellOrientation.Repair(ImportOperand(solid), cancellationToken);
-			return ManifoldKernel.ToMesh(oriented, "shell orientation");
+			return ManifoldResultReader.ToMesh(oriented, "shell orientation");
 		}
 
 		/// <summary>
@@ -449,11 +449,11 @@ namespace MatterHackers.PolygonMesh.Csg
 
 			var result = Morph(solidManifold, toolManifold, inset, reporter, cancellationToken, out ErosionPath erosionPath);
 
-			return (ManifoldKernel.ToMesh(result, inset ? "minkowski difference" : "minkowski sum"), erosionPath);
+			return (ManifoldResultReader.ToMesh(result, inset ? "minkowski difference" : "minkowski sum"), erosionPath);
 		}
 
 		/// <summary>
-		/// <see cref="ManifoldKernel.Import"/>, with one more chance for a closed surface that has a
+		/// <see cref="ManifoldImport.Import"/>, with one more chance for a closed surface that has a
 		/// patch of triangles wound against the rest of it, and one for a solid whose seams are split.
 		/// </summary>
 		/// <remarks>
@@ -464,7 +464,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// <see cref="ConsistentWinding"/> keeps each surface's majority sign, so an inside-out shell
 		/// still means what it meant before - the shell-level repair is a separate step (see Run).
 		/// <para>
-		/// Here rather than in <see cref="ManifoldKernel.Import"/>: booleans and the bevel's output
+		/// Here rather than in <see cref="ManifoldImport.Import"/>: booleans and the bevel's output
 		/// gates classify meshes through that import, and a gate that quietly accepted a backward
 		/// patch would publish it. A Minkowski result is rebuilt from scratch by the kernel, so the
 		/// operand's winding never reaches the output.
@@ -503,7 +503,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		{
 			try
 			{
-				return ManifoldKernel.Import(mesh, repairOrientation: false);
+				return ManifoldImport.Import(mesh, repairOrientation: false);
 			}
 			catch (MeshImportRejectedException refused) when (refused.Status == RustStatus.NotClosed)
 			{
@@ -517,7 +517,7 @@ namespace MatterHackers.PolygonMesh.Csg
 					return imported;
 				}
 
-				var welded = ManifoldKernel.WeldSeams(mesh);
+				var welded = ManifoldImport.WeldSeams(mesh);
 				var weldedRewound = welded == null ? null : ConsistentWinding.Rewind(welded);
 				if (weldedRewound != null
 					&& TryImport(weldedRewound, out imported))
@@ -534,7 +534,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		{
 			try
 			{
-				imported = ManifoldKernel.Import(mesh, repairOrientation: false);
+				imported = ManifoldImport.Import(mesh, repairOrientation: false);
 				return true;
 			}
 			catch (MeshImportRejectedException)
@@ -582,7 +582,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// pipeline's reporter.
 		/// </summary>
 		/// <remarks>
-		/// Line for line the shape of <c>ManifoldKernel.Boolean</c>, and for the same reasons:
+		/// Line for line the shape of <c>ManifoldCancellableBoolean.Boolean</c>, and for the same reasons:
 		/// a token that can never be signalled allocates nothing and takes the uncancellable
 		/// path, and <b>completion wins</b> - a kernel that finished before it observed the
 		/// flag returns its result rather than throwing. The kernel reports cancellation as

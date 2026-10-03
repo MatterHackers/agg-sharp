@@ -242,7 +242,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				var meshCopy = mesh.Copy(CancellationToken.None);
 				meshCopy.Transform(matrix);
 
-				var imported = ManifoldKernel.Import(meshCopy, repairOrientation);
+				var imported = ManifoldImport.Import(meshCopy, repairOrientation);
 
 				return imported.HasSelfIntersections()
 					? BooleanOperandVerdict.SelfIntersecting
