@@ -197,7 +197,7 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// is exactly the contract <see cref="BooleanProgressAdapter"/> is written against.
 		/// </para>
 		/// </remarks>
-		private static RustProgressReporter ProgressSinkFor(BooleanProgressAdapter adapter)
+		internal static RustProgressReporter ProgressSinkFor(BooleanProgressAdapter adapter)
 		{
 			return adapter == null
 				? null

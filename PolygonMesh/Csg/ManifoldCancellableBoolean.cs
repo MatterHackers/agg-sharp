@@ -124,20 +124,26 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// and evaluates it. The tree is the whole point of the batch path (see
 		/// <see cref="ManifoldKernel.NeedsExplicitBoolean"/>), so this reproduces the FFI's definition line for
 		/// line: leaves over cloned implementations, one <c>CsgOp</c>, evaluate with the token.
+		/// <para>
+		/// <paramref name="progress"/> goes to every binary boolean the tree runs (ManifoldSharp's
+		/// C#-only <c>EvaluateWithToken(token, progress)</c>), so each one streams its own kernel
+		/// phases from the start; observation only, the result is the same bits either way.
+		/// </para>
 		/// </remarks>
 		internal static RustManifold BatchBoolean(
 			List<RustManifold> manifolds,
 			RustOpType operationType,
+			RustProgressReporter progress,
 			CancellationToken cancellationToken)
 		{
 			if (!cancellationToken.CanBeCanceled)
 			{
-				return BatchBooleanCore(manifolds, operationType, null);
+				return BatchBooleanCore(manifolds, operationType, null, progress);
 			}
 
 			var token = new RustCancelToken(cancellationToken);
 
-			var result = BatchBooleanCore(manifolds, operationType, token);
+			var result = BatchBooleanCore(manifolds, operationType, token, progress);
 
 			if (result.Status() == RustStatus.Cancelled)
 			{
@@ -154,7 +160,8 @@ namespace MatterHackers.PolygonMesh.Csg
 		private static RustManifold BatchBooleanCore(
 			List<RustManifold> manifolds,
 			RustOpType operationType,
-			RustCancelToken token)
+			RustCancelToken token,
+			RustProgressReporter progress)
 		{
 			// A single operand has nothing to combine with and every operation is identity on
 			// it - but an already-cancelled token still wins, so a caller that only polls the
@@ -175,7 +182,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				leaves.Add(new RustCsgLeaf(manifold.AsImpl().Clone()));
 			}
 
-			return RustManifold.FromImpl(new RustCsgOp(operationType, leaves).EvaluateWithToken(token));
+			return RustManifold.FromImpl(new RustCsgOp(operationType, leaves).EvaluateWithToken(token, progress));
 		}
 	}
 }

@@ -208,5 +208,74 @@ namespace MatterHackers.PolygonMesh.UnitTests
 
 			await Assert.That(reports).IsNotEmpty();
 		}
+
+		/// <summary>
+		/// Whether any report names a kernel phase - anything past the start/finish "combining"
+		/// the batch path reports on its own.
+		/// </summary>
+		private static bool ReportsAKernelPhase(IEnumerable<(double ratio, string message)> reports)
+		{
+			return reports.Any(report => report.message.StartsWith("Boolean: ")
+				&& report.message != "Boolean: " + ManifoldKernel.CombineCompletePhase);
+		}
+
+		[Test]
+		public async Task AWatchedTwoOperandSubtractStreamsKernelPhases()
+		{
+			// Two operands take the n-ary batch too, so before the kernel's CSG tree took a
+			// reporter the most common boolean in the app showed "combining" and nothing else.
+			static Mesh Subtract(Action<double, string> reporter)
+			{
+				var operands = AsymmetricOperands().Take(2).ToList();
+				return BooleanProcessing.DoArray(
+					operands,
+					CsgModes.Subtract,
+					ProcessingModes.Polygons,
+					ProcessingResolution._64,
+					ProcessingResolution._64,
+					reporter,
+					CancellationToken.None);
+			}
+
+			var reports = new List<(double ratio, string message)>();
+			var withNoReporter = Subtract(null);
+			var watched = Subtract((ratio, message) =>
+			{
+				lock (reports)
+				{
+					reports.Add((ratio, message));
+				}
+			});
+
+			await AssertSameMesh(withNoReporter, watched, "watching a subtract must not change its result");
+			await Assert.That(ReportsAKernelPhase(reports)).IsTrue()
+				.Because($"a watched subtract streams the kernel's phases (saw {string.Join(", ", reports.Select(r => r.message).Distinct())})");
+			await Assert.That(reports.All(report => report.ratio >= 0 && report.ratio <= 1)).IsTrue();
+		}
+
+		[Test]
+		public async Task AWatchedNaryUnionStreamsKernelPhasesOnTheAsyncPath()
+		{
+			var reports = new List<(double ratio, string message)>();
+
+			var withNoReporter = await UnionAsync(null);
+			var watched = await UnionAsync(new ProgressReporter((ratio, message) =>
+			{
+				lock (reports)
+				{
+					reports.Add((ratio, message));
+				}
+			}));
+
+			await AssertSameMesh(withNoReporter, watched, "watching an n-ary union must not change its result");
+			await Assert.That(ReportsAKernelPhase(reports)).IsTrue()
+				.Because($"a watched n-ary union streams the kernel's phases (saw {string.Join(", ", reports.Select(r => r.message).Distinct())})");
+
+			// The bar never goes backwards, though each boolean in the tree restarts its phases.
+			for (int i = 1; i < reports.Count; i++)
+			{
+				await Assert.That(reports[i].ratio).IsGreaterThanOrEqualTo(reports[i - 1].ratio);
+			}
+		}
 	}
 }

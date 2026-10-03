@@ -362,7 +362,7 @@ namespace MatterHackers.PolygonMesh.Csg
 				// Cancellable, and on a heavily coloured model this union is most of the wall
 				// time - one boolean per colour group before the real operation even starts.
 				ManifoldKernelCallCounts.CountColorGroupUnion();
-				return ManifoldCancellableBoolean.BatchBoolean(subManifolds, RustOpType.Add, cancellationToken);
+				return ManifoldCancellableBoolean.BatchBoolean(subManifolds, RustOpType.Add, null, cancellationToken);
 			}
 			catch (OperationCanceledException)
 			{

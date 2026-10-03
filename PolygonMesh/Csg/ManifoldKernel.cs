@@ -315,7 +315,8 @@ namespace MatterHackers.PolygonMesh.Csg
 			{
 				var progress = BatchProgressFor(reporter, amountPerOperation, ratioCompleted);
 				ManifoldKernelCallCounts.CountOperandCombine();
-				boolResult = ManifoldCancellableBoolean.BatchBoolean(batch.Manifolds, operationType, cancellationToken);
+				boolResult = ManifoldCancellableBoolean.BatchBoolean(
+					batch.Manifolds, operationType, ManifoldPairwiseFold.ProgressSinkFor(progress), cancellationToken);
 				progress?.CompleteOperation(CombineCompletePhase);
 			}
 
@@ -359,16 +360,18 @@ namespace MatterHackers.PolygonMesh.Csg
 			}
 			else
 			{
-				// The batch is one native call with no progress hook, so the bar can only move at its
-				// two ends. Yield on both sides of it: before, so the "combining" report paints
-				// before the frame is held; after, so the finished bar paints and a Stop pressed
-				// while the call ran lands here rather than after the result is read back.
+				// The batch is one kernel call: its booleans stream their phases into the bar from
+				// inside it (on whatever thread runs them), but nothing inside it can yield. Yield on
+				// both sides of it: before, so the "combining" report paints before the frame is
+				// held; after, so the finished bar paints and a Stop pressed while the call ran lands
+				// here rather than after the result is read back.
 				var progress = BatchProgressFor(reporter, amountPerOperation, ratioCompleted);
 				cancellationToken.ThrowIfCancellationRequested();
 				await (reporter?.YieldToUi() ?? default);
 
 				ManifoldKernelCallCounts.CountOperandCombine();
-				boolResult = ManifoldCancellableBoolean.BatchBoolean(batch.Manifolds, operationType, cancellationToken);
+				boolResult = ManifoldCancellableBoolean.BatchBoolean(
+					batch.Manifolds, operationType, ManifoldPairwiseFold.ProgressSinkFor(progress), cancellationToken);
 
 				progress?.CompleteOperation(CombineCompletePhase);
 				cancellationToken.ThrowIfCancellationRequested();
@@ -407,7 +410,8 @@ namespace MatterHackers.PolygonMesh.Csg
 		/// explicit binary entry point. Progress is NOT a reason to fold: the fold re-runs a full
 		/// binary boolean against the growing result for every operand, which turned a 20-operand
 		/// union from seconds into minutes, and every boolean in the app is watched. A watched
-		/// batch reports at its start and end instead (<see cref="BatchProgressFor"/>).
+		/// batch hands its reporter to the tree instead, which passes it to each boolean it runs
+		/// (<see cref="BatchProgressFor"/>).
 		/// </remarks>
 		private static bool NeedsExplicitBoolean(RustWindingRule windingRule)
 		{
@@ -415,11 +419,18 @@ namespace MatterHackers.PolygonMesh.Csg
 		}
 
 		/// <summary>
-		/// The bar for a batch boolean, which the kernel cannot report into: already told the
-		/// combine has started, and closed out by the caller with
-		/// <see cref="BooleanProgressAdapter.CompleteOperation"/> once it returns. Null when
-		/// nobody is watching.
+		/// The bar for a batch boolean: already told the combine has started, fed the kernel's
+		/// phases through <see cref="ManifoldPairwiseFold.ProgressSinkFor"/> while it runs, and
+		/// closed out by the caller with <see cref="BooleanProgressAdapter.CompleteOperation"/>
+		/// once it returns. Null when nobody is watching.
 		/// </summary>
+		/// <remarks>
+		/// The whole batch is one operation window, and every boolean the kernel's tree runs
+		/// restarts its phases at fraction 0 inside it. The adapter's high-water mark keeps the
+		/// bar from going backwards, so on a multi-boolean tree it climbs with the first boolean
+		/// that gets far and then holds while later ones catch up; the phase name in the message
+		/// is what keeps moving.
+		/// </remarks>
 		private static BooleanProgressAdapter BatchProgressFor(ProgressReporter reporter, double amountPerOperation, double ratioCompleted)
 		{
 			if (!AnyoneWatching(reporter))
