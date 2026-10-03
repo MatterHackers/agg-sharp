@@ -59,7 +59,8 @@ namespace MatterHackers.AggSharpDemo
 
 		public const string AggSharpDemosLabel = "agg-sharp Demos";
 
-		/// <summary>The tab strip's height in design units: the GUI demo's menu bar plus room for the accent bar.</summary>
+		/// <summary>The tab strip's height in design units: the GUI demo's menu bar plus the band showing above the
+		/// folder tabs.</summary>
 		public const double TabBarHeight = 32;
 
 		private readonly IDemoStateStore stateStore;
@@ -267,14 +268,16 @@ namespace MatterHackers.AggSharpDemo
 
 		private void DemoTheme_ThemeChanged(object sender, EventArgs e) => this.ApplyTheme();
 
-		/// <summary>The tab strip takes the top bar's fill, so it and the page's menu bar read as one header, with
-		/// the selected tab in the accent; the pages recolour themselves.</summary>
+		/// <summary>Both pages start with a menu bar in the top bar's fill, so the selected tab takes that fill and joins
+		/// it; the band behind the tabs is a step darker. The pages recolour themselves.</summary>
 		private void ApplyTheme()
 		{
 			DemoPalette palette = this.DemoTheme.Palette;
-			this.Tabs.BarColor = palette.TopBarBackground;
+			this.Tabs.PageColor = palette.TopBarBackground;
+			// The dark canvas is a step under the dark top bar; the light palette has nothing darker than its top bar
+			// (the canvas is lighter), so the light band is its top bar taken down a step.
+			this.Tabs.BarColor = palette.IsDark ? palette.BackgroundColor : DemoPalette.Rgb(0.82, 0.82, 0.86);
 			this.Tabs.SeparatorColor = palette.Separator;
-			this.Tabs.AccentColor = DemoTheme.ColorOf(this.DemoTheme.Accent);
 			this.Tabs.TextColor = palette.TextColor;
 			this.Tabs.TextDimColor = palette.TextDim;
 			this.Tabs.HoverColor = this.DemoTheme.Theme.MinimalShade;

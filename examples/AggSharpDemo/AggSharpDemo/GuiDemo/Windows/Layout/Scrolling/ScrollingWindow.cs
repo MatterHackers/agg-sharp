@@ -109,12 +109,14 @@ namespace MatterHackers.AggSharpDemo.GuiDemo.Windows.Layout.Scrolling
 			this.kit.Recolor();
 			DemoPalette palette = this.demoTheme.Palette;
 			this.BackgroundColor = palette.PanelFill;
-			this.Tabs.BarColor = palette.PanelFill;
+			// The selected tab is filled with the page's colour so it joins the page; the band behind the tabs is the
+			// canvas tone, a step darker than the panel in both palettes.
+			this.Tabs.PageColor = palette.PanelFill;
+			this.Tabs.BarColor = palette.BackgroundColor;
 			this.Tabs.SeparatorColor = palette.Separator;
-			this.Tabs.AccentColor = this.kit.Theme.PrimaryAccentColor;
 			this.Tabs.TextColor = palette.TextColor;
 			this.Tabs.TextDimColor = palette.TextDim;
-			this.Tabs.HoverColor = palette.WidgetBackground;
+			this.Tabs.HoverColor = palette.Separator;
 			this.Tabs.PointSize = this.kit.FontSize(12);
 			this.Appearance.Recolor();
 			this.ScrollTo.Recolor();

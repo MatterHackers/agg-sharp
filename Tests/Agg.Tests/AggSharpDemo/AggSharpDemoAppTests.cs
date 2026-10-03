@@ -55,11 +55,13 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			foreach (GuiWidget tab in app.Tabs.Tabs)
 			{
 				RectangleDouble bounds = BoundsIn(app, tab);
-				await Assert.That(bounds.Top).IsEqualTo(app.LocalBounds.Top).Because($"'{tab.Text}' should sit along the top");
+				await Assert.That(bounds.Top).IsEqualTo(app.LocalBounds.Top - TabView.TabTopPadding * GuiWidget.DeviceScale).Within(1)
+					.Because($"'{tab.Text}' should sit along the top, under the band's top padding");
 			}
 
-			await Assert.That(BoundsIn(app, app.Tabs.Tabs[0]).Left).IsEqualTo(app.LocalBounds.Left);
-			await Assert.That(BoundsIn(app, app.Tabs.Tabs[1]).Right).IsEqualTo(app.LocalBounds.Right);
+			// Folder tabs sized to their labels, left-aligned after the inset.
+			await Assert.That(BoundsIn(app, app.Tabs.Tabs[0]).Left).IsEqualTo(app.LocalBounds.Left + TabView.TabInset * GuiWidget.DeviceScale).Within(1);
+			await Assert.That(BoundsIn(app, app.Tabs.Tabs[1]).Right).IsLessThan(app.LocalBounds.Right - TabView.TabInset * GuiWidget.DeviceScale);
 
 			// The first visit opens on AGG drawing, as the site always has.
 			await Assert.That(app.SelectedTab).IsEqualTo(AggSharpDemoApp.AggDemosTab);
@@ -335,8 +337,9 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 				app.DemoTheme.SetPreference(preference);
 				DemoPalette palette = preference == ThemePreference.Dark ? DemoPalette.Dark : DemoPalette.Light;
 
-				await Assert.That(app.Tabs.BarColor).IsEqualTo(palette.TopBarBackground).Because($"{preference} tab strip");
-				await Assert.That(app.Tabs.AccentColor).IsEqualTo(DemoTheme.ColorOf(app.DemoTheme.Accent)).Because($"{preference} selected tab");
+				// The selected tab joins the page's menu bar; the band behind the tabs is recessed a step darker.
+				await Assert.That(app.Tabs.PageColor).IsEqualTo(palette.TopBarBackground).Because($"{preference} selected tab");
+				await Assert.That((int)app.Tabs.BarColor.green).IsLessThan(palette.TopBarBackground.green).Because($"{preference} tab strip");
 				await Assert.That(sidebar.BackgroundColor).IsEqualTo(palette.PanelFill).Because($"{preference} sidebar");
 				await Assert.That(page.Content.BackgroundColor).IsEqualTo(palette.BackgroundColor).Because($"{preference} page area");
 				await Assert.That(search.BackgroundColor).IsEqualTo(palette.WidgetBackground).Because($"{preference} search fill");
