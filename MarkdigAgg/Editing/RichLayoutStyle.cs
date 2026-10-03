@@ -257,9 +257,10 @@ namespace Markdig.Agg.Editing
 		public double TableCellPaddingY => 2 * Scale;
 
 		/// <summary>
-		/// The thickness of a table's grid lines (the viewer's 1 pixel cell borders and rules).
+		/// The thickness of a table's grid lines: a whole number of device pixels, the same as the viewer's
+		/// <see cref="AggTable.GridLineThickness"/>, so a line never lands half on a pixel.
 		/// </summary>
-		public double TableGridLineWidth => 1 * Scale;
+		public double TableGridLineWidth => GridPixels.LineThickness(Scale);
 
 		/// <summary>
 		/// The narrowest a table column's text gets when the table is squeezed to fit (a column whose text is

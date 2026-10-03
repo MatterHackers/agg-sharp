@@ -29,6 +29,7 @@ either expressed or implied, of the FreeBSD Project.
 
 using System;
 using System.Collections.Generic;
+using Markdig.Renderers.Agg;
 using MatterHackers.Agg;
 using MatterHackers.VectorMath;
 
@@ -128,11 +129,60 @@ namespace Markdig.Agg.Editing
 		public List<List<RichTableCellLayout>> Rows { get; } = new List<List<RichTableCellLayout>>();
 
 		/// <summary>
-		/// The grid: a thin rectangle above every row, one below the last, and one left of every column and right of
-		/// the last. The widget fills these in <see cref="RichLayoutStyle.TableGridColor"/> after
-		/// the backgrounds.
+		/// The grid as laid out: a thin rectangle above every row, one below the last, and one left of every column
+		/// and right of the last. The widget does not fill these directly: it paints the grid from
+		/// <see cref="SnapGrid"/>, which puts each line on whole device pixels and keeps crossings from being painted
+		/// twice.
 		/// </summary>
 		public List<RectangleDouble> GridLines { get; } = new List<RectangleDouble>();
+
+		// The left edge of every vertical grid line, left to right, and the bottom edge of every rule, top to bottom,
+		// in block coordinates.
+		private readonly List<double> lineLefts = new List<double>();
+		private readonly List<double> lineBottoms = new List<double>();
+
+		// The rows the viewer stripes, by index (the rows StripedRows boxes).
+		internal List<int> StripedRowIndices { get; } = new List<int>();
+
+		/// <summary>
+		/// The grid as <see cref="SnapGrid"/> last snapped it, in drawing coordinates: each vertical line's left edge,
+		/// each rule's bottom edge (top rule first) and the whole-pixel line thickness. The lists are refilled in
+		/// place rather than reallocated each frame.
+		/// </summary>
+		internal List<double> SnappedLefts { get; } = new List<double>();
+
+		internal List<double> SnappedBottoms { get; } = new List<double>();
+
+		internal int SnappedThickness { get; private set; }
+
+		/// <summary>
+		/// Snaps the grid, drawn with the block's bottom at <paramref name="originY"/>, to whole device pixels under
+		/// <paramref name="graphics2D"/>'s transform, as the viewer's AggTable does (see <see cref="SnappedLefts"/>).
+		/// Returns false for a table with no rows, which has no grid.
+		/// </summary>
+		internal bool SnapGrid(Graphics2D graphics2D, double originY)
+		{
+			SnappedLefts.Clear();
+			SnappedBottoms.Clear();
+			if (Rows.Count == 0)
+			{
+				return false;
+			}
+
+			var transform = graphics2D.GetTransform();
+			SnappedThickness = Math.Max(1, (int)Math.Round(gridLineWidth));
+			foreach (double left in lineLefts)
+			{
+				SnappedLefts.Add(GridPixels.Snap(left, transform.tx));
+			}
+
+			foreach (double bottom in lineBottoms)
+			{
+				SnappedBottoms.Add(GridPixels.Snap(originY + bottom, transform.ty));
+			}
+
+			return true;
+		}
 
 		/// <summary>
 		/// The header row's box inside the outer grid lines, for a widget that shades it; null for a table with no
@@ -255,12 +305,14 @@ namespace Markdig.Agg.Editing
 				{
 					// The viewer counts its header as row 0 and stripes the even rows after it.
 					layout.StripedRows.Add(rowBox);
+					layout.StripedRowIndices.Add(r);
 				}
 			}
 
 			foreach (double top in layout.gridLineTops)
 			{
 				layout.GridLines.Add(new RectangleDouble(0, Flip(top + line), layout.Width, Flip(top)));
+				layout.lineBottoms.Add(Flip(top + line));
 			}
 
 			if (layout.Rows.Count > 0)
@@ -268,9 +320,11 @@ namespace Markdig.Agg.Editing
 				foreach (double left in layout.columnLefts)
 				{
 					layout.GridLines.Add(new RectangleDouble(left - line, Flip(gridBottom), left, Flip(gridTop)));
+					layout.lineLefts.Add(left - line);
 				}
 
 				layout.GridLines.Add(new RectangleDouble(layout.Width - line, Flip(gridBottom), layout.Width, Flip(gridTop)));
+				layout.lineLefts.Add(layout.Width - line);
 			}
 
 			return layout;

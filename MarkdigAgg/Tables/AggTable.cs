@@ -26,12 +26,6 @@ namespace Markdig.Renderers.Agg
 		public List<AggTableRow> Rows { get; }
 
 		/// <summary>
-		/// No longer populated: the table draws its own rules (see <see cref="OnDraw"/>). Kept because AggTable is
-		/// public library API.
-		/// </summary>
-		public List<HorizontalLine> HorizontalRules { get; } = new List<HorizontalLine>();
-
-		/// <summary>
 		/// The color of every grid line.
 		/// </summary>
 		public Color GridColor { get; set; } = Color.Black;
@@ -52,7 +46,7 @@ namespace Markdig.Renderers.Agg
 		/// <summary>
 		/// The grid line thickness in whole device pixels: one pixel at DeviceScale 1, scaled and rounded above it.
 		/// </summary>
-		public static int GridLineThickness => Math.Max(1, (int)Math.Round(DeviceScale));
+		public static int GridLineThickness => GridPixels.LineThickness(DeviceScale);
 
 		public override void OnLayout(LayoutEventArgs layoutEventArgs)
 		{
@@ -254,10 +248,8 @@ namespace Markdig.Renderers.Agg
 			double tx = transform.tx;
 			double ty = transform.ty;
 
-			// Floor(v + .5), not Math.Round: banker's rounding sends some .5 edges down and others up (DeviceScale 1.25
-			// puts edges on .5), which made columns differ by a pixel and let a line eat into a cell's padding.
-			double SnapX(double x) => Math.Floor(x + tx + 0.5) - tx;
-			double SnapY(double y) => Math.Floor(y + ty + 0.5) - ty;
+			double SnapX(double x) => GridPixels.Snap(x, tx);
+			double SnapY(double y) => GridPixels.Snap(y, ty);
 
 			// Each vertical line sits in the gap its cell's left margin opened; the closing one after the last cell.
 			foreach (var cell in columnRow.Cells)

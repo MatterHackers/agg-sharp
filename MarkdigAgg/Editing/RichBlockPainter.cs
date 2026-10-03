@@ -117,16 +117,36 @@ namespace Markdig.Agg.Editing
 
 		private static void DrawTable(Graphics2D graphics2D, RichTableLayout table, double originY, RichLayoutStyle style, RichEditColors colors, Func<InlineAtom, ImageBuffer> loadedImage)
 		{
-			// Stripes first, then the grid over them, as the viewer's AggTable draws; the header is marked only by
-			// its bold face, which the layout already chose.
-			foreach (var stripe in table.StripedRows)
+			// Painted like the viewer's AggTable: every line on whole device pixels, stripes between the lines and
+			// verticals between the rules, so no pixel of the translucent grid colour is painted twice. The header is
+			// marked only by its bold face, which the layout already chose.
+			if (table.SnapGrid(graphics2D, originY))
 			{
-				graphics2D.FillRectangle(Offset(stripe, originY), style.TableStripeColor);
-			}
+				var lefts = table.SnappedLefts;
+				var bottoms = table.SnappedBottoms;
+				int line = table.SnappedThickness;
+				foreach (int r in table.StripedRowIndices)
+				{
+					for (int c = 0; c + 1 < lefts.Count; c++)
+					{
+						graphics2D.FillRectangle(lefts[c] + line, bottoms[r + 1] + line, lefts[c + 1], bottoms[r], style.TableStripeColor);
+					}
+				}
 
-			foreach (var gridLine in table.GridLines)
-			{
-				graphics2D.FillRectangle(Offset(gridLine, originY), style.TableGridColor);
+				double gridLeft = lefts[0];
+				double gridRight = lefts[lefts.Count - 1] + line;
+				foreach (double bottom in bottoms)
+				{
+					graphics2D.FillRectangle(gridLeft, bottom, gridRight, bottom + line, style.TableGridColor);
+				}
+
+				foreach (double left in lefts)
+				{
+					for (int r = 0; r + 1 < bottoms.Count; r++)
+					{
+						graphics2D.FillRectangle(left, bottoms[r + 1] + line, left + line, bottoms[r], style.TableGridColor);
+					}
+				}
 			}
 
 			foreach (var row in table.Rows)
@@ -203,7 +223,15 @@ namespace Markdig.Agg.Editing
 
 			if (selection.WholeBlock)
 			{
-				graphics2D.FillRectangle(0, originY, width, originY + layout.Height, color);
+				if (layout is RichTableLayout wholeTable && wholeTable.SnapGrid(graphics2D, originY))
+				{
+					FillAroundGrid(graphics2D, wholeTable, originY, width, color);
+				}
+				else
+				{
+					graphics2D.FillRectangle(0, originY, width, originY + layout.Height, color);
+				}
+
 				return;
 			}
 
@@ -230,6 +258,40 @@ namespace Markdig.Agg.Editing
 				int from = blockIndex == start.BlockIndex && index == firstCell ? start.Offset : 0;
 				int to = blockIndex == end.BlockIndex && index == lastCell ? end.Offset : int.MaxValue;
 				DrawLineSelection(graphics2D, cell.Lines, originY, from, to, color);
+			}
+		}
+
+		// A selected table is shaded everywhere in its block except on the grid lines (just snapped by the caller),
+		// so the translucent selection never darkens a line and the grid keeps one tone, as when unselected.
+		private static void FillAroundGrid(Graphics2D graphics2D, RichTableLayout table, double originY, double width, Color color)
+		{
+			var lefts = table.SnappedLefts;
+			var bottoms = table.SnappedBottoms;
+			int line = table.SnappedThickness;
+			double gridLeft = lefts[0];
+			double gridRight = lefts[lefts.Count - 1] + line;
+			double gridTop = bottoms[0] + line;
+			double gridBottom = bottoms[bottoms.Count - 1];
+
+			// A table wider than the block runs past width, so a band can be empty; skip it rather than fill it inverted.
+			void Fill(double left, double bottom, double right, double top)
+			{
+				if (right > left && top > bottom)
+				{
+					graphics2D.FillRectangle(left, bottom, right, top, color);
+				}
+			}
+
+			Fill(0, gridTop, width, originY + table.Height);
+			Fill(0, originY, width, gridBottom);
+			Fill(0, gridBottom, gridLeft, gridTop);
+			Fill(gridRight, gridBottom, width, gridTop);
+			for (int r = 0; r + 1 < bottoms.Count; r++)
+			{
+				for (int c = 0; c + 1 < lefts.Count; c++)
+				{
+					Fill(lefts[c] + line, bottoms[r + 1] + line, Math.Min(lefts[c + 1], width), bottoms[r]);
+				}
 			}
 		}
 
