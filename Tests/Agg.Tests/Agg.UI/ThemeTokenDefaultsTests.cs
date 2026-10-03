@@ -67,31 +67,35 @@ namespace MatterHackers.Agg.UI.Tests
 	{
 		private const int HostPad = 4;
 
+		// Every hash that changed was re-captured when solid fills into a widget backbuffer
+		// became straight source-over: double-buffered text now composites as if drawn directly (byte-identical
+		// for the button, text edit, number edit and dropdown; the segmented control differs by at most one level on
+		// a few bytes), where its anti-aliased edges used to come out darker (up to 60 levels).
 		private const string ExpectedSnapshot =
-			"new button 70.403x32 22B3ED1469A3BD07\n"
+			"new button 70.403x32 F3D3C1D4B4B8C358\n"
 			+ "new textedit 86x20.667 97573CF572D6EFAC\n"
 			+ "new textedit-empty 86x20.667 2C7B244FF6615DCC\n"
-			+ "new numberedit 78.004x20.667 163E4D4CCFE4C9FE\n"
-			+ "new dropdown 100x20.667 572ECB0D9ABF25D8\n"
-			+ "new segmented 231x24 B585908644CCFF4A\n"
-			+ "new button hover 70.403x32 1A5C70829DAFD817\n"
+			+ "new numberedit 78.004x20.667 62B2849AE2A0CD3C\n"
+			+ "new dropdown 100x20.667 993063F3EA418E88\n"
+			+ "new segmented 231x24 28F017278385B7D4\n"
+			+ "new button hover 70.403x32 AF4419EE205656AB\n"
 			+ "new textedit hover 86x20.667 97573CF572D6EFAC\n"
 			+ "new textedit-empty hover 86x20.667 2C7B244FF6615DCC\n"
-			+ "new numberedit hover 78.004x20.667 163E4D4CCFE4C9FE\n"
-			+ "new dropdown hover 100x20.667 9751799AD6B70B22\n"
-			+ "new segmented hover 231x24 4CD5832C8A47DDEF\n"
-			+ "default button 70.403x36 21012BBD794DF517\n"
-			+ "default textedit 86x34 301914D2267AD22B\n"
-			+ "default textedit-empty 86x34 D14456D5728F8034\n"
-			+ "default numberedit 78.004x34 62375CE4CCAC1DC9\n"
-			+ "default dropdown 100x34 A2E7BA02F7997F89\n"
-			+ "default segmented 240x40 9DB7F9C711D6A879\n"
-			+ "default button hover 70.403x36 562388B3748516AE\n"
-			+ "default textedit hover 86x34 AC3E91868A2F3F3F\n"
-			+ "default textedit-empty hover 86x34 1DC54208371569B4\n"
-			+ "default numberedit hover 78.004x34 2C6D88503806649C\n"
-			+ "default dropdown hover 100x34 AB502DCCEAFDEAD5\n"
-			+ "default segmented hover 240x40 134203BEE48F8ED3";
+			+ "new numberedit hover 78.004x20.667 62B2849AE2A0CD3C\n"
+			+ "new dropdown hover 100x20.667 E72071E7578A1265\n"
+			+ "new segmented hover 231x24 B5A2594C71B2FCDF\n"
+			+ "default button 70.403x36 0D4FE92EF52D6DD4\n"
+			+ "default textedit 86x34 93223F18826119C5\n"
+			+ "default textedit-empty 86x34 1D98484CB65C4841\n"
+			+ "default numberedit 78.004x34 EA778097CDE0ABC8\n"
+			+ "default dropdown 100x34 B2D37621EF4F810A\n"
+			+ "default segmented 240x40 A1D92834C2EA43CA\n"
+			+ "default button hover 70.403x36 16EA0358DE4A872D\n"
+			+ "default textedit hover 86x34 55549D9A634D028D\n"
+			+ "default textedit-empty hover 86x34 6764C3315D00B82C\n"
+			+ "default numberedit hover 78.004x34 2D8A54A456E75E34\n"
+			+ "default dropdown hover 100x34 2AB0435F2EAD4AB5\n"
+			+ "default segmented hover 240x40 C1AAC32B63D2C2FD";
 
 		[Test]
 		public async Task ThemedWidgetsDrawAsTheyDidBeforeTokens()
@@ -244,15 +248,19 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
+		// Every hash that changed was re-captured when solid fills into a widget backbuffer
+		// became straight source-over: double-buffered text now composites as if drawn directly (byte-identical
+		// for the button, text edit, number edit and dropdown; the segmented control differs by at most one level on
+		// a few bytes), where its anti-aliased edges used to come out darker (up to 60 levels).
 		private const string ExpectedScaledSnapshot =
-			"x2 button 140.806x64 78D9F965A809331B\n"
+			"x2 button 140.806x64 5D1E71322E60565B\n"
 			+ "x2 textedit 92x41.333 435F6E92BF8E5479\n"
 			+ "x2 textedit-empty 92x41.333 7E1368FA1CC08968\n"
-			+ "x2 numberedit 96.008x41.333 ADF08A5D644D4BC2\n"
-			+ "x2 dropdown 155.023x41.333 5DFCBC809CEA3B67\n"
-			+ "x2 segmented 459x48 C2D2C5819D6CAF17\n"
+			+ "x2 numberedit 96.008x41.333 397EECAD7C900F49\n"
+			+ "x2 dropdown 155.023x41.333 F20D5A4518C370CA\n"
+			+ "x2 segmented 459x48 217002A2F5C0ABE3\n"
 			+ "stretched textedit 198x20.667 DEB504FF7F531F31\n"
-			+ "stretched-narrow segmented 150x24 31FFBEDCF7C57CDD";
+			+ "stretched-narrow segmented 150x24 B377C5C5B6E2EA43";
 
 		private static IEnumerable<(string, Func<ThemeConfig, GuiWidget>)> Widgets()
 		{

@@ -151,6 +151,94 @@ namespace Markdig.Agg.Tests
 			}
 		}
 
+		/// <summary>
+		/// The zebra stripe must actually reach the screen: a striped body row's cells read darker than an
+		/// unstriped row's, and the stripe stays between the grid lines so a line pixel looks the same in both rows.
+		/// </summary>
+		[Test]
+		[Arguments(1.0)]
+		[Arguments(2.0)]
+		public async Task StripedRowsPaintBetweenTheGridLines(double deviceScale)
+		{
+			double savedScale = GuiWidget.DeviceScale;
+			GuiWidget.DeviceScale = deviceScale;
+			try
+			{
+				var markdownWidget = new MarkdownWidget(new ThemeConfig(), scrollContent: false)
+				{
+					HAnchor = HAnchor.Stretch,
+					VAnchor = VAnchor.Stretch,
+					Markdown =
+					"""
+					| Feature | Status | Notes |
+					| :--- | :---: | ---: |
+					| Headings | Ready | 6 levels |
+					| Tables | Ready | Pipe and grid |
+					"""
+				};
+				var container = new GuiWidget(500 * deviceScale, 330 * deviceScale)
+				{
+					DoubleBuffer = true,
+					BackgroundColor = Color.White
+				};
+				container.AddChild(markdownWidget);
+				container.PerformLayout();
+				var graphics = container.BackBuffer.NewGraphics2D();
+				graphics.Clear(Color.White);
+				container.OnDraw(graphics);
+
+				var image = container.BackBuffer;
+				var table = markdownWidget.Descendants<AggTable>().Single();
+				var plainRow = table.Rows[1];
+				var stripedRow = table.Rows[2];
+				await Assert.That(plainRow.StripeColor.Alpha0To255).IsEqualTo(0);
+				await Assert.That(stripedRow.StripeColor.Alpha0To255).IsGreaterThan(0);
+
+				// The most common value inside a cell is its background (text covers only part of it).
+				int CellBackground(AggTableCell cell)
+				{
+					var bounds = cell.TransformToParentSpace(container, cell.LocalBounds);
+					var counts = new Dictionary<int, int>();
+					for (int y = (int)Math.Ceiling(bounds.Bottom) + 1; y < (int)Math.Floor(bounds.Top) - 1; y++)
+					{
+						for (int x = (int)Math.Ceiling(bounds.Left) + 1; x < (int)Math.Floor(bounds.Right) - 1; x++)
+						{
+							int red = image.GetPixel(x, y).red;
+							counts[red] = counts.TryGetValue(red, out int n) ? n + 1 : 1;
+						}
+					}
+
+					return counts.OrderByDescending(pair => pair.Value).First().Key;
+				}
+
+				for (int c = 0; c < stripedRow.Cells.Count; c++)
+				{
+					int plain = CellBackground(plainRow.Cells[c]);
+					int striped = CellBackground(stripedRow.Cells[c]);
+					await Assert.That(plain).IsEqualTo(255);
+					await Assert.That(striped).IsLessThanOrEqualTo(245);
+				}
+
+				// A vertical grid line pixel reads the same beside an unstriped and a striped cell: the stripe
+				// never lies under (and so never tints) a line.
+				int LinePixel(AggTableRow row)
+				{
+					var cell = row.Cells[1].TransformToParentSpace(container, row.Cells[1].LocalBounds);
+					int x = (int)Math.Floor(cell.Left) - 1;
+					int y = (int)Math.Floor((cell.Bottom + cell.Top) / 2);
+					return image.GetPixel(x, y).red;
+				}
+
+				int plainLine = LinePixel(plainRow);
+				await Assert.That(plainLine).IsLessThan(180);
+				await Assert.That(LinePixel(stripedRow)).IsEqualTo(plainLine);
+			}
+			finally
+			{
+				GuiWidget.DeviceScale = savedScale;
+			}
+		}
+
 		private static List<List<int>> Groups(IEnumerable<int> sortedValues)
 		{
 			var groups = new List<List<int>>();

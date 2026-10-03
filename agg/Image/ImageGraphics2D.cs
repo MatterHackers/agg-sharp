@@ -34,6 +34,10 @@ namespace MatterHackers.Agg
 		private readonly ScanlineCachePacked8 drawImageScanlineCache = new ScanlineCachePacked8();
 		private readonly ScanlineRenderer scanlineRenderer = new ScanlineRenderer();
 
+		// StraightOverDestination's chain, kept while the destination buffer stays the same so a fill allocates nothing.
+		private ImageBuffer straightOverBuffer;
+		private ImageClippingProxy straightOverClipping;
+
 		/// <summary>
 		/// Whether a Best-quality image draw reads past the source edge as the edge pixel (clamp) rather than as
 		/// transparent (clip). Clip is right for placing an image on a canvas; resizing an image into its own
@@ -87,7 +91,8 @@ namespace MatterHackers.Agg
 			rasterizer.add_path(vertexSource);
 			if (destImageByte != null)
 			{
-				scanlineRenderer.RenderSolid(destImageByte, rasterizer, scanlineCache, colorBytes.ToColor());
+				// See StraightOverDestination: a widget backbuffer takes a solid fill as straight source-over.
+				scanlineRenderer.RenderSolid(StraightOverDestination() ?? destImageByte, rasterizer, scanlineCache, colorBytes.ToColor());
 				DestImage.MarkImageChanged();
 			}
 			else
@@ -95,6 +100,73 @@ namespace MatterHackers.Agg
 				scanlineRenderer.RenderSolid(destImageFloat, rasterizer, scanlineCache, colorBytes.ToColorF());
 				destImageFloat.MarkImageChanged();
 			}
+		}
+
+		/// <summary>
+		/// The destination to fill a solid colour into when it is a 32 bit <see cref="ImageBuffer"/> labelled
+		/// <see cref="BlenderPreMultBGRA"/>: a clipping proxy with the destination's clip box over a
+		/// <see cref="StraightOverImageProxy"/> on that buffer. Null - fill through the destination as is - otherwise.
+		/// </summary>
+		/// <remarks>
+		/// <b>The rule: a widget backbuffer (and any image labelled premultiplied that the app draws into) holds
+		/// straight colour.</b> Every consumer reads it that way - the GPU image blit (see the note in
+		/// Graphics2DGpu.Render(IImageByte, ...)), the CPU blit onto a straight surface, and MatterCAD's icons - so
+		/// a solid fill blends into it with straight source-over (<see cref="BlenderStraightOverBGRA"/>, C++
+		/// <c>blender_rgba_plain</c>): (c, a) over a transparent pixel, the straight lerp over an opaque one.
+		/// Graphics2D colours are straight. Handing one to the label's premultiplied blender added the whole colour
+		/// on top of the background, so a translucent fill over opaque content came out too light - a faint one
+		/// clamped to white (ImageGraphics2DTranslucentFillTests, MarkdownTableGridTests' table stripes) - and
+		/// over a transparent pixel it stored (c * cover, cover) at an anti-aliased edge, which the straight-reading
+		/// composite darkened by the cover again (PartlyCoveredEdgeOnTransparentBackbufferCompositesStraight).
+		/// ImageBuffer's own solid blends keep the C++ premultiplied contract (ImageBufferSolidBlendTests); the
+		/// straight blend lives only in the proxy, so the buffer and its blender are never changed. A genuinely premultiplied target (the SVG
+		/// renderer's layers) draws through <see cref="ScanlineRenderer"/> directly with premultiplied colour.
+		/// Only a real ImageBuffer is asked: other IImageByte destinations (Graphics2DSpanImage) have no blender.
+		/// The chain is rebuilt only through plain <see cref="ImageClippingProxy"/> wrappers, whose boxes intersect
+		/// into one; any other proxy (an <see cref="ImageMultiClipProxy"/>) keeps the labelled blend rather than
+		/// lose its clipping.
+		/// </remarks>
+		private IImageByte StraightOverDestination()
+		{
+			int left = int.MinValue, bottom = int.MinValue, right = int.MaxValue, top = int.MaxValue;
+			IImageByte image = destImageByte;
+			while (image is ImageProxy proxy)
+			{
+				if (proxy.GetType() != typeof(ImageClippingProxy))
+				{
+					return null;
+				}
+
+				RectangleInt box = ((ImageClippingProxy)proxy).clip_box();
+				left = Math.Max(left, box.Left);
+				bottom = Math.Max(bottom, box.Bottom);
+				right = Math.Min(right, box.Right);
+				top = Math.Min(top, box.Top);
+				image = proxy.LinkedImage;
+			}
+
+			if (!(image is ImageBuffer buffer && buffer.BitDepth == 32 && buffer.GetRecieveBlender() is BlenderPreMultBGRA))
+			{
+				return null;
+			}
+
+			if (straightOverBuffer != buffer)
+			{
+				straightOverBuffer = buffer;
+				straightOverClipping = new ImageClippingProxy(new StraightOverImageProxy(buffer));
+			}
+
+			// Copied as is (an empty box stays empty): SetClippingBox would normalize an inverted, invisible box.
+			if (left == int.MinValue)
+			{
+				straightOverClipping.reset_clipping(true);
+			}
+			else
+			{
+				straightOverClipping.clip_box_naked(left, bottom, right, top);
+			}
+
+			return straightOverClipping;
 		}
 
 		/// <summary>

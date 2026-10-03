@@ -426,11 +426,10 @@ namespace MatterHackers.Agg.Svg
 			}
 
 			var flattened = new FlattenCurves(path) { ResolutionScale = scale };
-			Graphics2D graphics = target.NewGraphics2D();
 			SvgServerPaint fill = Paint(context, style.Fill, style.FillOpacity, flattened, transform);
 			if (!fill.IsNone)
 			{
-				Fill(graphics, target, new VertexSourceApplyTransform(flattened, transform), fill, style.FillEvenOdd, antiAlias ?? style.AntiAlias);
+				Fill(target, new VertexSourceApplyTransform(flattened, transform), fill, style.FillEvenOdd, antiAlias ?? style.AntiAlias);
 			}
 
 			SvgServerPaint stroke = style.StrokeWidth > 0 ? Paint(context, style.Stroke, style.StrokeOpacity, flattened, transform) : default;
@@ -457,7 +456,7 @@ namespace MatterHackers.Agg.Svg
 					MiterLimit = style.MiterLimit,
 					ApproximationScale = scale,
 				};
-				Fill(graphics, target, new VertexSourceApplyTransform(strokeOutline, transform), stroke, false, antiAlias ?? style.AntiAlias);
+				Fill(target, new VertexSourceApplyTransform(strokeOutline, transform), stroke, false, antiAlias ?? style.AntiAlias);
 			}
 		}
 
@@ -530,16 +529,14 @@ namespace MatterHackers.Agg.Svg
 		/// <paramref name="antiAlias"/> each pixel is covered or not: a coverage threshold of one half stands in for
 		/// tiny-skia's non-anti-aliased fill, which covers the pixels whose centres are inside.
 		/// </summary>
-		private static void Fill(Graphics2D graphics, ImageBuffer target, IVertexSource pixels, SvgServerPaint paint, bool evenOdd, bool antiAlias = true)
+		/// <remarks>
+		/// Every fill goes straight to <see cref="ScanlineRenderer"/>, never through Graphics2D.Render: ImageGraphics2D
+		/// blends a solid fill onto a target labelled premultiplied with straight-over math (widget backbuffers hold
+		/// straight colour), while SVG paint is already premultiplied for this genuinely premultiplied target
+		/// (<see cref="PaintColor"/>), so going through graphics.Render would blend a premultiplied colour as straight.
+		/// </remarks>
+		private static void Fill(ImageBuffer target, IVertexSource pixels, SvgServerPaint paint, bool evenOdd, bool antiAlias = true)
 		{
-			if (paint.Spans == null && antiAlias)
-			{
-				graphics.Rasterizer.filling_rule(evenOdd ? Util.filling_rule_e.fill_even_odd : Util.filling_rule_e.fill_non_zero);
-				graphics.Render(pixels, paint.Solid.Value);
-				graphics.Rasterizer.filling_rule(Util.filling_rule_e.fill_non_zero);
-				return;
-			}
-
 			// A bare rasterizer has no clip box, and the renderer writes every span it is given: without this a shape
 			// reaching past the target indexes outside its rows.
 			var rasterizer = new ScanlineRasterizer();
