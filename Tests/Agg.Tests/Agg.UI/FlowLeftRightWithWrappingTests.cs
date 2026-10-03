@@ -47,6 +47,43 @@ namespace MatterHackers.Agg.UI.Tests
 	public class FlowLeftRightWithWrappingTests
 	{
 		/// <summary>
+		/// ContentWidth - every item's width and margin end to end - is known before the flow has wrapped, so a
+		/// host can size a window to fit it on one row. It used to read 0 until the first wrap pass.
+		/// </summary>
+		[Test]
+		[NotInParallel]
+		[Arguments(1.0)]
+		[Arguments(2.0)]
+		public async Task ContentWidthIsKnownBeforeAnyWrap(double scale)
+		{
+			double savedDeviceScale = GuiWidget.DeviceScale;
+			try
+			{
+				GuiWidget.DeviceScale = scale;
+				var flow = new FlowLeftRightWithWrapping();
+				var items = new[]
+				{
+					new GuiWidget(50 * scale, 20 * scale) { Margin = new BorderDouble(2, 0) },
+					new GuiWidget(30 * scale, 20 * scale) { Margin = new BorderDouble(4, 0) },
+					new GuiWidget(70 * scale, 20 * scale),
+				};
+				foreach (var item in items)
+				{
+					flow.AddChild(item);
+				}
+
+				var expected = items.Sum(item => item.Width + item.DeviceMargin.Width);
+				await Assert.That(expected).IsEqualTo((50 + 4 + 30 + 8 + 70) * scale);
+				await Assert.That(flow.ContentWidth).IsEqualTo(expected)
+					.Because($"the flow has no parent and has never wrapped, at {scale}x");
+			}
+			finally
+			{
+				GuiWidget.DeviceScale = savedDeviceScale;
+			}
+		}
+
+		/// <summary>
 		/// Widening the parent re-wraps the flow at the new width, and narrowing it wraps it again.
 		/// </summary>
 		[Test]

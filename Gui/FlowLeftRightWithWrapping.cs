@@ -198,15 +198,22 @@ namespace MatterHackers.Agg.UI
 
 		private bool needAnotherLayout;
 
+		/// <summary>
+		/// How wide one row holding every item would be, in device pixels: each item's width and margin laid end
+		/// to end, without the row's own chrome. Computed from the items when asked, so it is right before the flow
+		/// has ever wrapped - a host sizing its window to fit the flow on one row asks before any layout.
+		/// </summary>
+		public double ContentWidth => addedChildren.Sum(ItemWidth);
 
-		private double contentWidth = 0;
-
-		public double ContentWidth => contentWidth;
+		/// <summary>The room <paramref name="child"/> takes in a row: a stretching item counts at its minimum.</summary>
+		private static double ItemWidth(GuiWidget child)
+		{
+			var width = child.HAnchor == HAnchor.Stretch ? child.MinimumSize.X : child.Width;
+			return width + child.DeviceMarginAndBorder.Width;
+		}
 
 		protected void DoWrappingLayout()
 		{
-			contentWidth = 0;
-
 			if (doingLayout)
 			{
 				needAnotherLayout = true;
@@ -242,13 +249,7 @@ namespace MatterHackers.Agg.UI
 				MaxLineWidth = 0;
 				foreach (var child in addedChildren)
 				{
-					var childWidth = child.Width + child.DeviceMarginAndBorder.Width;
-					if(child.HAnchor == HAnchor.Stretch)
-					{
-						childWidth = child.MinimumSize.X + child.DeviceMarginAndBorder.Width;
-					}
-
-					contentWidth += childWidth;
+					var childWidth = ItemWidth(child);
 
 					if (runningSize + childWidth > this.Width - rowPaddingWidth
 						|| child is IHardBreak)
