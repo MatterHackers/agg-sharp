@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2025, Lars Brubaker
+Copyright (c) 2026, Lars Brubaker
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -212,8 +212,11 @@ namespace Markdig.Agg.Tests
 				.SelectMany(row => row.Cells)
 				.ToList();
 
-			await Assert.That(cells.All(cell => cell.Border.Left > 0)).IsTrue();
-			await Assert.That(table.Children.OfType<HorizontalLine>().Count()).IsGreaterThanOrEqualTo(rows.Count + 1);
+			// The table paints the whole grid itself (MarkdownTableGridTests checks the pixels); cells carry no
+			// borders and no rule widgets sit between rows, since each of those ended at its own edge.
+			await Assert.That(cells.All(cell => cell.Border == new BorderDouble(0))).IsTrue();
+			await Assert.That(table.Children.OfType<HorizontalLine>().Any()).IsFalse();
+			await Assert.That(table.GridColor.Alpha0To255).IsGreaterThan(0);
 		}
 
 		[Test]
@@ -283,18 +286,18 @@ namespace Markdig.Agg.Tests
 
 			document.Parse(theme, root);
 
-			var rows = root
+			var table = root
 				.Descendants<AggTable>()
-				.Single()
+				.Single();
+			var rows = table
 				.Children
 				.OfType<AggTableRow>()
 				.ToList();
-			var allCells = rows.SelectMany(row => row.Cells).ToList();
 
-			await Assert.That(rows[0].BackgroundColor.Alpha0To255).IsEqualTo(0);
-			await Assert.That(rows[2].BackgroundColor.Alpha0To255).IsGreaterThan(0);
+			await Assert.That(rows[0].StripeColor.Alpha0To255).IsEqualTo(0);
+			await Assert.That(rows[2].StripeColor.Alpha0To255).IsGreaterThan(0);
 			await Assert.That(rows[0].Descendants<TextWidget>().Where(widget => widget.Text == "Feature" || widget.Text == "Status").All(widget => widget.Bold)).IsTrue();
-			await Assert.That(allCells.All(cell => cell.BorderColor == new Color(theme.TextColor, 150))).IsTrue();
+			await Assert.That(table.GridColor).IsEqualTo(new Color(theme.TextColor, 150));
 		}
 
 		[Test]

@@ -1,5 +1,5 @@
 // Copyright (c) 2016-2017 Nicolas Musset. All rights reserved.
-// Copyright (c) 2025, John Lewin
+// Copyright (c) 2026, John Lewin, Lars Brubaker
 // This file is licensed under the MIT license.
 // See the LICENSE.md file in the project root for more information.
 
@@ -22,6 +22,12 @@ namespace Markdig.Renderers.Agg
 		}
 
 		public bool IsHeadingRow { get; set; }
+
+		/// <summary>
+		/// The zebra stripe behind this row's cells (transparent for none). The owning AggTable paints it between
+		/// its grid lines; a row background would also cover the line gaps and tint the lines.
+		/// </summary>
+		public Color StripeColor { get; set; } = Color.Transparent;
 
 		public List<AggTableCell> Cells { get; } = new List<AggTableCell>();
 		public double RowHeight { get; private set; }
@@ -59,7 +65,8 @@ namespace Markdig.Renderers.Agg
 		internal void CellHeightChanged(double newHeight)
 		{
 			double cellPadding = 2;
-			double height = newHeight + 2 * cellPadding;
+			// Whole pixels, so the table's rules land on pixel boundaries between rows.
+			double height = Math.Ceiling(newHeight + 2 * cellPadding);
 
 			// We need the row to be as tall as the tallest cell
 			double maxCellHeight = height;
@@ -67,7 +74,7 @@ namespace Markdig.Renderers.Agg
 			{
 				if (cell.Children.Count > 0 && cell.Children.First() is FlowLeftRightWithWrapping wrappedChild)
 				{
-					maxCellHeight = Math.Max(maxCellHeight, wrappedChild.Height + 2 * cellPadding);
+					maxCellHeight = Math.Max(maxCellHeight, Math.Ceiling(wrappedChild.Height + 2 * cellPadding));
 				}
 			}
 

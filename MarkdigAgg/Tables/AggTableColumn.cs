@@ -36,7 +36,8 @@ namespace Markdig.Renderers.Agg
 				return;
 			}
 
-			double maxCellWidth = this.Cells.Select(c => c.ContentWidth).Max() + cellPadding * 2;
+			// Whole pixels, so the table's vertical grid lines land on pixel boundaries.
+			double maxCellWidth = System.Math.Ceiling(this.Cells.Select(c => c.ContentWidth).Max() + cellPadding * 2);
 			SetCellWidths(maxCellWidth);
 		}
 
