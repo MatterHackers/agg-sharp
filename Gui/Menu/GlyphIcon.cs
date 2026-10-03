@@ -60,8 +60,8 @@ namespace MatterHackers.Agg.UI
 
 			typeFace ??= LiberationSansFont.Instance;
 
-			// One em across the square: Font Awesome 4 draws on a 14 unit grid inside a 16 unit em, so its
-			// usual icon lands a pixel or so inside the square, the size agg-gui's rows show them.
+			// One em across the square: an icon font's usual glyph fills most of its em, so it lands at or a
+			// pixel inside the square.
 			var styled = new StyledTypeFace(typeFace, size * StyledTypeFace.PointsPerInch / StyledTypeFace.PixelsPerInch);
 			IVertexSource outline = styled.GetGlyphForCharacter(glyph[0]);
 			if (outline == null)
@@ -84,6 +84,66 @@ namespace MatterHackers.Agg.UI
 				* Affine.NewTranslation(size / 2.0, size / 2.0);
 
 			// Premultiplied, like the menu's own radio icons, which the row draws the same way
+			var image = new ImageBuffer(size, size);
+			image.SetRecieveBlender(new BlenderPreMultBGRA());
+			image.NewGraphics2D().Render(new VertexSourceApplyTransform(outline, transform), color);
+			return image;
+		}
+
+		/// <summary>
+		/// Draws <paramref name="glyph"/> in the font's em box rather than on its own outline: the box spans the
+		/// glyph's advance across and the face's descent to ascent up, and is centred in a <paramref name="size"/>
+		/// pixel square. Every glyph of a face then sits on the same baseline at the same scale, so a row of
+		/// button icons lines up - where <see cref="Render"/> would centre a short glyph (a minus, a caret) and
+		/// a tall one differently. A box wider or taller than the square (Font Awesome's eye-slash is 640 units
+		/// in a 512 em) shrinks to fit.
+		/// </summary>
+		/// <param name="glyph">The text to draw; only its first character is used. Null or empty returns null.</param>
+		/// <param name="typeFace">The font carrying the glyph. Null takes <see cref="LiberationSansFont.Instance"/>.</param>
+		/// <param name="color">The glyph's colour.</param>
+		/// <param name="size">The image's width and height in device pixels.</param>
+		/// <returns>The image, or null when there is no glyph or the font has no outline for it.</returns>
+		public static ImageBuffer RenderInEmBox(string glyph, TypeFace typeFace, Color color, int size)
+		{
+			if (string.IsNullOrEmpty(glyph)
+				|| size <= 0)
+			{
+				return null;
+			}
+
+			typeFace ??= LiberationSansFont.Instance;
+
+			var styled = new StyledTypeFace(typeFace, size * StyledTypeFace.PointsPerInch / StyledTypeFace.PixelsPerInch);
+			IVertexSource outline = styled.GetGlyphForCharacter(glyph[0]);
+			if (outline == null)
+			{
+				return null;
+			}
+
+			RectangleDouble bounds = outline.GetBounds();
+			if (bounds.Width <= 0
+				|| bounds.Height <= 0)
+			{
+				return null;
+			}
+
+			// The outline comes back with its pen at the origin and the baseline at y = 0; DescentInPixels is
+			// negative, below the baseline
+			double advance = styled.GetAdvanceForCharacter(glyph[0]);
+			double boxWidth = advance > 0 ? advance : bounds.Right;
+			double boxBottom = styled.DescentInPixels;
+			double boxHeight = styled.AscentInPixels - boxBottom;
+			if (boxHeight <= 0)
+			{
+				boxBottom = bounds.Bottom;
+				boxHeight = bounds.Height;
+			}
+
+			double scale = Math.Min(1, size / Math.Max(boxWidth, boxHeight));
+			Affine transform = Affine.NewTranslation(-boxWidth / 2, -(boxBottom + boxHeight / 2))
+				* Affine.NewScaling(scale)
+				* Affine.NewTranslation(size / 2.0, size / 2.0);
+
 			var image = new ImageBuffer(size, size);
 			image.SetRecieveBlender(new BlenderPreMultBGRA());
 			image.NewGraphics2D().Render(new VertexSourceApplyTransform(outline, transform), color);

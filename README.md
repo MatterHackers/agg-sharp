@@ -145,3 +145,9 @@ AGG 2.4 and keeps its ideas: anti-aliasing, subpixel accuracy, and the highest p
 ## License
 
 BSD 2-clause. See [LICENSE](LICENSE).
+
+Third-party assets:
+
+- `Gui/Fonts/fa-solid-900.ttf` — [Font Awesome Free](https://fontawesome.com) 6.7.2 Solid by Fonticons, Inc.,
+  agg's built-in icon font (`MatterHackers.Agg.UI.IconFont`). The font is SIL OFL 1.1 and the icons are
+  CC BY 4.0; see [Gui/Fonts/fa-solid-900-LICENSE.txt](Gui/Fonts/fa-solid-900-LICENSE.txt).

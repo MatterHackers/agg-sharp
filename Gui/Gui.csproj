@@ -23,6 +23,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- agg's built-in icon font, Font Awesome 6.7.2 Free Solid (font SIL OFL 1.1, icons CC BY 4.0; see
+         Fonts/fa-solid-900-LICENSE.txt); read by IconFont. -->
+    <EmbeddedResource Include="Fonts\fa-solid-900.ttf" LogicalName="MatterHackers.Agg.UI.Fonts.fa-solid-900.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Agg.Tests" />
   </ItemGroup>
 

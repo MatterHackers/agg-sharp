@@ -31,8 +31,8 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 {
 	/// <summary>
 	/// The GUI demo's emoji font: Noto Emoji, the same NotoEmoji-Regular.ttf agg-gui's demo chains behind its main
-	/// font (SIL OFL 1.1, see Fonts/NotoEmoji-LICENSE-OFL.txt), embedded in this assembly. As with
-	/// <see cref="IconFont"/> the font belongs to the demo; the library only follows <see cref="TypeFace.Fallback"/>.
+	/// font (SIL OFL 1.1, see Fonts/NotoEmoji-LICENSE-OFL.txt), embedded in this assembly. The font belongs
+	/// to the demo; the library only follows <see cref="TypeFace.Fallback"/>.
 	/// </summary>
 	public static class EmojiFont
 	{

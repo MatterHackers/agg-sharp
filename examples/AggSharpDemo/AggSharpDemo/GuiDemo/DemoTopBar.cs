@@ -310,15 +310,14 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			};
 		}
 
-		// top_bar.rs's icons (Font Awesome codepoints). Color's is palette (U+F53F), a Font Awesome 5 glyph the 4.7
-		// fa.ttf both demos load does not have - agg-gui draws its text font's missing-glyph box there. Paint brush
-		// (U+F1FC) is the nearest 4.7 icon, so the row shows that instead.
+		// top_bar.rs's icons (Font Awesome codepoints), drawn from agg's Font Awesome 6 Free Solid. GitHub's mark
+		// (U+F09B) is a Brands glyph, not in the Solid font, so its row shows the external-link arrow instead.
 		internal const string DemosGroupIcon = "\uF009";
 		internal const string BackendIcon = "\uF109";
 		internal const string SnapIcon = "\uF076";
 		internal const string ThemeIcon = "\uF042";
-		internal const string ColorIcon = "\uF1FC";
-		internal const string GitHubIcon = "\uF09B";
+		internal const string ColorIcon = "\uF53F";
+		internal const string GitHubIcon = "\uF08E";
 
 		/// <summary>top_bar.rs's Theme submenu icons: sun, moon, desktop.</summary>
 		internal static string ThemeIconOf(ThemePreference preference)

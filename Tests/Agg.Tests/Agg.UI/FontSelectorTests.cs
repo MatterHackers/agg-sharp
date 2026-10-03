@@ -106,15 +106,16 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(FaceOf(ClosedLabel(selector))).IsSameReferenceAs(LiberationSansFont.Instance);
 		}
 
-		/// <summary>Font Awesome maps its icons to private use code points and has no letters: its name would draw as boxes.</summary>
+		/// <summary>Font Awesome maps its icons to private use code points; its only ASCII glyphs are letter, digit and a few
+		/// symbol icons, so a name with parentheses would draw partly as boxes.</summary>
 		[Test]
 		public async Task AFaceThatCannotDrawItsNameFallsBackToTheUiFont()
 		{
-			await Assert.That(FontSelector.CanDrawName(IconFont.TypeFace, "Font Awesome")).IsFalse();
+			await Assert.That(FontSelector.CanDrawName(IconFont.TypeFace, "Font Awesome (Solid)")).IsFalse();
 			await Assert.That(FontSelector.CanDrawName(DemoText.Nunito, "Nunito")).IsTrue();
 
 			var selector = new FontSelector("Font", Color.Black);
-			MenuItem icons = selector.AddFont("Font Awesome", IconFont.TypeFace);
+			MenuItem icons = selector.AddFont("Font Awesome (Solid)", IconFont.TypeFace);
 			selector.SelectedIndex = 0;
 
 			await Assert.That(FaceOf(RowText(icons))).IsSameReferenceAs(AggContext.DefaultFont);

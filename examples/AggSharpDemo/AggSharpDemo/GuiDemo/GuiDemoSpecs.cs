@@ -44,7 +44,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			this.DefaultHeight = defaultHeight;
 		}
 
-		/// <summary>The Font Awesome 4 codepoint agg-gui puts in front of the title, or null for none. It is kept
+		/// <summary>The Font Awesome codepoint agg-gui puts in front of the title, or null for none. It is kept
 		/// apart from the title because the text fonts have no Font Awesome glyphs; the window title, sidebar row
 		/// and Demos menu item each draw it from <see cref="IconFont"/> beside the text.</summary>
 		public string Icon { get; }

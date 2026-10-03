@@ -90,8 +90,8 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 			await Assert.That(Child(view, "view.backend").IconGlyph).IsEqualTo("\uF109");
 			await Assert.That(Child(view, "view.snap").IconGlyph).IsEqualTo("\uF076");
 			await Assert.That(Child(view, "view.theme").IconGlyph).IsEqualTo("\uF042");
-			await Assert.That(Child(view, "view.accent").IconGlyph).IsEqualTo("\uF1FC");
-			await Assert.That(Child(bar.Menus[2].SubMenuItems(), "help.github").IconGlyph).IsEqualTo("\uF09B");
+			await Assert.That(Child(view, "view.accent").IconGlyph).IsEqualTo("\uF53F");
+			await Assert.That(Child(bar.Menus[2].SubMenuItems(), "help.github").IconGlyph).IsEqualTo("\uF08E");
 			await Assert.That(bar.Menus[0].SubMenuItems().All(g => g.IconGlyph == "\uF009")).IsTrue();
 			await Assert.That(bar.Menus[0].IconGlyph).IsEqualTo("\uF009").Because("the Demos title leads with top_bar.rs's th-large icon");
 			await Assert.That(bar.Menus[0].IconTypeFace).IsEqualTo(IconFont.TypeFace);
