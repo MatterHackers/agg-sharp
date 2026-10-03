@@ -80,6 +80,23 @@ namespace MatterHackers.RenderGl.Compat
 			stack.Push(matrix * stack.Pop());
 		}
 
+		/// <summary>
+		/// Empties every stack back to a single identity and selects the model-view stack, as a fresh
+		/// context starts. For the top of a frame: a draw that threw between a push and its pop leaves
+		/// its entries behind, and a stack that only ever grows carries a wrong matrix - and the wrong
+		/// depth - into every frame after.
+		/// </summary>
+		public void Reset()
+		{
+			foreach (var stack in new[] { this.modelViewStack, this.projectionStack, this.textureStack })
+			{
+				stack.Clear();
+				stack.Push(Matrix4X4.Identity);
+			}
+
+			this.Mode = OpenGl.MatrixMode.Modelview;
+		}
+
 		/// <summary>Duplicates the top of the current stack.</summary>
 		public void Push()
 		{

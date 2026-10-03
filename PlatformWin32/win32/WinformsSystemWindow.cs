@@ -902,7 +902,27 @@ namespace MatterHackers.Agg.UI
 			{
 				Console.Error.WriteLine($"WinformsSystemWindow paint threw, frame abandoned: {paintException}");
 				UiThread.ReportUnhandledException(paintException);
+
+				// After the report, and contained: a throw out of here would reach WndProc and the modal
+				// dialog every branch of this catch exists to keep the paint away from.
+				try
+				{
+					this.AbandonFrame();
+				}
+				catch (Exception abandonException)
+				{
+					Console.Error.WriteLine($"WinformsSystemWindow could not abandon the frame: {abandonException}");
+				}
 			}
+		}
+
+		/// <summary>
+		/// Closes a frame whose draw threw, so the next paint starts a new frame rather than continuing
+		/// this one. Nothing to do on a CPU surface; the GPU window forgets its viewport and target - see
+		/// <c>WebGpuControl.AbandonFrame</c> for what leaving them was costing.
+		/// </summary>
+		protected virtual void AbandonFrame()
+		{
 		}
 
 		private void PaintFrame(PaintEventArgs paintEventArgs)
@@ -1027,75 +1047,13 @@ namespace MatterHackers.Agg.UI
 			this.BeginInvoke((Action)this.FinishSmokeRun);
 		}
 
+		/// <summary>
+		/// Ends a smoke run once its frames are drawn: reports, closes, arms the exit watchdog - see
+		/// <see cref="WinformsSmokeRunClose"/>.
+		/// </summary>
 		private void FinishSmokeRun()
 		{
-			string report = this.RenderErrorReport;
-			if (!string.IsNullOrEmpty(report))
-			{
-				Console.Error.WriteLine($"AGG_SMOKE render error: {report}");
-				Environment.ExitCode = 1;
-			}
-
-			string status = this.RenderStatusReport;
-			string detail = $"{drawCount} frames on {this.GetType().Name}"
-				+ (string.IsNullOrEmpty(status) ? string.Empty : $" [{status}]");
-
-			// The exit code was already right, but a run that failed used to print "ok" anyway, and the
-			// console line is what a human (and every log scraper) reads first.
-			if (Environment.ExitCode != 0)
-			{
-				Console.WriteLine($"AGG_SMOKE FAILED: {detail}");
-			}
-			else
-			{
-				Console.WriteLine($"AGG_SMOKE ok: {detail}");
-			}
-
-			// Armed before the close, not after: a close that throws or blocks is exactly the case the
-			// watchdog exists for.
-			WinformsSmokeRun.StartExitWatchdog();
-
-			try
-			{
-				// Closing the agg window is what tears the platform window down with it; the form's own
-				// Close is only the fallback for a window that was never attached to one.
-				var windowToClose = this.ShellAggWindow();
-
-				if (windowToClose != null)
-				{
-					windowToClose.Close();
-				}
-				else
-				{
-					this.Close();
-				}
-			}
-			catch (Exception ex)
-			{
-				// The close raced its own teardown, or a demo threw on the way out. Worth saying out loud
-				// - it is the difference between "closed cleanly" and "the watchdog had to shoot it" - but
-				// not worth failing the run over, since the frames all rendered.
-				Console.Error.WriteLine($"AGG_SMOKE: close threw {ex.GetType().Name}: {ex}");
-			}
-		}
-
-		/// <summary>
-		/// The agg window whose close ends the application: the shell, not whatever is currently on top.
-		/// </summary>
-		/// <remarks>
-		/// In single window mode <see cref="AggSystemWindow"/> is the window being drawn and given the
-		/// events, which the provider re-points at every dialog that opens. Closing that only dismisses the
-		/// dialog - the shell stays up, the message loop keeps running, and the process never exits. The
-		/// provider keeps the shell first in <see cref="ISystemWindowProvider.OpenWindows"/> and takes the
-		/// dialogs above it down with it, so closing that one window is the whole application closing.
-		/// See <see cref="PlatformCloseArbitration.ShellWindowForClose"/>, which every host shares.
-		/// </remarks>
-		private SystemWindow ShellAggWindow()
-		{
-			return PlatformCloseArbitration.ShellWindowForClose(
-				SingleWindowMode,
-				this.WindowProvider,
-				this.AggSystemWindow);
+			WinformsSmokeRunClose.ReportAndClose(this, drawCount);
 		}
 
 		protected override void OnPaintBackground(PaintEventArgs e)

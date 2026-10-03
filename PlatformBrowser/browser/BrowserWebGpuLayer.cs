@@ -249,6 +249,10 @@ namespace MatterHackers.Agg.Platform.Browser
 			}
 
 			this.frameIsPresentable = frame != null;
+
+			// Before the target is set, so the frame starts with balanced stacks whatever the previous
+			// frame's draw did - abandoned by a throw, it left its pushes outstanding (see GL.BeginFrame).
+			this.Gl.BeginFrame();
 			this.compat.SetRenderTarget(frame ?? this.EnsureScratchTarget(), this.depthTarget);
 		}
 

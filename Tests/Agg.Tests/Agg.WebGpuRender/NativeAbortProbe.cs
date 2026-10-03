@@ -221,12 +221,14 @@ namespace MatterHackers.Agg.Tests
 			using (GpuTestGate.Acquire(nameof(SubmittingAnInvalidRecordingThrows)))
 			using (var device = new WebGpuRenderDevice(false, TestRenderBackend.Native, nameof(NativeAbortProbe)))
 			{
-				// 20 mip levels on a 4x4 texture is invalid, so wgpu hands back an error texture - as it hands
-				// back an error buffer when an allocation fails. Copying from it records fine; submitting the
-				// recording is what wgpu-native treats as fatal.
-				using var invalid = device.CreateTexture(new TextureDescriptor(4, 4, TextureFormat.Rgba8Unorm, TextureUsage.CopySrc | TextureUsage.TextureBinding, 20, 1, "invalid"));
-				using var destination = device.CreateTexture(new TextureDescriptor(4, 4, TextureFormat.Rgba8Unorm, TextureUsage.CopyDst | TextureUsage.TextureBinding, 1, 1, "destination"));
-				device.CopyTextureToTexture(invalid, destination, 0, 0, 4, 4);
+				// An 8x8 copy out of a 4x4 texture. The textures are fine (an error texture would now be
+				// refused by CreateTexture itself, so it cannot be the way in any more); the *copy* is what
+				// wgpu rejects, and it rejects it the way it rejects everything recorded on an encoder - at
+				// Finish, with the recording marked invalid. Submitting that is what wgpu-native treats as
+				// fatal.
+				using var source = device.CreateTexture(new TextureDescriptor(4, 4, TextureFormat.Rgba8Unorm, TextureUsage.CopySrc | TextureUsage.TextureBinding, 1, 1, "source"));
+				using var destination = device.CreateTexture(new TextureDescriptor(8, 8, TextureFormat.Rgba8Unorm, TextureUsage.CopyDst | TextureUsage.TextureBinding, 1, 1, "destination"));
+				device.CopyTextureToTexture(source, destination, 0, 0, 8, 8);
 
 				try
 				{

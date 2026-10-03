@@ -140,16 +140,15 @@ namespace MatterHackers.Agg.Tests
 		{
 			// End to end through the by-value desktop callback: a real validation error, decoded from the
 			// view wgpu-native passes. 20 mip levels on a 4x4 texture is rejected at creation and reported
-			// out of band; only submitting a copy from it is fatal (see NativeAbortProbe), so nothing is
-			// submitted here.
+			// out of band - which CreateTexture now notices and throws over (its message is the same text,
+			// and is not what this test is about); the error the callback recorded is what is read.
 			using (GpuTestGate.Acquire(nameof(WgpuCallbackAbiTests)))
 			using (var device = new WebGpuRenderDevice(false, TestRenderBackend.Native, nameof(WgpuCallbackAbiTests)))
 			{
 				await Assert.That(device.LastUncapturedError).IsNull();
 
-				using (device.CreateTexture(new TextureDescriptor(4, 4, TextureFormat.Rgba8Unorm, TextureUsage.TextureBinding, 20, 1, "tooManyMips")))
-				{
-				}
+				await Assert.That(() => device.CreateTexture(new TextureDescriptor(4, 4, TextureFormat.Rgba8Unorm, TextureUsage.TextureBinding, 20, 1, "tooManyMips")))
+					.Throws<InvalidOperationException>();
 
 				string error = device.LastUncapturedError;
 				await Assert.That(error).IsNotNull();

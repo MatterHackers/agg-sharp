@@ -136,10 +136,8 @@ namespace MatterHackers.Agg.UI
 		// to know it is being smoke tested, and with the variables unset none of this does anything. Kept
 		// byte for byte compatible with WinformsSystemWindow's version so one AGG_SMOKE_* invocation drives
 		// either platform.
-		private static readonly int SmokeFrameTarget = ParseSmokeFrames();
+		private static readonly int SmokeFrameTarget = MacSmokeRun.ParseFrames();
 		private static readonly string SmokeScreenshotPath = Environment.GetEnvironmentVariable("AGG_SMOKE_SCREENSHOT");
-
-		private static System.Threading.Timer smokeExitWatchdog;
 
 		/// <summary>
 		/// Set <c>AGG_LOG_GESTURE=1</c> to print every scroll and magnify event as it arrives - its type,
@@ -2740,6 +2738,16 @@ namespace MatterHackers.Agg.UI
 					// texture is still the one being drawn into.
 					this.CheckSmokeRunProgress();
 				}
+				catch
+				{
+					// The frame ends here, just not on screen: closed at the layer and forgotten by the
+					// viewport flag, so the next paint is a new frame and not this one continued. Without
+					// this the skipped present below left the frame open for good - see
+					// MacWebGpuLayer.AbandonFrame. The throw itself is the loop's to report.
+					this.viewPortHasBeenSet = false;
+					this.webGpuLayer?.AbandonFrame();
+					throw;
+				}
 				finally
 				{
 					this.isInsidePaint = false;
@@ -2974,92 +2982,13 @@ namespace MatterHackers.Agg.UI
 			UiThread.RunOnIdle(this.FinishSmokeRun);
 		}
 
+		/// <summary>
+		/// Ends a smoke run once its frames are drawn: reports, closes, arms the exit watchdog - see
+		/// <see cref="MacSmokeRun.ReportAndClose"/>.
+		/// </summary>
 		private void FinishSmokeRun()
 		{
-			string report = this.RenderErrorReport;
-			if (!string.IsNullOrEmpty(report))
-			{
-				Console.Error.WriteLine($"AGG_SMOKE render error: {report}");
-				Environment.ExitCode = 1;
-			}
-
-			string status = this.RenderStatusReport;
-			string detail = $"{this.drawCount} frames on {this.GetType().Name}"
-				+ (string.IsNullOrEmpty(status) ? string.Empty : $" [{status}]");
-
-			if (Environment.ExitCode != 0)
-			{
-				Console.WriteLine($"AGG_SMOKE FAILED: {detail}");
-			}
-			else
-			{
-				Console.WriteLine($"AGG_SMOKE ok: {detail}");
-			}
-
-			// Armed before the close, not after: a close that throws or blocks is exactly the case the
-			// watchdog exists for.
-			StartSmokeExitWatchdog();
-
-			try
-			{
-				// Closing the agg window is what tears the platform window down with it; the platform's own
-				// close is only the fallback for a window that was never attached to one.
-				var windowToClose = this.ShellAggWindow();
-
-				if (windowToClose != null)
-				{
-					windowToClose.Close();
-				}
-				else
-				{
-					this.Close();
-				}
-			}
-			catch (Exception ex)
-			{
-				Console.Error.WriteLine($"AGG_SMOKE: close threw {ex.GetType().Name}: {ex}");
-			}
-		}
-
-		/// <summary>
-		/// The agg window whose close ends the application: the shell, not whatever is currently on top.
-		/// See <see cref="PlatformCloseArbitration.ShellWindowForClose"/> for why
-		/// <see cref="aggSystemWindow"/> is not that window in single window mode.
-		/// </summary>
-		private SystemWindow ShellAggWindow()
-		{
-			return PlatformCloseArbitration.ShellWindowForClose(SingleWindowMode, this.WindowProvider, this.aggSystemWindow);
-		}
-
-		/// <summary>
-		/// Guarantees a smoke run terminates. Closing the window ends the event loop, but a teardown that
-		/// throws part way or a demo that left a foreground thread running would keep the process alive
-		/// forever, and an unattended run that never returns is indistinguishable from a hang in the
-		/// renderer. Firing is itself a failure and is reported as one.
-		/// </summary>
-		private static void StartSmokeExitWatchdog()
-		{
-			var watchdog = new System.Threading.Timer(
-				_ =>
-				{
-					Console.Error.WriteLine("AGG_SMOKE: the process did not exit on its own after closing; forcing exit.");
-					Console.WriteLine("AGG_SMOKE FAILED: the exit watchdog had to force the process down.");
-					Environment.Exit(Environment.ExitCode != 0 ? Environment.ExitCode : 1);
-				},
-				null,
-				TimeSpan.FromSeconds(5),
-				System.Threading.Timeout.InfiniteTimeSpan);
-
-			// Nothing else holds this; keeping the reference alive is the only thing standing between the
-			// timer and the collector.
-			smokeExitWatchdog = watchdog;
-		}
-
-		private static int ParseSmokeFrames()
-		{
-			return int.TryParse(Environment.GetEnvironmentVariable("AGG_SMOKE_FRAMES"), out int frames) && frames > 0
-				? frames
-				: 0;
+			MacSmokeRun.ReportAndClose(this, this.drawCount);
 		}
 
 		// -----------------------------------------------------------------------------------------

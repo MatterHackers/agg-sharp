@@ -58,6 +58,8 @@ namespace MatterHackers.Agg.Tests
 
 		public int BeginCount { get; private set; }
 
+		public int BeginFrameCount { get; private set; }
+
 		public int EndCount { get; private set; }
 
 		public int Vertex2Count { get; private set; }
@@ -143,6 +145,8 @@ namespace MatterHackers.Agg.Tests
 		private int NextId() => nextGeneratedId++;
 
 		public bool GlHasBufferObjects => true;
+
+		public void BeginFrame() => BeginFrameCount++;
 
 		public void Begin(BeginMode mode) => BeginCount++;
 
