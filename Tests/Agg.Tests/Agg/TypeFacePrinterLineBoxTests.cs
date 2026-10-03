@@ -23,8 +23,12 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 using MatterHackers.Agg.Font;
+using MatterHackers.Agg.Platform;
+using MatterHackers.Agg.VertexSource;
 using TUnit.Assertions;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -49,6 +53,50 @@ namespace MatterHackers.Agg.Tests.Agg
 
 			await Assert.That(printer.LocalBounds.Bottom).IsEqualTo(0).Within(1e-9);
 			await Assert.That(printer.LocalBounds.Top).IsEqualTo(printer.TypeFaceStyle.EmSizeInPixels).Within(1e-9);
+		}
+
+		/// <summary>
+		/// Every <see cref="Baseline"/> prints, and its box sits where the name says against the origin:
+		/// Text puts the baseline there, BoundsTop the top of the ascent, BoundsCenter half the ascent,
+		/// TextCenter the middle of the line box and BoundsBottom its bottom. The glyphs move with the box.
+		/// </summary>
+		[Test]
+		public async Task EveryBaselinePlacesTheBoxWhereItsNameSays()
+		{
+			var style = new StyledTypeFace(AggContext.DefaultFont, 24);
+			double lineBoxBottom = new TypeFacePrinter("H", style).LineBoxBottomInPixels;
+			double em = style.EmSizeInPixels;
+			double ascent = style.AscentInPixels;
+
+			double textGlyphBottom = GlyphBottom(new TypeFacePrinter("H", style, baseline: Baseline.Text));
+
+			foreach (Baseline baseline in Enum.GetValues<Baseline>())
+			{
+				var printer = new TypeFacePrinter("H", style, baseline: baseline);
+				RectangleDouble bounds = printer.LocalBounds;
+
+				double expectedBottom = baseline switch
+				{
+					Baseline.Text => lineBoxBottom,
+					Baseline.BoundsTop => lineBoxBottom - ascent,
+					Baseline.BoundsCenter => lineBoxBottom - ascent / 2,
+					Baseline.TextCenter => -em / 2,
+					Baseline.BoundsBottom => 0,
+					_ => throw new NotImplementedException(),
+				};
+
+				await Assert.That(bounds.Bottom).IsEqualTo(expectedBottom).Within(1e-9);
+				await Assert.That(bounds.Top - bounds.Bottom).IsEqualTo(em).Within(1e-9);
+
+				// The glyphs shift by the same amount as the box (to within the whole-pixel baseline snap).
+				double glyphShift = GlyphBottom(printer) - textGlyphBottom;
+				await Assert.That(glyphShift).IsEqualTo(bounds.Bottom - lineBoxBottom).Within(1.0);
+			}
+		}
+
+		private static double GlyphBottom(TypeFacePrinter printer)
+		{
+			return printer.Vertices().Where(vertex => !vertex.IsStop).Min(vertex => vertex.Position.Y);
 		}
 	}
 }

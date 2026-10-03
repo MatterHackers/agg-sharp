@@ -315,15 +315,8 @@ namespace MatterHackers.Agg.Font
 						throw new NotImplementedException();
 				}
 
-				switch (Baseline)
-				{
-					case Font.Baseline.BoundsCenter:
-						bounds.Offset(0, -TypeFaceStyle.AscentInPixels / 2);
-						break;
-
-					default:
-						break;
-				}
+				// The box moves with the glyphs: the same baseline offset the vertices are drawn at.
+				bounds.Offset(0, GetBaseline(Vector2.Zero).Y);
 
 				bounds.Offset(Origin);
 				return bounds;
@@ -599,6 +592,12 @@ namespace MatterHackers.Agg.Font
 			return currentOffset;
 		}
 
+		/// <summary>
+		/// Sets <paramref name="currentOffset"/>'s Y to where the first line's baseline sits against the origin
+		/// for <see cref="Baseline"/>: Text at the origin, BoundsTop and BoundsCenter at the top and middle of
+		/// the ascent, TextCenter and BoundsBottom at the middle and bottom of the one-em line box
+		/// (<see cref="LineBoxBottomInPixels"/>, which is centred on the ascent and descent).
+		/// </summary>
 		private Vector2 GetBaseline(Vector2 currentOffset)
 		{
 			switch (Baseline)
@@ -613,6 +612,14 @@ namespace MatterHackers.Agg.Font
 
 				case Baseline.BoundsCenter:
 					currentOffset.Y = -TypeFaceStyle.AscentInPixels / 2;
+					break;
+
+				case Baseline.TextCenter:
+					currentOffset.Y = -(LineBoxBottomInPixels + TypeFaceStyle.EmSizeInPixels / 2);
+					break;
+
+				case Baseline.BoundsBottom:
+					currentOffset.Y = -LineBoxBottomInPixels;
 					break;
 
 				default:
