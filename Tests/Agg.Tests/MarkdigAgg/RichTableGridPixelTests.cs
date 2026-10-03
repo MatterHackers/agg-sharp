@@ -33,6 +33,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Markdig.Agg.Editing;
 using MatterHackers.Agg;
+using MatterHackers.Agg.Image;
 using MatterHackers.Agg.UI;
 using MatterHackers.VectorMath;
 using TUnit.Assertions;
@@ -170,6 +171,122 @@ namespace Markdig.Agg.Tests
 					{
 						await Assert.That(Math.Abs(Tone(x, group.Max() + 1) - Tone(x, group.Max() + 2))).IsLessThanOrEqualTo(2);
 					}
+				}
+			}
+			finally
+			{
+				GuiWidget.DeviceScale = savedScale;
+			}
+		}
+
+		/// <summary>
+		/// A whole-table selection (a triple-click or select-all on the table block) shades the cells and the
+		/// block around the grid but never the grid lines: the translucent selection drawn under a line would make
+		/// it darker than an unselected line. The shading runs to the block's right edge and stops there, leaving
+		/// the scroll margin beside the block unshaded. The same table is drawn unselected and selected and the two
+		/// images are compared pixel by pixel.
+		/// </summary>
+		[Test]
+		[Arguments(1.0)]
+		[Arguments(2.0)]
+		public async Task WholeTableSelectionStaysOffTheGridLines(double deviceScale)
+		{
+			double savedScale = GuiWidget.DeviceScale;
+			GuiWidget.DeviceScale = deviceScale;
+			try
+			{
+				var container = new GuiWidget(500 * deviceScale, 200 * deviceScale, SizeLimitsToSet.None)
+				{
+					DoubleBuffer = true,
+				};
+				// The editor is narrower than the container, so there are page pixels right of the block to check.
+				var editor = new RichMarkdownEditWidget(new ThemeConfig())
+				{
+					HAnchor = HAnchor.Absolute,
+					VAnchor = VAnchor.Stretch,
+					Width = 420 * deviceScale,
+					Markdown = "| Feature | Status | Notes |\n| --- | --- | --- |\n| Headings | Ready | 6 levels |\n| Tables | Ready | Pipe and grid |\n| Lists | Done | Nested |\n",
+				};
+				container.AddChild(editor);
+				container.PerformLayout();
+
+				ImageBuffer Render()
+				{
+					container.BackBuffer.NewGraphics2D().Clear(Color.White);
+					container.OnDraw(container.BackBuffer.NewGraphics2D());
+					return new ImageBuffer(container.BackBuffer);
+				}
+
+				editor.Selection = RichSelection.At(new DocPosition(0, 0));
+				var plain = Render();
+				editor.Selection = RichEditOperations.WholeBlock(editor.Document, 0);
+				await Assert.That(editor.Selection.WholeBlock).IsTrue();
+				var selected = Render();
+
+				var layout = (RichTableLayout)editor.BlockLayout(0);
+				double origin = editor.BlockOrigin(0);
+				var view = editor.DocumentView;
+				var block = view.TransformToParentSpace(container, new RectangleDouble(0, origin, view.Width, origin + layout.Height));
+
+				int Difference(int x, int y)
+				{
+					var a = plain.GetPixel(x, y);
+					var b = selected.GetPixel(x, y);
+					return Math.Max(Math.Abs(a.red - b.red), Math.Max(Math.Abs(a.green - b.green), Math.Abs(a.blue - b.blue)));
+				}
+
+				// The grid, found on the unselected image as the first test does: lines are far darker than the page.
+				bool Ink(int x, int y) => plain.GetPixel(x, y).red < 200;
+				int minX = Math.Max(0, (int)Math.Floor(block.Left) - 2);
+				int maxX = Math.Min(plain.Width - 1, (int)Math.Ceiling(block.Right) + 2);
+				int minY = Math.Max(0, (int)Math.Floor(block.Bottom) - 2);
+				int maxY = Math.Min(plain.Height - 1, (int)Math.Ceiling(block.Top) + 2);
+				var vertical = Groups(Enumerable.Range(minX, maxX - minX + 1)
+					.Where(x => Enumerable.Range(minY, maxY - minY + 1).Count(y => Ink(x, y)) > (maxY - minY) * 0.6));
+				await Assert.That(vertical.Count).IsEqualTo(4);
+				int gridLeft = vertical.First().Min();
+				int gridRight = vertical.Last().Max();
+				var horizontal = Groups(Enumerable.Range(minY, maxY - minY + 1)
+					.Where(y => Enumerable.Range(gridLeft, gridRight - gridLeft + 1).Count(x => Ink(x, y)) > (gridRight - gridLeft) * 0.6));
+				await Assert.That(horizontal.Count).IsEqualTo(5);
+				int gridBottom = horizontal.First().Min();
+				int gridTop = horizontal.Last().Max();
+
+				// Every cell is visibly shaded, sampled just inside its bottom-left corner where no text is drawn.
+				for (int c = 0; c + 1 < vertical.Count; c++)
+				{
+					for (int r = 0; r + 1 < horizontal.Count; r++)
+					{
+						await Assert.That(Difference(vertical[c].Max() + 2, horizontal[r].Max() + 2)).IsGreaterThan(10);
+					}
+				}
+
+				// Every grid-line pixel keeps its unselected colour.
+				foreach (int y in horizontal.SelectMany(group => group))
+				{
+					for (int x = gridLeft; x <= gridRight; x++)
+					{
+						await Assert.That(Difference(x, y)).IsLessThanOrEqualTo(2);
+					}
+				}
+
+				foreach (int x in vertical.SelectMany(group => group))
+				{
+					for (int y = gridBottom; y <= gridTop; y++)
+					{
+						await Assert.That(Difference(x, y)).IsLessThanOrEqualTo(2);
+					}
+				}
+
+				// The shading runs right of the grid to the block's right edge and stops there: the scroll margin
+				// beside the block is untouched.
+				int blockRight = (int)Math.Round(block.Right);
+				int midY = (gridBottom + gridTop) / 2;
+				await Assert.That(blockRight + 2).IsLessThan(plain.Width);
+				await Assert.That(Difference(blockRight - 2, midY)).IsGreaterThan(10);
+				for (int x = blockRight + 1; x < plain.Width; x++)
+				{
+					await Assert.That(Difference(x, midY)).IsLessThanOrEqualTo(2);
 				}
 			}
 			finally
