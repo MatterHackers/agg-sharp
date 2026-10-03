@@ -106,10 +106,19 @@ namespace MatterHackers.RenderGl.Compat
 
 		/// <summary>
 		/// Stops a recording that never reached its <c>glEndList</c> - a draw that threw in the middle of
-		/// one. What was recorded so far stays in the list, as it would after a real EndList; the point is
-		/// that the next frame's draws go to the screen and not into somebody's half-built list.
+		/// one - so the next frame's draws go to the screen and not into somebody's half-built list. The
+		/// half-built list is deleted with any buffers it baked: callers cache a list's name only after
+		/// EndList (Graphics2DGpu's halo and edge caches), so nobody will ever replay or delete it, and a
+		/// draw that throws mid-recording every frame would otherwise leak one list per frame.
 		/// </summary>
-		public void AbandonRecording() => this.RecordingList = 0;
+		public void AbandonRecording()
+		{
+			if (this.IsRecording)
+			{
+				this.Delete(this.RecordingList, 1);
+				this.RecordingList = 0;
+			}
+		}
 
 		/// <summary>
 		/// Appends one <c>glBegin</c>/<c>glEnd</c> batch to the list being recorded. The lists are copied

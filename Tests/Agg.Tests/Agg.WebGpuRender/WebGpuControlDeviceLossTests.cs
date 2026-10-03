@@ -75,7 +75,7 @@ namespace MatterHackers.Agg.Tests.WebGpuRender
 
 			// One healthy frame first, so recovery is being asked of a control in its normal steady state.
 			control.BeginFrame();
-			control.Present();
+			control.EndFrame(present: true);
 
 			originalDevice.DestroyDeviceToSimulateLoss();
 
@@ -97,7 +97,7 @@ namespace MatterHackers.Agg.Tests.WebGpuRender
 
 			// And the rebuilt control renders: this is the frame a repainting app would draw.
 			control.BeginFrame();
-			control.Present();
+			control.EndFrame(present: true);
 
 			await Assert.That(control.Device.LastUncapturedError).IsNull();
 		}
@@ -124,7 +124,7 @@ namespace MatterHackers.Agg.Tests.WebGpuRender
 				|| control.PresentMode == WGPUPresentMode.Fifo).IsTrue();
 
 			control.BeginFrame();
-			control.Present();
+			control.EndFrame(present: true);
 
 			await Assert.That(control.Device.LastUncapturedError).IsNull();
 
@@ -132,7 +132,7 @@ namespace MatterHackers.Agg.Tests.WebGpuRender
 			await Assert.That(control.PresentMode).IsEqualTo(WGPUPresentMode.Fifo);
 
 			control.BeginFrame();
-			control.Present();
+			control.EndFrame(present: true);
 
 			await Assert.That(control.Device.LastUncapturedError).IsNull();
 		}

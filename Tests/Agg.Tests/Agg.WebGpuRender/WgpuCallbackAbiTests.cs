@@ -161,6 +161,57 @@ namespace MatterHackers.Agg.Tests
 			}
 		}
 
+		[Test]
+		public async Task AnErrorIsCountedEvenWhenStderrThrows()
+		{
+			// CreateTexture and Submit decide whether wgpu rejected them by whether the error count rose,
+			// so the count must not depend on the stderr echo succeeding. A writer that throws on the echo
+			// stands in for a closed or broken stderr; everything else passes through to the real stderr,
+			// so a test running in parallel that writes there is not affected.
+			// The swap sits inside the gate so it is in place no longer than the GPU work needs it.
+			using (GpuTestGate.Acquire(nameof(WgpuCallbackAbiTests)))
+			{
+				var original = Console.Error;
+				Console.SetError(new ThrowOnWgpuErrorWriter(original));
+				try
+				{
+					using (var device = new WebGpuRenderDevice(false, TestRenderBackend.Native, nameof(WgpuCallbackAbiTests)))
+					{
+						await Assert.That(() => device.CreateTexture(new TextureDescriptor(4, 4, TextureFormat.Rgba8Unorm, TextureUsage.TextureBinding, 20, 1, "tooManyMips")))
+							.Throws<InvalidOperationException>()
+							.Because("the rejected texture was counted, so CreateTexture saw the error");
+						await Assert.That(device.LastUncapturedError).Contains("tooManyMips");
+					}
+				}
+				finally
+				{
+					Console.SetError(original);
+				}
+			}
+		}
+
+		/// <summary>Forwards to an inner writer, but throws on the uncaptured-error echo.</summary>
+		private sealed class ThrowOnWgpuErrorWriter : System.IO.TextWriter
+		{
+			private readonly System.IO.TextWriter inner;
+
+			public ThrowOnWgpuErrorWriter(System.IO.TextWriter inner) => this.inner = inner;
+
+			public override Encoding Encoding => this.inner.Encoding;
+
+			public override void Write(char value) => this.inner.Write(value);
+
+			public override void WriteLine(string value)
+			{
+				if (value != null && value.StartsWith("wgpu uncaptured error", StringComparison.Ordinal))
+				{
+					throw new System.IO.IOException("stderr is gone");
+				}
+
+				this.inner.WriteLine(value);
+			}
+		}
+
 		/// <summary>
 		/// How many scalars a parameter of this type occupies, counted through nested structs, so a
 		/// one-field wrapper around a multi-field struct still counts as multi-field. Pointers, primitives

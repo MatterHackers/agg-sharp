@@ -412,7 +412,7 @@ namespace MatterHackers.Agg.UI
 			string screenshotPath = this.pendingScreenshotPath;
 			if (screenshotPath == null)
 			{
-				this.webGpuControl.Present();
+				this.webGpuControl.EndFrame(present: true);
 				return;
 			}
 
@@ -491,14 +491,14 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
-			this.webGpuControl.Present();
+			this.webGpuControl.EndFrame(present: true);
 		}
 
 		/// <inheritdoc/>
 		protected override void AbandonFrame()
 		{
 			this.viewPortHasBeenSet = false;
-			this.webGpuControl?.AbandonFrame();
+			this.webGpuControl?.EndFrame(present: false);
 		}
 
 		private void SetAndClearViewPort()

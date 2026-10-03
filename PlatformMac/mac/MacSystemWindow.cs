@@ -791,7 +791,7 @@ namespace MatterHackers.Agg.UI
 			{
 				// The smoke-run path asks from inside the paint, just before the present that would consume
 				// the request. Forcing another paint from here would re-enter the frame; queuing is enough,
-				// because this frame is about to reach PresentOrCapture anyway.
+				// because this frame is about to reach EndFrame anyway.
 				this.pendingScreenshotPath = path;
 				return;
 			}
@@ -2686,6 +2686,7 @@ namespace MatterHackers.Agg.UI
 			{
 				this.drawCount++;
 				this.isInsidePaint = true;
+				bool drawFinished = false;
 
 				try
 				{
@@ -2737,25 +2738,18 @@ namespace MatterHackers.Agg.UI
 					// Before the present, because a GPU window can only read a frame back while the frame's
 					// texture is still the one being drawn into.
 					this.CheckSmokeRunProgress();
-				}
-				catch
-				{
-					// The frame ends here, just not on screen: closed at the layer and forgotten by the
-					// viewport flag, so the next paint is a new frame and not this one continued. Without
-					// this the skipped present below left the frame open for good - see
-					// MacWebGpuLayer.AbandonFrame. The throw itself is the loop's to report.
-					this.viewPortHasBeenSet = false;
-					this.webGpuLayer?.AbandonFrame();
-					throw;
+					drawFinished = true;
 				}
 				finally
 				{
 					this.isInsidePaint = false;
-				}
 
-				using (MatterHackers.RenderCore.FrameProfiler.Time("Present"))
-				{
-					this.PresentOrCapture();
+					// Every frame ends here, however its draw went; a draw that threw is not shown, and its
+					// exception is still the one that propagates (see MacWebGpuLayer.EndFrame).
+					using (MatterHackers.RenderCore.FrameProfiler.Time("Present"))
+					{
+						this.EndFrame(drawFinished);
+					}
 				}
 			}
 
@@ -2770,17 +2764,17 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Presents the frame. Any screenshot requested for this frame is read back first: after the
-		/// present the texture is the swapchain's again.
+		/// Ends the frame: presents it if the draw finished (reading back any screenshot requested for it
+		/// first - after the present the texture is the swapchain's again), and closes it unshown if not.
 		/// </summary>
-		private void PresentOrCapture()
+		private void EndFrame(bool drawFinished)
 		{
 			this.viewPortHasBeenSet = false;
 
 			string screenshotPath = this.pendingScreenshotPath;
-			if (screenshotPath == null)
+			if (!drawFinished || screenshotPath == null)
 			{
-				this.webGpuLayer.Present();
+				this.webGpuLayer?.EndFrame(drawFinished);
 				return;
 			}
 
@@ -2830,7 +2824,7 @@ namespace MatterHackers.Agg.UI
 				}
 			}
 
-			this.webGpuLayer.Present();
+			this.webGpuLayer.EndFrame(present: true);
 		}
 
 		private void SetAndClearViewPort()

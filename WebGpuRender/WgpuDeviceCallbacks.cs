@@ -89,13 +89,16 @@ namespace MatterHackers.WebGpuRender
 				var device = FromUserdata(userdata);
 				string text = $"{type}: {WgpuStrings.ToManaged(message)}";
 
+				// Counted first: CreateTexture and Submit tell a rejected call by whether the error count
+				// rose, so a stderr that throws must not be able to skip the count.
+				device?.ReportUncapturedError(text);
+
 				// Written out the moment it happens, because the device keeps only the *last* error: the
 				// one that names the cause (a rejected descriptor, say) is overwritten by the one that
 				// names the consequence (a pass that could not be finished), and the exception the host
 				// eventually shows carries only the latter. MatterCAD ran black for a whole session over
 				// an error nothing had recorded.
 				Console.Error.WriteLine($"wgpu uncaptured error on '{device?.Label ?? "unknown device"}': {text}");
-				device?.ReportUncapturedError(text);
 			}
 			catch (Exception)
 			{

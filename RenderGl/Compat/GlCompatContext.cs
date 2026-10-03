@@ -29,6 +29,7 @@ using MatterHackers.Agg;
 using MatterHackers.RenderCore;
 using MatterHackers.RenderGl.OpenGl;
 using MatterHackers.VectorMath;
+using static MatterHackers.RenderGl.Compat.GlCompatUnsupportedMessages;
 
 namespace MatterHackers.RenderGl.Compat
 {
@@ -205,24 +206,35 @@ namespace MatterHackers.RenderGl.Compat
 		public void Submit()
 		{
 			this.releases.MarkRenderThread();
-			this.passes.FlushPass();
 
-			// Everything staged for this submit window reaches the queue here, in as few writes as the
-			// stagers can manage: the 2D submitter's directly, and anything else that batches per-draw
-			// uniforms (the scene renderer) through the hook.
-			this.submitter.FlushPendingWrites();
-			this.BeforeSubmit?.Invoke();
-
-			FrameProfiler.Count("Submit");
-			using (FrameProfiler.Time("Submit"))
+			try
 			{
-				this.device.Submit();
+				this.passes.FlushPass();
+
+				// Everything staged for this submit window reaches the queue here, in as few writes as the
+				// stagers can manage: the 2D submitter's directly, and anything else that batches per-draw
+				// uniforms (the scene renderer) through the hook.
+				this.submitter.FlushPendingWrites();
+				this.BeforeSubmit?.Invoke();
+
+				FrameProfiler.Count("Submit");
+				using (FrameProfiler.Time("Submit"))
+				{
+					this.device.Submit();
+				}
 			}
+			finally
+			{
+				// Also on a throw, or a window whose GPU rejects every frame grows the pools and release queue
+				// every frame. A rejected device submit drops its recording, so nothing in flight reads these.
+				// A throw before it (pass end, a flush, the hook) leaves the recording to go out with the next
+				// submit; still safe, as Reset only rewinds cursors: those failed-frame draws may read the next
+				// frame's bytes, and a texture released here that they use makes wgpu reject that one submit.
+				this.submitter.ResetPerDrawPools();
 
-			this.submitter.ResetPerDrawPools();
-
-			// After the submit, so nothing recorded before it loses a texture it draws from.
-			this.releases.Drain();
+				// After the submit, so nothing recorded before it loses a texture it draws from.
+				this.releases.Drain();
+			}
 		}
 
 		/// <summary>Submits and presents a surface.</summary>
@@ -734,10 +746,6 @@ namespace MatterHackers.RenderGl.Compat
 
 		// --- Not supported: user shaders (canned pipelines only) ---
 
-		private const string ShaderMessage =
-			"GlCompatContext does not emulate user shaders. The renderer draws through the canned "
-			+ "pipelines named in GlShaderKeys; add a canned combo there instead of compiling GLSL.";
-
 		/// <summary>Not supported - see <see cref="GlShaderKeys"/>.</summary>
 		public int CreateProgram() => throw new NotSupportedException(ShaderMessage);
 
@@ -789,19 +797,6 @@ namespace MatterHackers.RenderGl.Compat
 		public void EnableVertexAttribArray(int index) => throw new NotSupportedException(ShaderMessage);
 
 		// --- Not implemented yet ---
-
-		private const string MeshFallbackMessage =
-			"TODO (port plan, Phase 3): the client-array draw path is the legacy GL mesh fallback that "
-			+ "runs when INativeSceneRenderer.CanRender returns false. The plan closes those gaps in the "
-			+ "native renderer rather than teaching the compat layer lit and textured mesh drawing.";
-
-		private const string FramebufferMessage =
-			"TODO (port plan, Phase 2/3): render-to-texture goes through GlCompatContext.SetRenderTarget "
-			+ "rather than GL framebuffer objects. Wire the remaining callers to that.";
-
-		private const string BufferObjectMessage =
-			"TODO (port plan, Phase 3): GL buffer objects have no consumer in the renderer today; "
-			+ "retained vertex data is owned by the scene renderer, not by GL names.";
 
 		/// <summary>Not implemented - see the message on the thrown exception.</summary>
 		public void DrawArrays(BeginMode mode, int first, int count) => throw new NotImplementedException(MeshFallbackMessage);

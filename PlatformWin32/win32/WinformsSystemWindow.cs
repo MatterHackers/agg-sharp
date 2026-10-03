@@ -902,24 +902,13 @@ namespace MatterHackers.Agg.UI
 			{
 				Console.Error.WriteLine($"WinformsSystemWindow paint threw, frame abandoned: {paintException}");
 				UiThread.ReportUnhandledException(paintException);
-
-				// After the report, and contained: a throw out of here would reach WndProc and the modal
-				// dialog every branch of this catch exists to keep the paint away from.
-				try
-				{
-					this.AbandonFrame();
-				}
-				catch (Exception abandonException)
-				{
-					Console.Error.WriteLine($"WinformsSystemWindow could not abandon the frame: {abandonException}");
-				}
 			}
 		}
 
 		/// <summary>
 		/// Closes a frame whose draw threw, so the next paint starts a new frame rather than continuing
-		/// this one. Nothing to do on a CPU surface; the GPU window forgets its viewport and target - see
-		/// <c>WebGpuControl.AbandonFrame</c> for what leaving them was costing.
+		/// this one. Must not throw: it runs while the draw's exception propagates. Nothing to do on a CPU
+		/// surface; the GPU window forgets its viewport and target - see <c>WebGpuControl.EndFrame</c>.
 		/// </summary>
 		protected virtual void AbandonFrame()
 		{
@@ -944,54 +933,64 @@ namespace MatterHackers.Agg.UI
 			{
 				drawCount++;
 
-				Graphics2D graphics2D;
-				using (MatterHackers.RenderCore.FrameProfiler.Time("NewGraphics2D+Acquire"))
+				try
 				{
-					graphics2D = this.NewGraphics2D();
-				}
-
-				using (MatterHackers.RenderCore.FrameProfiler.Time("WidgetTreeDraw"))
-				{
-					if (!SingleWindowMode)
+					Graphics2D graphics2D;
+					using (MatterHackers.RenderCore.FrameProfiler.Time("NewGraphics2D+Acquire"))
 					{
-						// We must call on draw background as this is effectively our child and that is the way it is done in GuiWidget.
-						// Parents call child OnDrawBackground before they call OnDraw
-						AggSystemWindow.OnDrawBackground(graphics2D);
-						AggSystemWindow.OnDraw(graphics2D);
+						graphics2D = this.NewGraphics2D();
 					}
-					else
+
+					using (MatterHackers.RenderCore.FrameProfiler.Time("WidgetTreeDraw"))
 					{
-						for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
+						if (!SingleWindowMode)
 						{
-							graphics2D.FillRectangle(this.WindowProvider.OpenWindows[0].LocalBounds, new Color(Color.Black, 160));
-							this.WindowProvider.OpenWindows[i].OnDraw(graphics2D);
+							// We must call on draw background as this is effectively our child and that is the way it is done in GuiWidget.
+							// Parents call child OnDrawBackground before they call OnDraw
+							AggSystemWindow.OnDrawBackground(graphics2D);
+							AggSystemWindow.OnDraw(graphics2D);
+						}
+						else
+						{
+							for (var i = 0; i < this.WindowProvider.OpenWindows.Count; i++)
+							{
+								graphics2D.FillRectangle(this.WindowProvider.OpenWindows[0].LocalBounds, new Color(Color.Black, 160));
+								this.WindowProvider.OpenWindows[i].OnDraw(graphics2D);
+							}
 						}
 					}
-				}
 
-				// Draws a widget batched and never issued (Graphics2DSpanImage's pixel runs) belong
-				// to this frame, under the CPU layer, rather than being lost.
-				graphics2D.FlushDeferredDraws();
+					// Draws a widget batched and never issued (Graphics2DSpanImage's pixel runs) belong
+					// to this frame, under the CPU layer, rather than being lost.
+					graphics2D.FlushDeferredDraws();
 
-				// A widget that rasterized into Graphics2D.DestImage drew into a CPU buffer, not into the
-				// frame. On a GPU surface that buffer is a layer this uploads and draws over the frame now,
-				// after every widget has had its turn - the agg demos that rasterize by hand (aa_demo,
-				// FontHinting and friends) are the consumers, and on a CPU surface there is nothing to do
-				// because DestImage *is* the frame.
-				if (graphics2D is Graphics2DGpu gpuGraphics && gpuGraphics.HasCpuLayer)
-				{
-					// A composite every frame means some widget is rasterizing on the CPU into DestImage;
-					// the stack of whoever first asked is printed by Graphics2DGpu.
-					MatterHackers.RenderCore.FrameProfiler.Count("CompositeCpuLayer");
-					using (MatterHackers.RenderCore.FrameProfiler.Time("CompositeCpuLayer"))
+					// A widget that rasterized into Graphics2D.DestImage drew into a CPU buffer, not into the
+					// frame. On a GPU surface that buffer is a layer this uploads and draws over the frame now,
+					// after every widget has had its turn - the agg demos that rasterize by hand (aa_demo,
+					// FontHinting and friends) are the consumers, and on a CPU surface there is nothing to do
+					// because DestImage *is* the frame.
+					if (graphics2D is Graphics2DGpu gpuGraphics && gpuGraphics.HasCpuLayer)
 					{
-						gpuGraphics.CompositeCpuLayer();
+						// A composite every frame means some widget is rasterizing on the CPU into DestImage;
+						// the stack of whoever first asked is printed by Graphics2DGpu.
+						MatterHackers.RenderCore.FrameProfiler.Count("CompositeCpuLayer");
+						using (MatterHackers.RenderCore.FrameProfiler.Time("CompositeCpuLayer"))
+						{
+							gpuGraphics.CompositeCpuLayer();
+						}
 					}
-				}
 
-				// Before the present, because a GPU window can only read a frame back while the frame's
-				// texture is still the one being drawn into.
-				CheckSmokeRunProgress();
+					// Before the present, because a GPU window can only read a frame back while the frame's
+					// texture is still the one being drawn into.
+					CheckSmokeRunProgress();
+				}
+				catch
+				{
+					// Closed unshown, so the next paint starts a whole frame; OnPaint reports the throw. A
+					// present that throws below closes its frame itself (WebGpuControl.EndFrame).
+					this.AbandonFrame();
+					throw;
+				}
 
 				using (MatterHackers.RenderCore.FrameProfiler.Time("Present"))
 				{

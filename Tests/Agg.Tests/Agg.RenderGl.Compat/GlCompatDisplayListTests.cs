@@ -166,5 +166,33 @@ namespace MatterHackers.Agg.Tests
 			await Assert.That(harness.Device.CommandsOf<DrawCommand>().Count).IsEqualTo(0);
 			await Assert.That(harness.Context.Passes.PassOpenCount).IsEqualTo(0);
 		}
+
+		[Test]
+		public async Task BeginFrameDeletesAListAnAbandonedFrameLeftHalfRecorded()
+		{
+			// Callers cache a list's id only after EndList, so a draw that throws mid-recording every
+			// frame asks for a fresh list each time. If an abandoned recording were kept, each frame would
+			// leak one partial list and every buffer it had baked.
+			var harness = GlCompatTestHarness.Create();
+
+			int list = harness.Context.GenLists(1);
+			harness.Context.NewList(list, null);
+			harness.DrawTriangle();
+
+			// Replaying the half-built list bakes a buffer for its partial geometry.
+			harness.Context.CallList(list);
+			var baked = harness.VertexBufferCreations().Single().Buffer as StubResource;
+
+			harness.Context.BeginFrame();
+
+			await Assert.That(baked.IsDisposed).IsTrue()
+				.Because("the abandoned list's baked buffer must be released with it");
+
+			harness.Device.ClearRecording();
+			harness.Context.CallList(list);
+			harness.Context.FlushPass();
+			await Assert.That(harness.Device.CommandsOf<DrawCommand>().Count).IsEqualTo(0)
+				.Because("the abandoned list was deleted, so replaying its name draws nothing");
+		}
 	}
 }

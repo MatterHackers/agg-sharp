@@ -117,6 +117,12 @@ namespace MatterHackers.Agg.Tests
 			gl.PushAttrib(AttribMask.ViewportBit);
 			gl.PopAttrib();
 
+			// A push with no MatrixMode call lands on whichever stack the reset left current. Only if that
+			// was model-view is the projection stack still empty, so its pop is the unbalanced one; had
+			// the reset kept Projection, the push would have gone there and this pop would succeed.
+			gl.PushMatrix();
+			gl.MatrixMode(MatrixMode.Projection);
+
 			var threw = false;
 			try
 			{
@@ -127,7 +133,7 @@ namespace MatterHackers.Agg.Tests
 				threw = true;
 			}
 
-			await Assert.That(threw).IsTrue().Because("after the reset nothing is pushed on any stack, so the first pop is the unbalanced one");
+			await Assert.That(threw).IsTrue().Because("the reset has to leave model-view current, so the push went there and the projection stack is still empty");
 		}
 
 		/// <summary>

@@ -48,7 +48,7 @@ namespace MatterHackers.Agg.UI
 	/// <para>
 	/// <b>Frame shape</b> is identical to Windows' and macOS'. <see cref="BeginFrame"/> acquires the
 	/// swapchain texture and points the compat context at it plus a depth buffer; widget paint draws through
-	/// <see cref="Gl"/>; <see cref="Present"/> submits and presents. A frame the swapchain cannot hand out
+	/// <see cref="Gl"/>; <see cref="EndFrame"/> submits and presents. A frame the swapchain cannot hand out
 	/// is drawn into a scratch texture and never presented, because widget paint has no way to be told
 	/// "not this time".
 	/// </para>
@@ -286,20 +286,25 @@ namespace MatterHackers.Agg.UI
 		}
 
 		/// <summary>
-		/// Ends a frame whose draw threw partway through. Nothing is presented: what the frame drew before
-		/// the throw is not a picture anyone should see, and the last complete frame stays up instead. But
-		/// the frame still has to be closed - its recording submitted (or, if it was the recording that was
-		/// invalid, dropped by the submit that refuses it) and the target forgotten, so the next
-		/// <see cref="BeginFrame"/> starts a whole frame rather than continuing this one. The swapchain
-		/// texture stays acquired and that next frame draws into it.
+		/// Ends the frame, however its draw went. With <paramref name="present"/> (the draw finished) a
+		/// presentable frame is submitted and presented; otherwise the recording is only submitted - what a
+		/// frame drew before a throw is not a picture anyone should see, so the last complete frame stays up
+		/// and the swapchain texture stays acquired for the next frame to draw into. Either way the target
+		/// is forgotten, so the next <see cref="BeginFrame"/> starts a whole frame rather than continuing
+		/// this one. Hosts call it from a <c>finally</c>, the way the browser host calls
+		/// <c>BrowserWebGpuLayer.EndFrame</c>.
 		/// </summary>
 		/// <remarks>
-		/// Before this, a throw skipped the host's present, and so the target stayed set, BeginFrame took
-		/// its "already in a frame" exit, and the host's viewport flag stayed set too: every later frame was
-		/// drawn as a continuation of the abandoned one, into a texture that was never presented, with the
-		/// abandoned draw's matrix pushes still outstanding. The window went black and stayed black.
+		/// The target is forgotten in a <c>finally</c> because the present can throw too (the submit
+		/// refusing a recording wgpu rejects). Before, a throw - from the draw or from the present - left the
+		/// target set, so BeginFrame took its "already in a frame" exit and the host's viewport flag stayed
+		/// set: every later frame was drawn as a continuation of the failed one, into a texture that was
+		/// never presented, with its matrix pushes still outstanding. The window went black and stayed black.
+		/// A present that throws still throws (there is no draw exception for it to hide); an abandoned
+		/// frame's submit failure is only logged, so the draw's own exception is the one reported.
 		/// </remarks>
-		public void AbandonFrame()
+		/// <param name="present">True when the draw finished and the frame should be shown.</param>
+		public void EndFrame(bool present)
 		{
 			if (!this.isInitialized || this.compat.Passes.ColorTarget == null)
 			{
@@ -308,31 +313,7 @@ namespace MatterHackers.Agg.UI
 
 			try
 			{
-				this.compat.Submit();
-			}
-			catch (Exception submitException)
-			{
-				// Most often the very thing the frame threw over: a recording wgpu rejects. The device has
-				// already dropped it, which is all that was needed here; the throw that abandoned the frame
-				// is the one being reported.
-				Console.Error.WriteLine($"{this.GetType().Name}: the abandoned frame's recording was dropped: {submitException.Message}");
-			}
-
-			this.frameIsPresentable = false;
-			this.compat.SetRenderTarget(null, null);
-		}
-
-		/// <summary>Ends the frame: submits everything recorded and presents it.</summary>
-		public void Present()
-		{
-			if (!this.isInitialized)
-			{
-				return;
-			}
-
-			try
-			{
-				if (this.frameIsPresentable)
+				if (present && this.frameIsPresentable)
 				{
 					using (FrameProfiler.Time("PresentSwapchain"))
 					{
@@ -348,12 +329,22 @@ namespace MatterHackers.Agg.UI
 			}
 			catch (Exception) when (this.TryRecoverIfDeviceLost())
 			{
-				return;
 			}
+			catch (Exception submitException) when (!present)
+			{
+				// Most often the very thing the frame threw over: a recording wgpu rejects. The device has
+				// already dropped it, which is all that was needed here.
+				// Guarded: a throwing stderr must not replace the draw's exception, which is the one to report.
+				try { Console.Error.WriteLine($"{this.GetType().Name}: the abandoned frame's recording was dropped: {submitException.Message}"); } catch { }
+			}
+			finally
+			{
+				this.frameIsPresentable = false;
 
-			// Forgetting the target is what makes BeginFrame acquire again next time; the texture it
-			// referred to was released by the present.
-			this.compat.SetRenderTarget(null, null);
+				// Forgetting the target is what makes BeginFrame acquire again next time. After a device
+				// recovery this is the new context (nothing to forget), or null if the recovery failed.
+				this.compat?.SetRenderTarget(null, null);
+			}
 		}
 
 		/// <summary>
@@ -437,7 +428,7 @@ namespace MatterHackers.Agg.UI
 
 		/// <summary>
 		/// Reads the frame currently being drawn back into a PNG at <paramref name="path"/>. Must be
-		/// called after the widget draw and before <see cref="Present"/> - once presented, the frame's
+		/// called after the widget draw and before <see cref="EndFrame"/> - once presented, the frame's
 		/// texture is gone.
 		/// </summary>
 		/// <param name="path">File to write; an existing file is replaced.</param>
