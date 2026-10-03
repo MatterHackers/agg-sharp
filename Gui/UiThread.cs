@@ -266,6 +266,12 @@ namespace MatterHackers.Agg.UI
 		{
 			int callingThreadId = Thread.CurrentThread.ManagedThreadId;
 
+			// The UI thread never waits on the thread pool inside agg's Parallel: a pool saturated by a long
+			// operation (an exact Dilate) left the replicas of a tiny handle mesh's trace-data loop unscheduled
+			// for minutes, freezing the window. Set unconditionally because the mark is per thread and the id
+			// check below may already match a thread that the InvokePendingActions fallback latched unmarked.
+			MatterHackers.Agg.Parallel.RunInlineOnCurrentThread();
+
 			// Compared before writing so the pump is not dirtying a shared field on every idle tick.
 			if (uiThreadId != callingThreadId)
 			{

@@ -72,7 +72,7 @@ namespace MatterHackers.Agg.UI.Tests
 				// run that work a frame before the click that asked for it.
 				UiThread.RunOnIdle(() => order.Add("idle action"));
 
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
 
 				await Assert.That(order).IsEquivalentTo(new[] { "browser events", "idle action" }, CollectionOrdering.Matching);
 			}
@@ -156,24 +156,24 @@ namespace MatterHackers.Agg.UI.Tests
 				var tick = new BrowserFrameTick(() => { }, () => canPaint, () => paints++);
 
 				// A window that has been shown but never invalidated still owes the page its first frame.
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
 				await Assert.That(paints).IsEqualTo(1);
 
 				// Nothing asked for another one, and a browser tick is not a reason to redraw - the loop runs
 				// sixty times a second whether or not anything changed.
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
 				await Assert.That(paints).IsEqualTo(1);
 
 				// Asked for while nothing can paint - the state a host is in before its render device has
 				// finished coming up. The request is still owed rather than dropped.
 				canPaint = false;
 				tick.Invalidate();
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
 				await Assert.That(paints).IsEqualTo(1);
 				await Assert.That(tick.NeedsRedraw).IsTrue();
 
 				canPaint = true;
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
 				await Assert.That(paints).IsEqualTo(2);
 			}
 			finally
@@ -206,7 +206,7 @@ namespace MatterHackers.Agg.UI.Tests
 						throw new InvalidOperationException("a widget's draw threw");
 					});
 
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
 
 				await Assert.That(paintAttempts).IsEqualTo(1);
 				await Assert.That(reported.Count).IsEqualTo(1)
@@ -219,13 +219,13 @@ namespace MatterHackers.Agg.UI.Tests
 
 				// And the loop is still running, which is the half the spike's frame loop gave up on: a dead
 				// loop leaves a window on screen with no input, no idle queue and no way to close.
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
 				await Assert.That(tick.TickCount).IsEqualTo(2L);
 				await Assert.That(paintAttempts).IsEqualTo(1);
 
 				// It repeats only as often as something asks for a repaint.
 				tick.Invalidate();
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
 				await Assert.That(paintAttempts).IsEqualTo(2);
 				await Assert.That(reported.Count).IsEqualTo(2);
 			}
@@ -259,7 +259,7 @@ namespace MatterHackers.Agg.UI.Tests
 
 				UiThread.RunOnIdle(() => idleRan = true);
 
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
 
 				await Assert.That(reported.Count).IsEqualTo(1);
 				await Assert.That(idleRan).IsTrue();
@@ -295,7 +295,7 @@ namespace MatterHackers.Agg.UI.Tests
 					tick.Tick();
 				});
 
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
 
 				await Assert.That(order).IsEquivalentTo(new[]
 				{
@@ -307,7 +307,7 @@ namespace MatterHackers.Agg.UI.Tests
 						+ "but its idle drain is guarded, exactly as MacSystemWindow.InvokeIdleActions is");
 
 				// The guarded drain did not lose the queued action; it is simply owed to a later tick.
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
 				await Assert.That(order).Contains("action queued by the outer one");
 			}
 			finally
@@ -342,8 +342,8 @@ namespace MatterHackers.Agg.UI.Tests
 					diagnosticOutput: output,
 					errorOutput: errors);
 
-				tick.Tick();
-				tick.Tick();
+				RunOnItsOwnThread(tick.Tick);
+				RunOnItsOwnThread(tick.Tick);
 
 				string reported = output.ToString();
 
@@ -368,6 +368,10 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
+		/// <summary>
+		/// Every tick runs here, never on the test's pool thread: a tick marks its thread as the UI thread, and
+		/// that mark makes agg's Parallel run loops inline on it for the rest of the process.
+		/// </summary>
 		private static void RunOnItsOwnThread(ThreadStart work)
 		{
 			var thread = new Thread(work)

@@ -100,6 +100,39 @@ namespace MatterHackers.Agg.UI.Tests
 			}
 		}
 
+		/// <summary>
+		/// The pump every host installs runs agg's parallel loops on itself. Otherwise a UI-thread loop (a
+		/// handle mesh's BVH) waits on the thread pool, and a pool saturated by a long operation (an exact
+		/// Dilate) froze the window for minutes.
+		/// </summary>
+		[Test]
+		[Timeout(30_000)]
+		public async Task ThePumpThreadRunsParallelLoopsInline(CancellationToken cancellationToken)
+		{
+			UiThread.ResetForTests();
+
+			try
+			{
+				bool markedBefore = true;
+				bool markedAfter = false;
+
+				RunOnItsOwnThread(() =>
+				{
+					markedBefore = Parallel.CurrentThreadRunsInline;
+					MainLoopSynchronizationContext.InstallOnPumpThread();
+					markedAfter = Parallel.CurrentThreadRunsInline;
+				});
+
+				await Assert.That(markedBefore).IsFalse();
+				await Assert.That(markedAfter).IsTrue()
+					.Because("the UI thread must never wait on the thread pool inside agg's Parallel");
+			}
+			finally
+			{
+				UiThread.ResetForTests();
+			}
+		}
+
 		private static void RunOnItsOwnThread(ThreadStart work)
 		{
 			var thread = new Thread(work)
