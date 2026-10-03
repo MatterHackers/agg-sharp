@@ -177,6 +177,12 @@ namespace MatterHackers.RenderGl.Compat
 		public void PushAttrib(AttribMask mask) => this.attribStack.Push((mask, this.Viewport));
 
 		/// <summary>
+		/// Drops every saved attribute set without restoring any of it. For the top of a frame, where
+		/// whatever a throw left pushed belongs to a frame that is over; the host sets the viewport afresh.
+		/// </summary>
+		public void ClearAttribStack() => this.attribStack.Clear();
+
+		/// <summary>
 		/// Restores what <see cref="PushAttrib"/> saved and reports whether the viewport changed, so the
 		/// caller can push it at the encoder.
 		/// </summary>

@@ -105,6 +105,13 @@ namespace MatterHackers.RenderGl.Compat
 		public void EndRecording() => this.RecordingList = 0;
 
 		/// <summary>
+		/// Stops a recording that never reached its <c>glEndList</c> - a draw that threw in the middle of
+		/// one. What was recorded so far stays in the list, as it would after a real EndList; the point is
+		/// that the next frame's draws go to the screen and not into somebody's half-built list.
+		/// </summary>
+		public void AbandonRecording() => this.RecordingList = 0;
+
+		/// <summary>
 		/// Appends one <c>glBegin</c>/<c>glEnd</c> batch to the list being recorded. The lists are copied
 		/// because the accumulator reuses its own.
 		/// </summary>

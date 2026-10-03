@@ -70,6 +70,39 @@ namespace MatterHackers.Agg.Tests
 		}
 
 		[Test]
+		public async Task BeginFrameDropsWhatAnAbandonedFrameLeftPushed()
+		{
+			// A draw that throws between PushMatrix and PopMatrix leaves its matrix on the stack, and the
+			// stack never shrinks on its own: every frame after would draw through the abandoned frame's
+			// transform. The host's BeginFrame is where that history has to end.
+			var harness = GlCompatTestHarness.Create();
+
+			harness.Context.MatrixMode(MatterHackers.RenderGl.OpenGl.MatrixMode.Modelview);
+			harness.Context.PushMatrix();
+			harness.Context.Translate(5, 7, 0);
+			harness.Context.MatrixMode(MatterHackers.RenderGl.OpenGl.MatrixMode.Projection);
+			harness.Context.PushMatrix();
+			harness.Context.Ortho(0, 100, 0, 50, -1, 1);
+			harness.Context.PushAttrib(AttribMask.ViewportBit);
+			harness.Context.NewList(harness.Context.GenLists(1), null);
+
+			harness.Context.BeginFrame();
+
+			// Model-view mode again, as a fresh context: this pop would otherwise act on the projection.
+			harness.Context.PopMatrix();
+			harness.DrawTriangle();
+			harness.Context.Submit();
+
+			var modelView = harness.UniformModelView(0);
+			await Assert.That(modelView.Row3.X).IsEqualTo(0.0).Within(1e-5);
+			await Assert.That(modelView.Row3.Y).IsEqualTo(0.0).Within(1e-5);
+			await Assert.That(harness.UniformProjection(0).Row0.X).IsEqualTo(1.0).Within(1e-5)
+				.Because("the abandoned frame's ortho projection must not outlive it");
+			await Assert.That(harness.Device.CommandsOf<DrawCommand>().Count).IsEqualTo(1)
+				.Because("the draw went to the target, not into the display list the abandoned frame was still recording");
+		}
+
+		[Test]
 		public async Task EachDrawGetsItsOwnUniformRangeSoOneWriteCannotOverwriteAnother()
 		{
 			// If every draw shared a uniform range, both draws in a pass would read whichever write landed

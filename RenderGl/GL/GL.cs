@@ -80,14 +80,7 @@ namespace MatterHackers.RenderGl.OpenGl
 
         private readonly Dictionary<int, bool> isEnabled = new Dictionary<int, bool>();
         private bool inBegin;
-        private int pushAttribCount = 0;
-        private Dictionary<MatrixMode, int> pushMatrixCount = new Dictionary<MatrixMode, int>()
-        {
-            [OpenGl.MatrixMode.Modelview] = 0,
-            [OpenGl.MatrixMode.Projection] = 0,
-        };
-
-        private MatrixMode matrixMode = OpenGl.MatrixMode.Modelview;
+        private readonly GlStackBalance stacks = new GlStackBalance();
 
         /// <summary>
         /// The underlying GPU context implementation (e.g. VorticeD3DGl).
@@ -97,6 +90,20 @@ namespace MatterHackers.RenderGl.OpenGl
         public GL(IGpuContext gpuContext = null)
         {
             GpuContext = gpuContext;
+        }
+
+        /// <summary>
+        /// Starts a frame: forgets every push, attribute and immediate-mode state the previous frame left
+        /// behind, here and in the context. The host calls this once per frame, before the first draw.
+        /// A frame that finished cleanly has nothing to forget; one a throw abandoned mid-draw has its
+        /// unmatched pushes still counted, and left alone they accumulate frame over frame until the
+        /// guard in <see cref="GlStackBalance"/> fails every frame at its first push (see its remarks).
+        /// </summary>
+        public void BeginFrame()
+        {
+            inBegin = false;
+            stacks.ResetForFrame();
+            GpuContext?.BeginFrame();
         }
 
         public void Begin(BeginMode mode)
@@ -681,7 +688,7 @@ namespace MatterHackers.RenderGl.OpenGl
 
         public void MatrixMode(MatrixMode mode)
         {
-            matrixMode = mode;
+            stacks.MatrixMode = mode;
             GpuContext?.MatrixMode(mode);
             CheckForError();
         }
@@ -735,31 +742,21 @@ namespace MatterHackers.RenderGl.OpenGl
 
         public void PopAttrib()
         {
-            pushAttribCount--;
+            stacks.PopAttrib();
             GpuContext?.PopAttrib();
             CheckForError();
         }
 
         public void PopMatrix()
         {
-            pushMatrixCount[matrixMode]--;
-            if (pushMatrixCount[matrixMode] < 0)
-            {
-                throw new Exception("popMatrib called too many times.");
-            }
-
+            stacks.PopMatrix();
             GpuContext?.PopMatrix();
             CheckForError();
         }
 
         public void PushAttrib(AttribMask mask)
         {
-            pushAttribCount++;
-            if (pushAttribCount > 100)
-            {
-                throw new Exception("pushAttrib being called without matching PopAttrib");
-            }
-
+            stacks.PushAttrib();
             GpuContext?.PushAttrib(mask);
             CheckForError();
         }
@@ -772,12 +769,7 @@ namespace MatterHackers.RenderGl.OpenGl
 
         public void PushMatrix()
         {
-            pushMatrixCount[matrixMode]++;
-            if (pushMatrixCount[matrixMode] > 32)
-            {
-                throw new Exception("PushMatrix being called without matching PopMatrix");
-            }
-
+            stacks.PushMatrix();
             GpuContext?.PushMatrix();
             CheckForError();
         }

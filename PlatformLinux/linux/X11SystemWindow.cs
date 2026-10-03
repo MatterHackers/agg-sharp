@@ -3332,6 +3332,15 @@ namespace MatterHackers.Agg.UI
 					// texture is still the one being drawn into.
 					this.CheckSmokeRunProgress();
 				}
+				catch
+				{
+					// The frame ends here, just not on screen: closed at the layer and forgotten by the
+					// viewport flag, so the next paint is a new frame, not this one continued (the skipped
+					// present below used to leave it open for good - see X11WebGpuLayer.AbandonFrame).
+					this.viewPortHasBeenSet = false;
+					this.webGpuLayer?.AbandonFrame();
+					throw;
+				}
 				finally
 				{
 					this.isInsidePaint = false;

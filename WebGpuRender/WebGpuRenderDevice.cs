@@ -139,6 +139,9 @@ namespace MatterHackers.WebGpuRender
 
 		private readonly string label;
 
+		/// <summary>The label this device was created with, for messages that name it.</summary>
+		internal string Label => this.label;
+
 		private GCHandle selfHandle;
 		private WGPUInstance instance;
 		private WGPUAdapter adapter;
@@ -452,31 +455,11 @@ namespace MatterHackers.WebGpuRender
 			return new WebGpuBuffer(handle, usage, size, "buffer", this.LiveResources);
 		}
 
-		/// <summary>
-		/// Buckets a resource label for the frame profiler. Trailing digits are dropped because the
-		/// compat layer names its textures after GL texture ids, and one counter per id says nothing.
-		/// </summary>
-		private static string ProfileLabel(string label)
-		{
-			if (string.IsNullOrEmpty(label))
-			{
-				return "unlabeled";
-			}
-
-			int end = label.Length;
-			while (end > 0 && char.IsDigit(label[end - 1]))
-			{
-				end--;
-			}
-
-			return end == 0 ? label : label.Substring(0, end);
-		}
-
 		/// <inheritdoc/>
 		public IGpuTexture CreateTexture(in TextureDescriptor descriptor)
 		{
 			FrameProfiler.Count("dev.CreateTexture");
-			FrameProfiler.Count("tex:" + ProfileLabel(descriptor.Label));
+			FrameProfiler.Count("tex:" + WgpuProfileLabel.Bucket(descriptor.Label));
 			this.ThrowIfDisposed();
 
 			// Checked here for the same reason CreateBuffer checks its size, only worse: an over-limit
@@ -507,10 +490,26 @@ namespace MatterHackers.WebGpuRender
 					sampleCount = Math.Max(1u, descriptor.SampleCount),
 				};
 
+				int errorsBefore = this.uncapturedErrorCount;
 				WGPUTexture handle = wgpuDeviceCreateTexture(this.device, &textureDescriptor);
-				if (handle.IsNull)
+
+				// The same trick Submit uses. A descriptor wgpu rejects for any other reason (a zero
+				// dimension, a mip chain longer than the size allows, a usage the format cannot have) comes
+				// back as a non-null *error* texture whose view is an error object too, and nothing says
+				// so until a pass that attaches it fails at Finish as "TextureView with '' label is
+				// invalid" - a frame later, with no label and no descriptor, in a message that the next
+				// error has by then overwritten. Caught here it names the texture that caused it.
+				if (handle.IsNull || this.uncapturedErrorCount != errorsBefore)
 				{
-					throw new InvalidOperationException("wgpuDeviceCreateTexture returned null.");
+					if (!handle.IsNull)
+					{
+						wgpuTextureRelease(handle);
+					}
+
+					throw new InvalidOperationException(
+						$"wgpuDeviceCreateTexture rejected '{descriptor.Label}' ({descriptor.Width}x{descriptor.Height}"
+						+ $" {descriptor.Format}, {textureDescriptor.mipLevelCount} mip levels, {textureDescriptor.sampleCount} samples,"
+						+ $" usage {descriptor.Usage}) on '{this.label}': {(handle.IsNull ? "it returned null" : this.LastUncapturedError)}");
 				}
 
 				// A null view descriptor means the whole resource, which is what every use here wants.
