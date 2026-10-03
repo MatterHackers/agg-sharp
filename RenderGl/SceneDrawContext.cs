@@ -193,8 +193,17 @@ namespace MatterHackers.RenderGl
 
 			try
 			{
-				this.EndScenePass();
-				RenderHelper.UnsetGlContext(this.gl);
+				// The pops run even when the scene submit throws: the matrices and attributes BeginFrame
+				// pushed would otherwise stay on for every later draw in the window's frame. The submit's
+				// exception is the one that propagates.
+				try
+				{
+					this.EndScenePass();
+				}
+				finally
+				{
+					RenderHelper.UnsetGlContext(this.gl);
+				}
 			}
 			finally
 			{

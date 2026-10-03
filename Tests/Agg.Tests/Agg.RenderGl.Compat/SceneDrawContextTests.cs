@@ -309,6 +309,41 @@ namespace MatterHackers.Agg.Tests
 		/// A <see cref="SceneDrawContext"/> over a <see cref="GlCompatTestHarness"/>, with a scene renderer
 		/// that records what it is handed instead of drawing it.
 		/// </summary>
+		/// <summary>
+		/// A scene render that fails at its submit still hands back the matrices and attributes the frame
+		/// pushed, so the rest of the window's drawing is not left inside the 3D view's projection.
+		/// </summary>
+		[Test]
+		public async Task EndFrameRestoresGlStacksWhenTheScenePassThrows()
+		{
+			var harness = Harness.Create();
+			harness.Renderer.ThrowOnEnd = true;
+			var stacks = harness.Gl.Stacks;
+
+			int projectionBefore = stacks.MatrixDepth(MatrixMode.Projection);
+			int modelviewBefore = stacks.MatrixDepth(MatrixMode.Modelview);
+			int attribBefore = stacks.AttribDepth;
+
+			harness.Context.BeginFrame(harness.World, harness.Viewport, new LightingData());
+			await Assert.That(stacks.AttribDepth).IsEqualTo(attribBefore + 1);
+
+			InvalidOperationException thrown = null;
+			try
+			{
+				harness.Context.EndFrame();
+			}
+			catch (InvalidOperationException e)
+			{
+				thrown = e;
+			}
+
+			await Assert.That(thrown?.Message).IsEqualTo("Scene submit failed validation.");
+			await Assert.That(stacks.MatrixDepth(MatrixMode.Projection)).IsEqualTo(projectionBefore);
+			await Assert.That(stacks.MatrixDepth(MatrixMode.Modelview)).IsEqualTo(modelviewBefore);
+			await Assert.That(stacks.AttribDepth).IsEqualTo(attribBefore);
+			await Assert.That(harness.Context.IsFrameOpen).IsFalse();
+		}
+
 		private sealed class Harness
 		{
 			private Harness(GlCompatTestHarness compat, GL gl, RecordingSceneRenderer renderer, SceneDrawContext context)
@@ -482,10 +517,17 @@ namespace MatterHackers.Agg.Tests
 				this.IsSceneRenderingActive = true;
 			}
 
+			/// <summary>Makes <see cref="EndSceneRendering"/> throw, as a submit failing validation does.</summary>
+			public bool ThrowOnEnd { get; set; }
+
 			public void EndSceneRendering()
 			{
 				this.EndCount++;
 				this.IsSceneRenderingActive = false;
+				if (this.ThrowOnEnd)
+				{
+					throw new InvalidOperationException("Scene submit failed validation.");
+				}
 			}
 
 			public bool CanRender(MeshRenderCommand command) => this.IsSceneRenderingActive && command?.Mesh != null;

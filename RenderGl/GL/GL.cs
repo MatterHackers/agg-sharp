@@ -83,6 +83,12 @@ namespace MatterHackers.RenderGl.OpenGl
         private readonly GlStackBalance stacks = new GlStackBalance();
 
         /// <summary>
+        /// The push/pop depths this GL has counted this frame, so tests can check a caller left the
+        /// matrix and attribute stacks where it found them.
+        /// </summary>
+        internal GlStackBalance Stacks => stacks;
+
+        /// <summary>
         /// The underlying GPU context implementation (e.g. VorticeD3DGl).
         /// </summary>
         public IGpuContext GpuContext { get; set; }
