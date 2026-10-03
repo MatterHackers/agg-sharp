@@ -134,15 +134,12 @@ namespace MatterHackers.Agg.UI
 
 			var list = this.Suggestions;
 			string insert = list.Suggestions[index].InsertText;
-			string text = this.field.Text ?? "";
-			int start = Math.Max(0, Math.Min(list.ReplaceStart, text.Length));
-			int end = Math.Max(start, Math.Min(start + list.ReplaceLength, text.Length));
 
 			this.accepting = true;
 			try
 			{
-				this.field.Text = text.Substring(0, start) + insert + text.Substring(end);
-				this.field.InternalTextEditWidget.SetCursorPosition(start + insert.Length);
+				// one undo step of its own, so Ctrl+Z puts back exactly what was typed
+				this.field.ReplaceRange(list.ReplaceStart, list.ReplaceLength, insert);
 			}
 			finally
 			{

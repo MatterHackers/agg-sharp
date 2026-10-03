@@ -42,7 +42,7 @@ namespace MatterHackers.Agg.UI.Tests
 	[NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))]
 	public class TextSuggestionControllerTests
 	{
-		private static readonly string[] Words = { "apple", "apricot", "avocado", "banana", "obj." };
+		private static readonly string[] Words = { "apple", "apricot", "avocado", "banana", "obj.", "self." };
 
 		[After(Test)]
 		public void DrainTheIdleQueue()
@@ -204,6 +204,32 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(harness.Provider.Calls.Last()).IsEqualTo(("obj.", 4));
 			await Assert.That(harness.Controller.IsOpen).IsTrue().Because("an insert ending in '.' shows the members next");
 			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "width", "height" });
+		}
+
+		/// <summary>
+		/// Accepting a suggestion is one edit of its own: Ctrl+Z puts back exactly what was typed, caret and all,
+		/// and redo brings the accepted text back. The accept used to go through the Text setter, which takes no
+		/// undo snapshot, so undo could not land on the typed word.
+		/// </summary>
+		[Test]
+		public async Task AcceptIsItsOwnUndoStep()
+		{
+			var harness = new Harness();
+			harness.Type('=');
+			harness.Type('s');
+			harness.Type('e');
+			harness.Type('l');
+			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "self." });
+			harness.Key(Keys.Enter);
+			await Assert.That(harness.Field.Text).IsEqualTo("=self.");
+
+			harness.Key(Keys.Control | Keys.Z);
+			await Assert.That(harness.Field.Text).IsEqualTo("=sel");
+			await Assert.That(harness.Field.CharIndexToInsertBefore).IsEqualTo(4);
+
+			harness.Key(Keys.Control | Keys.Y);
+			await Assert.That(harness.Field.Text).IsEqualTo("=self.");
+			await Assert.That(harness.Field.CharIndexToInsertBefore).IsEqualTo(6);
 		}
 
 		/// <summary>

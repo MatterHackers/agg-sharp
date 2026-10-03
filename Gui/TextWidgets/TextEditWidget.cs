@@ -115,6 +115,12 @@ namespace MatterHackers.Agg.UI
 			InternalTextEditWidget.ClearUndoHistory();
 		}
 
+		/// <inheritdoc cref="UI.InternalTextEditWidget.ReplaceRange"/>
+		public void ReplaceRange(int start, int length, string text)
+		{
+			InternalTextEditWidget.ReplaceRange(start, length, text);
+		}
+
 		public void SetTextAsUndoBaseline(string text, int charIndex = 0)
 		{
 			InternalTextEditWidget.SetTextAsUndoBaseline(text, charIndex);

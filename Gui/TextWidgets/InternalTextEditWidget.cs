@@ -42,29 +42,9 @@ namespace MatterHackers.Agg.UI
 {
 	public class InternalTextEditWidget : GuiWidget, IIgnoredPopupChild
 	{
-		private static HashSet<char> WordBreakChars = new HashSet<char>(new char[] 
-		{ 
-			' ', '\t', // white space characters
-			'\'', '"', '`', // quotes
-			',', '.', '?', '!', '@', '&', // punctuation
-			'(', ')', '<', '>', '[', ']', '{', '}', // parents (or equivalent)
-			'-', '+', '*', '/', '=', '\\', '#', '$', '^', '|', '°', '²', '³'// math symbols
-		});
-
         private char? maskChar = null;
         private string actualText = ""; 
 		
-		private static HashSet<char> WordBreakCharsAndCR
-		{
-			get
-			{
-				var withCR = new HashSet<char>(WordBreakChars);
-				withCR.Add('\n');
-
-				return withCR;
-			}
-		}
-
 		/// <summary>
 		/// Gets or sets whether caret motion and delete use Mac conventions (Option for word-wise, Command
 		/// for line- and document-wise) instead of the Windows ones (Control for word-wise, Control+Home/End
@@ -148,7 +128,7 @@ namespace MatterHackers.Agg.UI
 
 		public event EventHandler AllSelected;
 
-		private UndoBuffer undoBuffer = new UndoBuffer();
+		private readonly TextEditUndoHistory undoHistory;
 
 		private bool mouseIsDownLeft = false;
 		private bool showingRightClickMenu = false;
@@ -390,6 +370,9 @@ namespace MatterHackers.Agg.UI
                     CharIndexToInsertBefore = 0;
                     actualText = normalizedText;
                     UpdateDisplayText();
+
+                    // a program setting the text is not an undo step, but the next edit's undo returns to it
+                    undoHistory?.AcceptUnrecordedChange();
                     OnTextChanged(null);
                     Invalidate();
                 }
@@ -425,8 +408,7 @@ namespace MatterHackers.Agg.UI
 
             FixBarPosition(DesiredXPositionOnLine.Set);
 
-            var newUndoData = new TextWidgetUndoCommand(this);
-            undoBuffer.Add(newUndoData);
+            undoHistory = new TextEditUndoHistory(this);
 
             Cursor = Cursors.IBeam;
 
@@ -782,14 +764,14 @@ namespace MatterHackers.Agg.UI
 				{
 					while (CharIndexToInsertBefore >= 0
 						&& (CharIndexToInsertBefore >= Text.Length
-							|| (CharIndexToInsertBefore > -1 && !WordBreakCharsAndCR.Contains(Text[CharIndexToInsertBefore]))))
+							|| (CharIndexToInsertBefore > -1 && !TextCaretNavigation.IsWordBreakOrNewLine(Text[CharIndexToInsertBefore]))))
 					{
 						CharIndexToInsertBefore--;
 					}
 
 					CharIndexToInsertBefore++;
 					SelectionIndexToStartBefore = CharIndexToInsertBefore + 1;
-					while (SelectionIndexToStartBefore < Text.Length && !WordBreakCharsAndCR.Contains(Text[SelectionIndexToStartBefore]))
+					while (SelectionIndexToStartBefore < Text.Length && !TextCaretNavigation.IsWordBreakOrNewLine(Text[SelectionIndexToStartBefore]))
 					{
 						SelectionIndexToStartBefore++;
 					}
@@ -917,12 +899,45 @@ namespace MatterHackers.Agg.UI
 
                 if (createUndoMarker)
                 {
-                    var newUndoDeleteData = new TextWidgetUndoCommand(this);
-                    undoBuffer.Add(newUndoDeleteData);
+                    undoHistory.RecordEdit();
                 }
 
                 Selecting = false;
             }
+        }
+
+        /// <summary>
+        /// Replaces <paramref name="length"/> characters from <paramref name="start"/> with <paramref name="text"/>
+        /// as one undo step, the way an edit by the user is: the selection ends, the caret goes after the inserted
+        /// text and TextChanged is raised. Setting <see cref="Text"/> takes no undo step and puts the caret at the
+        /// start, so a program making an edit on the user's behalf (accepting a completion) uses this instead.
+        /// The range is clamped to the text; a replacement that changes nothing only moves the caret.
+        /// </summary>
+        public void ReplaceRange(int start, int length, string text)
+        {
+            if (ReadOnly)
+            {
+                return;
+            }
+
+            text = NormalizeLineEndings(text);
+            start = Math.Max(0, Math.Min(start, actualText.Length));
+            int end = Math.Max(start, Math.Min(start + Math.Max(0, length), actualText.Length));
+            string replaced = actualText.Substring(0, start) + text + actualText.Substring(end);
+            bool changed = replaced != actualText;
+
+            actualText = replaced;
+            Selecting = false;
+            CharIndexToInsertBefore = start + text.Length;
+            SelectionIndexToStartBefore = CharIndexToInsertBefore;
+            if (changed)
+            {
+                UpdateDisplayText();
+                OnTextChanged(null);
+                undoHistory.RecordEdit();
+            }
+
+            FixBarPosition(DesiredXPositionOnLine.Set);
         }
 
         public void SetSelection(int firstIndexSelected, int lastIndexSelected)
@@ -1391,13 +1406,13 @@ namespace MatterHackers.Agg.UI
 
 		public void Undo()
 		{
-			undoBuffer.Undo();
+			undoHistory.Undo();
 			FixBarPosition(DesiredXPositionOnLine.Set);
 		}
 
 		public void Redo()
 		{
-			undoBuffer.Redo();
+			undoHistory.Redo();
 			FixBarPosition(DesiredXPositionOnLine.Set);
 		}
 
@@ -1453,8 +1468,7 @@ namespace MatterHackers.Agg.UI
                 actualText = NormalizeLineEndings(stringBuilder.ToString());
                 UpdateDisplayText();
 
-                var newUndoCommand = new TextWidgetUndoCommand(this);
-                undoBuffer.Add(newUndoCommand);
+                undoHistory.RecordEdit();
             }
         }
 
@@ -1499,16 +1513,16 @@ namespace MatterHackers.Agg.UI
 
                 FixBarPosition(DesiredXPositionOnLine.Set);
 
-                var newUndoData = new TextWidgetUndoCommand(this);
+                // both branches record one step per character: MergeTypingDuringUndo has never actually merged
                 if (MergeTypingDuringUndo
                     && charIndexToAcceptAsMerging == CharIndexToInsertBefore - 1
                     && keyPressEvent.KeyChar != '\n' && keyPressEvent.KeyChar != '\r')
                 {
-                    undoBuffer.Add(newUndoData);
+                    undoHistory.RecordEdit();
                 }
                 else
                 {
-                    undoBuffer.Add(newUndoData);
+                    undoHistory.RecordEdit();
                 }
 
                 charIndexToAcceptAsMerging = CharIndexToInsertBefore;
@@ -1543,167 +1557,22 @@ namespace MatterHackers.Agg.UI
 			return characterStartIndexInclusive + maxLength;
 		}
 
-        // the '\n' is always considered to be the end of the line.
-        // if startIndexInclusive == endIndexInclusive, the line is empty (other than the return)
-        private void GetStartAndEndIndexForLineContainingChar(int charToFindLineContaining, out int startIndexOfLineInclusive, out int endIndexOfLineInclusive)
-        {
-            startIndexOfLineInclusive = 0;
-            endIndexOfLineInclusive = actualText.Length;
-            if (endIndexOfLineInclusive == 0)
-            {
-                return;
-            }
-
-            charToFindLineContaining = Math.Max(Math.Min(charToFindLineContaining, actualText.Length), 0);
-
-            if (charToFindLineContaining == actualText.Length
-                || actualText[charToFindLineContaining] == '\n')
-            {
-                endIndexOfLineInclusive = charToFindLineContaining;
-            }
-            else
-            {
-                int endReturn = actualText.IndexOf('\n', charToFindLineContaining + 1);
-                if (endReturn != -1)
-                {
-                    endIndexOfLineInclusive = endReturn;
-                }
-            }
-
-            bool isIndex0AndNL = endIndexOfLineInclusive == 0 && actualText[endIndexOfLineInclusive] == '\n';
-            if (isIndex0AndNL || actualText[endIndexOfLineInclusive - 1] == '\n')
-            {
-                startIndexOfLineInclusive = endIndexOfLineInclusive;
-            }
-            else
-            {
-                int returnAtStartOfCurrentLine = actualText.LastIndexOf('\n', endIndexOfLineInclusive - 1);
-                if (returnAtStartOfCurrentLine != -1)
-                {
-                    startIndexOfLineInclusive = returnAtStartOfCurrentLine + 1;
-                }
-            }
-        }
-
         private void GotoLineAbove()
 		{
-			GetStartAndEndIndexForLineContainingChar(CharIndexToInsertBefore, out int startIndexInclusive, out int endIndexInclusive);
+			TextCaretNavigation.GetLineExtents(actualText, CharIndexToInsertBefore, out int startIndexInclusive, out int endIndexInclusive);
 
-			GetStartAndEndIndexForLineContainingChar(startIndexInclusive - 1, out int prevStartIndexInclusive, out int prevEndIndexInclusive);
+			TextCaretNavigation.GetLineExtents(actualText, startIndexInclusive - 1, out int prevStartIndexInclusive, out int prevEndIndexInclusive);
 			// we found the extents of the line above now put the cursor in the right place.
 			CharIndexToInsertBefore = GetIndexOffset(prevStartIndexInclusive, prevEndIndexInclusive, desiredBarX);
 		}
 
 		private void GotoLineBelow()
 		{
-			GetStartAndEndIndexForLineContainingChar(CharIndexToInsertBefore, out int startIndexInclusive, out int endIndexInclusive);
+			TextCaretNavigation.GetLineExtents(actualText, CharIndexToInsertBefore, out int startIndexInclusive, out int endIndexInclusive);
 
-			GetStartAndEndIndexForLineContainingChar(endIndexInclusive + 1, out int nextStartIndexInclusive, out int nextEndIndexInclusive);
+			TextCaretNavigation.GetLineExtents(actualText, endIndexInclusive + 1, out int nextStartIndexInclusive, out int nextEndIndexInclusive);
 			// we found the extents of the line above now put the cursor in the right place.
 			CharIndexToInsertBefore = GetIndexOffset(nextStartIndexInclusive, nextEndIndexInclusive, desiredBarX);
-		}
-
-		public static int IndexOfNextToken(string text, int cursor)
-		{
-			var insert = cursor;
-			var length = text.Length;
-			if (insert == text.Length)
-			{
-				// If we are already at the end, return.
-				return text.Length;
-			}
-
-			// if we are starting an a CR
-			if (text[insert] == '\n')
-			{
-				// If we are on a CR advance one (goto next line)
-				insert++;
-				// and skip ' ' and '\t'
-				while (insert < length 
-					&& (text[insert] == ' ' || text[insert] == '\t'))
-				{
-					insert++;
-				}
-
-				return insert;
-			}
-			else if (WordBreakChars.Contains(text[insert]))
-			{
-				// we are starting on a work break char
-				// while we are on the same char advance
-				var current = text[insert];
-				while (insert < length && text[insert]  == current)
-				{
-					insert++;
-				}
-			}
-			else
-			{
-				// we are starting on a normal character
-				while (insert < length && !WordBreakCharsAndCR.Contains(text[insert]))
-				{
-					insert++;
-				}
-
-				// and also skip ' ' and '\t'
-				while (insert < length
-					&& (text[insert] == ' ' || text[insert] == '\t'))
-				{
-					insert++;
-				}
-			}
-
-			return insert;
-		}
-
-		public static int IndexOfPreviousToken(string text, int cursor)
-		{
-			if (cursor == 0)
-			{
-				return 0;
-			}
-
-			int prevToken = Math.Max(0, Math.Min(text.Length - 1, cursor - 1));
-			var token = text[prevToken];
-
-			if (text[prevToken] == '\n')
-			{
-				if (prevToken > 0
-					&& text[prevToken - 1] == '\n')
-				{
-					return prevToken;
-				}
-
-				prevToken--;
-			}
-			else if (token == ' ' || token == '\t')
-			{
-				// the token to the left is a breaking character
-				while (--prevToken >= 0
-					&& (text[prevToken] == ' ' || text[prevToken] == '\t'))
-				{
-					// skip back the entire token
-				}
-			}
-			else if (WordBreakChars.Contains(token))
-			{
-				// the token to the left is a breaking character
-				while (--prevToken >= 0 && text[prevToken] == token)
-				{
-					// skip back the entire token
-				}
-
-				return prevToken + 1;
-			}
-
-			// the token to the left is normal character skip until a break
-			while (prevToken >= 0 && !WordBreakCharsAndCR.Contains(text[prevToken]))
-			{
-				// skip back until we are on a word break
-				prevToken--;
-			}
-
-			return prevToken + 1;
 		}
 
         public void SelectAll()
@@ -1733,40 +1602,18 @@ namespace MatterHackers.Agg.UI
             FixBarPosition(DesiredXPositionOnLine.Set);
         }
 
-        public static int GotoStartOfCurrentLine(string text, int cursor)
-		{
-			if (cursor > 0)
-			{
-				int indexOfReturn = text.LastIndexOf('\n', cursor - 1);
-				if (indexOfReturn == -1)
-				{
-					return 0;
-				}
-				else
-				{
-					var firstNonWhiteSpaceRegex = new Regex("[^\\t ]");
-					Match firstNonWhiteSpace = firstNonWhiteSpaceRegex.Match(text, indexOfReturn + 1);
-					if (firstNonWhiteSpace.Success)
-					{
-						if (firstNonWhiteSpace.Index < cursor
-						   || text[cursor - 1] == '\n')
-						{
-							return firstNonWhiteSpace.Index;
-						}
-					}
+		/// <summary>Where Control+Right (Option+Right on Mac) moves the caret to from <paramref name="cursor"/>.</summary>
+		public static int IndexOfNextToken(string text, int cursor) => TextCaretNavigation.IndexOfNextToken(text, cursor);
 
-					return indexOfReturn + 1;
-				}
-			}
+		/// <summary>Where Control+Left (Option+Left on Mac) moves the caret to from <paramref name="cursor"/>.</summary>
+		public static int IndexOfPreviousToken(string text, int cursor) => TextCaretNavigation.IndexOfPreviousToken(text, cursor);
 
-			return 0;
-		}
+		/// <summary>Where Home moves the caret to from <paramref name="cursor"/>.</summary>
+		public static int GotoStartOfCurrentLine(string text, int cursor) => TextCaretNavigation.StartOfCurrentLine(text, cursor);
 
 		public void ClearUndoHistory()
 		{
-			undoBuffer.ClearHistory();
-			var newUndoData = new TextWidgetUndoCommand(this);
-			undoBuffer.Add(newUndoData);
+			undoHistory.Clear();
 		}
 
 		public void SetTextAsUndoBaseline(string text, int charIndex = 0)
