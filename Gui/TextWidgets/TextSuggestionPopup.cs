@@ -53,6 +53,8 @@ namespace MatterHackers.Agg.UI
 		private readonly TextSuggestionController controller;
 		private readonly ThemeConfig theme;
 		private readonly AnchoredPopup placement = new AnchoredPopup() { Gap = 2 };
+		private readonly List<GuiWidget> trackedAncestors = new List<GuiWidget>();
+		private GuiWidget trackedHost;
 		private int firstVisibleRow;
 
 		internal TextSuggestionPopup(TextSuggestionController controller, ThemeConfig theme)
@@ -126,7 +128,71 @@ namespace MatterHackers.Agg.UI
 
 			this.firstVisibleRow = 0;
 			this.Visible = true;
+			this.TrackField(field, host);
 			this.Place();
+		}
+
+		/// <summary>Hides the list and stops following the field.</summary>
+		internal void Hide()
+		{
+			this.Untrack();
+			this.Visible = false;
+		}
+
+		/// <summary>
+		/// Nothing moves the list with the field - it is the window's child, not the field's - so it watches what can
+		/// move the field. A window resize (which in y-up agg moves every top-anchored field) or any ancestor moving
+		/// places it again. A scroll of a <see cref="ScrollableWidget"/> above the field closes it instead: the list
+		/// is drawn over the whole window, unclipped by the scroll area, so following the field out of view would
+		/// leave it floating over unrelated content.
+		/// </summary>
+		private void TrackField(GuiWidget field, GuiWidget host)
+		{
+			this.Untrack();
+			this.trackedHost = host;
+			host.BoundsChanged += this.Tracked_Moved;
+			for (var widget = field; widget != null && widget != host; widget = widget.Parent)
+			{
+				this.trackedAncestors.Add(widget);
+				widget.PositionChanged += this.Tracked_Moved;
+				if (widget is ScrollableWidget scrollable)
+				{
+					scrollable.ScrollPositionChanged += this.Tracked_Scrolled;
+				}
+			}
+		}
+
+		private void Untrack()
+		{
+			if (this.trackedHost != null)
+			{
+				this.trackedHost.BoundsChanged -= this.Tracked_Moved;
+				this.trackedHost = null;
+			}
+
+			foreach (var widget in this.trackedAncestors)
+			{
+				widget.PositionChanged -= this.Tracked_Moved;
+				if (widget is ScrollableWidget scrollable)
+				{
+					scrollable.ScrollPositionChanged -= this.Tracked_Scrolled;
+				}
+			}
+
+			this.trackedAncestors.Clear();
+		}
+
+		private void Tracked_Moved(object sender, EventArgs e)
+		{
+			if (this.Visible)
+			{
+				this.Place();
+			}
+		}
+
+		private void Tracked_Scrolled(object sender, EventArgs e)
+		{
+			this.controller.Close();
 		}
 
 		internal void ScrollHighlightIntoView()
@@ -240,6 +306,18 @@ namespace MatterHackers.Agg.UI
 		{
 			int maxFirst = this.controller.Suggestions.Suggestions.Count - this.VisibleRowCount;
 			this.firstVisibleRow = Math.Max(0, Math.Min(maxFirst, this.firstVisibleRow - Math.Sign(mouseEvent.WheelDelta) * 3));
+
+			// Enter, Tab and the footer act on the highlighted row, so it comes along to the nearest row in view
+			// rather than staying behind, out of sight.
+			int highlight = this.controller.HighlightIndex;
+			int lastVisibleRow = this.firstVisibleRow + this.VisibleRowCount - 1;
+			int clamped = Math.Max(this.firstVisibleRow, Math.Min(highlight, lastVisibleRow));
+			if (clamped != highlight)
+			{
+				// in view already, so this only re-places for the footer
+				this.controller.MoveHighlight(clamped - highlight, wrap: false);
+			}
+
 			this.Invalidate();
 			mouseEvent.WheelDelta = 0;
 		}

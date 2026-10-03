@@ -37,7 +37,10 @@ namespace MatterHackers.Agg.UI
 	/// leaves the field - the user keeps typing, and each edit refilters the list. The highlight is
 	/// <see cref="HighlightIndex"/>, and the keys that drive it (Up, Down, PageUp, PageDown, Enter, Tab, Escape)
 	/// are taken in <see cref="TextEditWidget.PreviewKeyDown"/> before the field can edit, submit, tab away or
-	/// scroll for them. The list is agg drawn and parented to the window, so it works in the browser too.
+	/// scroll for them. Shift+Enter and Shift+Tab are left to the field, as Shift+Tab closes the list on its way
+	/// past. Ctrl+Space (Ctrl on Mac too, as in VS Code: Cmd+Space belongs to Spotlight) asks the provider at the
+	/// caret on demand, even with nothing typed - it only re-asks, so a provider that offers nothing for an empty
+	/// word still shows nothing. The list is agg drawn and parented to the window, so it works in the browser too.
 	/// </remarks>
 	public class TextSuggestionController : IDisposable
 	{
@@ -116,7 +119,7 @@ namespace MatterHackers.Agg.UI
 			this.Suggestions = TextSuggestionList.Empty;
 			this.lastQueryText = null;
 			this.lastQueryCaret = -1;
-			this.Popup.Visible = false;
+			this.Popup.Hide();
 		}
 
 		/// <summary>
@@ -190,6 +193,24 @@ namespace MatterHackers.Agg.UI
 
 		private void Field_PreviewKeyDown(object sender, KeyEventArgs keyEvent)
 		{
+			if (keyEvent.KeyCode == Keys.Space
+				&& keyEvent.Control
+				&& !keyEvent.Alt
+				&& !keyEvent.Shift)
+			{
+				if (!this.field.ReadOnly)
+				{
+					// Forget the last query so an open list is asked again too, not kept as it is.
+					this.lastQueryText = null;
+					this.Requery();
+				}
+
+				// Never a typed space, whatever the provider answered.
+				keyEvent.Handled = true;
+				keyEvent.SuppressKeyPress = true;
+				return;
+			}
+
 			if (!this.IsOpen
 				|| keyEvent.Control
 				|| keyEvent.Alt)
@@ -216,10 +237,16 @@ namespace MatterHackers.Agg.UI
 					this.MoveHighlight(-page, wrap: false);
 					break;
 
-				case Keys.Enter:
+				case Keys.Enter when !keyEvent.Shift:
 				case Keys.Tab when !keyEvent.Shift:
 					this.Accept(this.HighlightIndex);
 					break;
+
+				case Keys.Tab:
+					// Shift+Tab keeps doing what it does in the field (focus the previous control); the list must not
+					// be left hanging from a field that may no longer have the caret.
+					this.Close();
+					return;
 
 				case Keys.Escape:
 					this.Close();

@@ -42,7 +42,11 @@ namespace MatterHackers.Agg.UI.Tests
 	[NotInParallel(nameof(AutomationRunner.ShowWindowAndExecuteTests))]
 	public class TextSuggestionControllerTests
 	{
-		private static readonly string[] Words = { "apple", "apricot", "avocado", "banana", "obj.", "self." };
+		private static readonly string[] Words =
+		{
+			"apple", "apricot", "avocado", "banana", "obj.", "self.",
+			"cab", "cad", "cake", "calf", "calm", "camp", "can", "cap", "car", "cat",
+		};
 
 		[After(Test)]
 		public void DrainTheIdleQueue()
@@ -260,9 +264,148 @@ namespace MatterHackers.Agg.UI.Tests
 			await Assert.That(popupBounds.Left).IsEqualTo(firstLeft);
 		}
 
+		/// <summary>
+		/// The list is parented to the window, so nothing moves it with the field: a window resize that moves a
+		/// top-anchored field (agg is y-up, so any vertical resize does) used to leave it hanging where the field was.
+		/// </summary>
+		[Test]
+		public async Task PopupFollowsTheFieldWhenTheWindowResizes()
+		{
+			var harness = new Harness((window, field) =>
+			{
+				field.VAnchor = VAnchor.Top | VAnchor.Fit;
+				field.Margin = new BorderDouble(top: 40);
+				window.AddChild(field);
+			});
+			harness.Type('a');
+			var before = harness.LineBottomAtReplaceStart();
+
+			harness.Window.Size = new Vector2(400, 500);
+
+			var lineBottom = harness.LineBottomAtReplaceStart();
+			await Assert.That(lineBottom.Y).IsGreaterThan(before.Y + 100).Because("the resize must actually move the field");
+			var popupBounds = harness.PopupBoundsInWindow();
+			await Assert.That(popupBounds.Top).IsLessThanOrEqualTo(lineBottom.Y);
+			await Assert.That(lineBottom.Y - popupBounds.Top).IsLessThan(10.0);
+			await Assert.That(System.Math.Abs(popupBounds.Left - lineBottom.X)).IsLessThan(1.0);
+		}
+
+		/// <summary>
+		/// Scrolling a container the field sits in closes the list: it is drawn over the whole window, not clipped
+		/// by the container, so following the field would leave it floating over other content once the field
+		/// scrolls out of view.
+		/// </summary>
+		[Test]
+		public async Task ScrollingAnAncestorClosesTheList()
+		{
+			ScrollableWidget scroller = null;
+			var harness = new Harness((window, field) =>
+			{
+				scroller = new ScrollableWidget(300, 200, autoScroll: true);
+				var content = new GuiWidget(280, 600);
+				field.OriginRelativeParent = new Vector2(10, 500);
+				content.AddChild(field);
+				scroller.AddChild(content);
+				window.AddChild(scroller);
+			});
+			harness.Type('a');
+			await Assert.That(harness.Controller.IsOpen).IsTrue();
+
+			scroller.ScrollPosition += new Vector2(0, 30);
+
+			await Assert.That(harness.Controller.IsOpen).IsFalse();
+			await Assert.That(harness.Controller.Popup.Visible).IsFalse();
+			await Assert.That(harness.Field.InternalTextEditWidget.Focused).IsTrue();
+		}
+
+		/// <summary>
+		/// The wheel scrolls the rows, and the highlight comes along so it is always a row in view: Enter and the
+		/// footer act on the highlighted row, which used to stay behind, out of sight.
+		/// </summary>
+		[Test]
+		public async Task WheelKeepsTheHighlightOnAVisibleRow()
+		{
+			var harness = new Harness();
+			harness.Type('c');
+			await Assert.That(harness.Labels().Length).IsEqualTo(10);
+
+			var popup = harness.Controller.Popup;
+			var center = popup.TransformToParentSpace(harness.Window, popup.RowBounds(1).Center);
+			harness.Window.OnMouseWheel(new MouseEventArgs(MouseButtons.None, 0, center.X, center.Y, -120));
+
+			await Assert.That(popup.RowBounds(0).Width).IsEqualTo(0.0).Because("the first row scrolled out of view");
+			int highlight = harness.Controller.HighlightIndex;
+			await Assert.That(popup.RowBounds(highlight).Width).IsGreaterThan(0.0);
+
+			harness.Key(Keys.Enter);
+			await Assert.That(harness.Field.Text).IsEqualTo(harness.Provider.Words("c")[highlight]);
+		}
+
+		[Test]
+		public async Task ShiftEnterDoesNotAccept()
+		{
+			var harness = new Harness();
+			harness.Type('a');
+			harness.Key(Keys.Shift | Keys.Enter);
+
+			await Assert.That(harness.Field.Text).IsEqualTo("a");
+		}
+
+		/// <summary>Shift+Tab closes the list and still does what Shift+Tab does, so focus can move back.</summary>
+		[Test]
+		public async Task ShiftTabClosesAndIsNotConsumed()
+		{
+			var harness = new Harness();
+			harness.Type('a');
+			harness.Key(Keys.Shift | Keys.Tab);
+
+			await Assert.That(harness.Controller.IsOpen).IsFalse();
+			await Assert.That(harness.Field.Text).IsEqualTo("a");
+			await Assert.That(harness.OtherField.ContainsFocus).IsTrue().Because("the list must not swallow the window's Shift+Tab focus move");
+
+			// With nowhere else to go the focus stays in the field, and the list still closes.
+			var alone = new Harness();
+			alone.OtherField.Visible = false;
+			alone.Type('a');
+			alone.Key(Keys.Shift | Keys.Tab);
+
+			await Assert.That(alone.Field.InternalTextEditWidget.Focused).IsTrue();
+			await Assert.That(alone.Controller.IsOpen).IsFalse();
+		}
+
+		/// <summary>
+		/// Ctrl+Space asks the provider at the caret on demand - with nothing typed, or with the list closed by
+		/// Escape - and shows whatever it offers, without typing a space.
+		/// </summary>
+		[Test]
+		public async Task ControlSpaceOpensTheListOnDemand()
+		{
+			var harness = new Harness();
+			harness.Provider.OfferEverythingForAnEmptyWord = true;
+
+			harness.Key(Keys.Control | Keys.Space);
+			await Assert.That(harness.Controller.IsOpen).IsTrue();
+			await Assert.That(harness.Provider.Calls.Last()).IsEqualTo(("", 0));
+			await Assert.That(harness.Labels().Length).IsEqualTo(Words.Length);
+			await Assert.That(harness.Field.Text).IsEqualTo("");
+
+			harness.Type('a');
+			harness.Key(Keys.Escape);
+			await Assert.That(harness.Controller.IsOpen).IsFalse();
+			harness.Key(Keys.Control | Keys.Space);
+			await Assert.That(harness.Controller.IsOpen).IsTrue();
+			await Assert.That(harness.Labels()).IsEquivalentTo(new[] { "apple", "apricot", "avocado" });
+			await Assert.That(harness.Field.Text).IsEqualTo("a");
+		}
+
 		private class FakeProvider : ITextSuggestionProvider
 		{
 			public List<(string Text, int Caret)> Calls { get; } = new List<(string, int)>();
+
+			/// <summary>Answer an empty word with every word, as a provider listing all it knows on demand would.</summary>
+			public bool OfferEverythingForAnEmptyWord { get; set; }
+
+			public string[] Words(string prefix) => TextSuggestionControllerTests.Words.Where(w => w.StartsWith(prefix)).ToArray();
 
 			public TextSuggestionList GetSuggestions(string text, int caret)
 			{
@@ -283,19 +426,20 @@ namespace MatterHackers.Agg.UI.Tests
 				}
 
 				string word = text.Substring(start, caret - start);
-				if (word.Length == 0)
+				if (word.Length == 0 && !this.OfferEverythingForAnEmptyWord)
 				{
 					return TextSuggestionList.Empty;
 				}
 
-				var matches = Words.Where(w => w.StartsWith(word)).Select(w => new TextSuggestion(w)).ToArray();
+				var matches = this.Words(word).Select(w => new TextSuggestion(w)).ToArray();
 				return new TextSuggestionList(start, caret - start, matches);
 			}
 		}
 
 		private class Harness
 		{
-			public Harness()
+			/// <param name="mountField">Puts the field in the window; by default it sits directly in it.</param>
+			public Harness(System.Action<SystemWindow, TextEditWidget> mountField = null)
 			{
 				this.Window = new SystemWindow(400, 300);
 				this.Field = new TextEditWidget(pixelWidth: 200)
@@ -306,7 +450,7 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					OriginRelativeParent = new Vector2(50, 20),
 				};
-				this.Window.AddChild(this.Field);
+				(mountField ?? ((window, field) => window.AddChild(field)))(this.Window, this.Field);
 				this.Window.AddChild(this.OtherField);
 				this.Provider = new FakeProvider();
 				this.Controller = new TextSuggestionController(this.Field, this.Provider);
@@ -337,7 +481,7 @@ namespace MatterHackers.Agg.UI.Tests
 				}
 			}
 
-			public void Key(Keys key)
+			public KeyEventArgs Key(Keys key)
 			{
 				var down = new KeyEventArgs(key);
 				this.Window.OnKeyDown(down);
@@ -345,6 +489,23 @@ namespace MatterHackers.Agg.UI.Tests
 				{
 					this.Window.OnKeyPress(new KeyPressEventArgs('\b'));
 				}
+
+				// Ctrl+Space also produces a space character unless the key down is suppressed.
+				if (!down.SuppressKeyPress && key == (Keys.Control | Keys.Space))
+				{
+					this.Window.OnKeyPress(new KeyPressEventArgs(' '));
+				}
+
+				return down;
+			}
+
+			/// <summary>The bottom of the caret's line where the list's text to replace starts, in window coordinates.</summary>
+			public Vector2 LineBottomAtReplaceStart()
+			{
+				var edit = this.Field.InternalTextEditWidget;
+				var offset = edit.Printer.GetOffsetLeftOfCharacterIndex(this.Controller.Suggestions.ReplaceStart);
+				double fontHeight = edit.Printer.TypeFaceStyle.EmSizeInPixels;
+				return edit.TransformToParentSpace(this.Window, new Vector2(offset.X, edit.Height + offset.Y - fontHeight));
 			}
 		}
 	}
