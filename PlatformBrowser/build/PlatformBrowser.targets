@@ -58,4 +58,27 @@
     </ItemGroup>
   </Target>
 
+  <!--
+    A 32 MB GC nursery for every browser head, instead of Mono SGen's 4 MB.
+
+    On wasm the nursery is a fixed 4 MB (sgen-conf.h SGEN_DEFAULT_NURSERY_SIZE; dynamic_nursery is FALSE in
+    sgen-gc.c), and the runtime is single threaded, so a minor GC runs synchronously inside whichever
+    allocation fills it - in the middle of a frame - and an animating app stalls on a steady rhythm. A minor
+    GC's pause scales with the survivors it copies and the old-generation card scan, not with the nursery's
+    size, so an 8x nursery means about 8x fewer pauses of about the same length. The cost is 32 MB of linear
+    memory reserved for good. SGen requires the size to be a power of two.
+
+    The runtime reads MONO_GC_PARAMS from the boot config's environment variables, which the WebAssembly SDK
+    fills from @(WasmEnvironmentVariable) when it writes the boot config. This is a target rather than a
+    static item so it sees every item the head declares wherever it declares it (a static item's condition
+    only sees what came before the import): a head that declares its own MONO_GC_PARAMS keeps it.
+  -->
+  <Target Name="_PlatformBrowserDefaultGcNursery"
+          BeforeTargets="_GenerateBuildWasmBootJson;GeneratePublishWasmBootJson">
+    <ItemGroup>
+      <_PlatformBrowserDeclaredGcParams Include="@(WasmEnvironmentVariable)" Condition="'%(Identity)' == 'MONO_GC_PARAMS'" />
+      <WasmEnvironmentVariable Include="MONO_GC_PARAMS" Value="nursery-size=32m" Condition="'@(_PlatformBrowserDeclaredGcParams)' == ''" />
+    </ItemGroup>
+  </Target>
+
 </Project>

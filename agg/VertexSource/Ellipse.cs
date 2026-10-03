@@ -148,6 +148,28 @@ namespace MatterHackers.Agg.VertexSource
 			yield return vertexData;
 		}
 
+		/// <summary>
+		/// Hashes the parameters that fix <see cref="Vertices"/> rather than the vertices themselves, so the GPU
+		/// cache lookup each frame builds no iterator. A subclass may yield something else, so it hashes its
+		/// vertices as before.
+		/// </summary>
+		public override ulong GetLongHashCode(ulong hash = 14695981039346656037)
+		{
+			if (GetType() != typeof(Ellipse))
+			{
+				return base.GetLongHashCode(hash);
+			}
+
+			// Tags the parameter hash so it cannot line up with a vertex walk of the same numbers.
+			hash = 0x456c6c6970736531UL.GetLongHashCode(hash);
+			hash = originX.GetLongHashCode(hash);
+			hash = originY.GetLongHashCode(hash);
+			hash = radiusX.GetLongHashCode(hash);
+			hash = radiusY.GetLongHashCode(hash);
+			hash = NumSteps.GetLongHashCode(hash);
+			return (IsCw ? 1 : 0).GetLongHashCode(hash);
+		}
+
 		private void calc_num_steps()
 		{
 			double ra = (Math.Abs(radiusX) + Math.Abs(radiusY)) / 2;

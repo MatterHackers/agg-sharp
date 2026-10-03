@@ -102,13 +102,16 @@ namespace MatterHackers.RenderGl
         // but it is now reached from more than one thread and needs guarding.
         private static readonly Dictionary<ulong, Mesh> NativeScenePathMeshes = new Dictionary<ulong, Mesh>();
 
-        // The anti-aliasing alpha ramp textures are cpu side ImageBuffers with no gl affinity, so they
-        // are built once and never invalidated - only the gl textures made from them are context bound.
-        // Volatile plus publish-when-complete so a racing thread can never see a half filled list.
-        private static volatile List<ImageBuffer> aATextureImages;
-        private static readonly object aATextureImagesLock = new object();
-
         private readonly GlContextCaches caches;
+
+        // Scratch shapes reused per draw so a steady-state frame allocates none. The draws using them do not
+        // nest, and the tessellator copies what it reads, so a shape is free again when its draw returns.
+        private Ellipse ellipseAtOrigin;
+        private RoundedRect rectangleShape;
+        private RoundedRect rectangleOutlineShape;
+        private Stroke rectangleOutline;
+        private VertexStorage lineShape;
+        private Stroke lineOutline;
 
         private readonly int width;
         private readonly int height;
@@ -440,65 +443,29 @@ namespace MatterHackers.RenderGl
             gl.PopMatrix();
         }
 
-        /// <summary>
-        /// Builds (once) and returns the anti-aliasing alpha ramp images. Returns the list rather than
-        /// leaving callers to read the field, so a caller can never index a field that changed between
-        /// the check and the read.
-        /// </summary>
-        private static List<ImageBuffer> GetLineImageCache()
-        {
-            var existing = aATextureImages;
-            if (existing != null) return existing;
-
-            lock (aATextureImagesLock)
-            {
-                if (aATextureImages != null) return aATextureImages;
-
-                // Fill a local list and publish it only when it is complete - a thumbnail worker and
-                // the ui thread can both land here, and a partially filled list would index-fault.
-                var textureImages = new List<ImageBuffer>();
-                for (int i = 0; i < 256; i++)
-                {
-                    // Premultiplied white (PreRender blends One / OneMinusSrcAlpha): the texture holds these bytes as they are.
-                    var texture = new ImageBuffer(1024, 4, 32, new BlenderPreMultBGRA());
-                    textureImages.Add(texture);
-                    var hardwarePixelBuffer = texture.GetBuffer();
-                    for (int y = 0; y < 4; y++)
-                    {
-                        byte alpha = 0;
-                        for (int x = 0; x < 1024; x++)
-                        {
-                            var index = (y * 1024 + x) * 4;
-                            hardwarePixelBuffer[index + 0] = alpha;
-                            hardwarePixelBuffer[index + 1] = alpha;
-                            hardwarePixelBuffer[index + 2] = alpha;
-                            hardwarePixelBuffer[index + 3] = alpha;
-                            alpha = (byte)i;
-                        }
-                    }
-                }
-
-                aATextureImages = textureImages;
-                return textureImages;
-            }
-        }
-
         private void DrawAAShape(IVertexSource vertexSourceIn, IColorType colorIn, bool useCache)
         {
             SyncCacheGeneration();
 
+            // Nothing here reads the source through Rewind/Vertex: hashing and tessellating both walk
+            // Vertices(). It is rewound before tessellating; rewinding every draw built an enumerator.
             var vertexSource = vertexSourceIn;
-            vertexSource.Rewind(0);
 
             var translation = Vector2.Zero;
             var transform = GetTransform();
+            // The geometry goes to the cache under this transform when set - hashed as a
+            // VertexSourceApplyTransform, and only wrapped in one on a miss, so a hit allocates nothing.
+            bool transformShape = false;
 
             if (useCache
                 && IsTransformIdentity(transform)
                 && vertexSource is Ellipse ellipse)
             {
                 translation = new Vector2(ellipse.originX, ellipse.originY);
-                vertexSource = new Ellipse(0, 0, ellipse.radiusX, ellipse.radiusY, ellipse.NumSteps, ellipse.IsCw);
+                // Reused: the tessellator copies what it reads, so nothing holds on to this past the call.
+                var ellipseAtOrigin = this.ellipseAtOrigin ??= new Ellipse();
+                ellipseAtOrigin.init(0, 0, ellipse.radiusX, ellipse.radiusY, ellipse.NumSteps, ellipse.IsCw);
+                vertexSource = ellipseAtOrigin;
             }
             else if (useCache
                 && vertexSource is VertexSourceApplyTransform applyTransform
@@ -534,15 +501,17 @@ namespace MatterHackers.RenderGl
                 translation.Y = (float)(translation.Y * transform.sy + transform.ty);
                 transform.tx = 0;
                 transform.ty = 0;
-                vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
+                transformShape = true;
             }
             else
             {
-                vertexSource = new VertexSourceApplyTransform(vertexSource, transform);
+                transformShape = true;
             }
 
             var colorBytes = colorIn.ToColor();
-            var longHash = vertexSource.GetLongHashCode();
+            var longHash = transformShape
+                ? VertexSourceApplyTransform.GetLongHashCode(vertexSource, transform)
+                : vertexSource.GetLongHashCode();
             // Include color in cache key so same geometry with different colors gets separate display lists
             longHash = longHash * 31 + (ulong)(colorBytes.red | (colorBytes.green << 8) | (colorBytes.blue << 16) | (colorBytes.Alpha0To255 << 24));
             // and the rule, which changes the triangles the same geometry tessellates to.
@@ -561,10 +530,9 @@ namespace MatterHackers.RenderGl
 
                 triangleEdgeInfo.Clear();
                 triangleEdgeInfo.WindingRule = TesselatorWindingRule;
-                //using (new RecursiveReportTimer("Graphics2DOpenGl.SendShapeToTesselator"))
-                {
-                    VertexSourceToTesselator.SendShapeToTesselator(triangleEdgeInfo, vertexSource);
-                }
+                var shape = transformShape ? new VertexSourceApplyTransform(vertexSource, transform) : vertexSource;
+                shape.Rewind(0);
+                VertexSourceToTesselator.SendShapeToTesselator(triangleEdgeInfo, shape);
 
                 triangleEdgeInfo.BuildHaloMesh();
             }
@@ -705,7 +673,7 @@ namespace MatterHackers.RenderGl
         {
             SyncCacheGeneration();
 
-            var lineImages = GetLineImageCache();
+            var lineImages = GpuAlphaRampImages.Get();
             PushOrthoProjection();
 
             gl.Enable(EnableCap.Texture2D);
@@ -821,20 +789,21 @@ namespace MatterHackers.RenderGl
             }
             else
             {
-                var rect = new RoundedRect(left + 0.5, bottom + 0.5, right - 0.5, top - 0.5, 0);
-                var rectOutline = new Stroke(rect, strokeWidth);
+                var rect = rectangleOutlineShape ??= new RoundedRect(0, 0, 0, 0, 0);
+                rect.rect(left + 0.5, bottom + 0.5, right - 0.5, top - 0.5);
+                var rectOutline = rectangleOutline ??= new Stroke(rect);
+                rectOutline.Width = strokeWidth;
                 Render(rectOutline, color);
             }
         }
 
-        private static bool IsPixelAligned(params double[] values)
+        // Four fixed arguments rather than params: a params array per rectangle drawn was frame garbage.
+        private static bool IsPixelAligned(double a, double b, double c, double d)
         {
-            foreach (var value in values)
-            {
-                if (Math.Abs(value - (int)value) >= 0.01) return false;
-            }
-            return true;
+            return IsPixelAligned(a) && IsPixelAligned(b) && IsPixelAligned(c) && IsPixelAligned(d);
         }
+
+        private static bool IsPixelAligned(double value) => !(Math.Abs(value - (int)value) >= 0.01);
 
         private void DrawOptimizedRectangle(double left, double bottom, double right, double top, Color color)
         {
@@ -872,7 +841,8 @@ namespace MatterHackers.RenderGl
             }
             else
             {
-                var rect = new RoundedRect(left, bottom, right, top, 0);
+                var rect = rectangleShape ??= new RoundedRect(0, 0, 0, 0, 0);
+                rect.rect(left, bottom, right, top);
                 Render(rect, fillColor.ToColor());
             }
         }
@@ -907,7 +877,15 @@ namespace MatterHackers.RenderGl
             }
             else
             {
-                base.Line(x1, y1, x2, y2, color, strokeWidth);
+                // Graphics2D.Line's stroke, on reused scratch: its GetLine hands out a fresh VertexStorage
+                // (and its 256-vertex block) per line, which was most of a line's frame garbage.
+                var line = lineShape ??= new VertexStorage();
+                line.Clear();
+                line.MoveTo(x1, y1);
+                line.LineTo(x2, y2);
+                var lineOutline = this.lineOutline ??= new Stroke(line);
+                lineOutline.Width = strokeWidth;
+                Render(lineOutline, color);
             }
         }
 
@@ -937,7 +915,9 @@ namespace MatterHackers.RenderGl
             try
             {
                 this.SetTransform(Affine.NewIdentity());
-                Render(new RoundedRect(clearBounds, 0), color.ToColor());
+                var clearShape = rectangleShape ??= new RoundedRect(0, 0, 0, 0, 0);
+                clearShape.rect(clearBounds.Left, clearBounds.Bottom, clearBounds.Right, clearBounds.Top);
+                Render(clearShape, color.ToColor());
             }
             finally
             {

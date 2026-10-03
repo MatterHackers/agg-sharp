@@ -74,7 +74,11 @@ namespace MatterHackers.Agg.VertexSource
 			m_status = status.initial;
 		}
 
-        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        /// <summary>
+        /// Hashes every vertex <see cref="Vertices"/> yields. Virtual so an adapter whose output is fixed by
+        /// its source and a few parameters (<see cref="Stroke"/>) can hash those without generating.
+        /// </summary>
+        public virtual ulong GetLongHashCode(ulong hash = 14695981039346656037)
         {
             foreach (var vertex in this.Vertices())
             {

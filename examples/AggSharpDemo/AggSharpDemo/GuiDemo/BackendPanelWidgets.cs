@@ -71,8 +71,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 	/// <summary>
 	/// agg-gui's frame-time sparkline (performance.rs paint_sparkline): the <see cref="FrameHistory"/> as a line,
-	/// fast frames high, over a rounded track, with an orange line at 16.7 ms (60 fps). The y range never
-	/// shrinks below that line, so a run of fast frames does not zoom in on noise.
+	/// slow frames high, over a rounded track, with an orange line at 16.7 ms (60 fps) and a red marker on each
+	/// frame that had a garbage collection. The y range never shrinks below that line, so a run of fast frames
+	/// does not zoom in on noise.
 	/// </summary>
 	public class FrameSparkline : GuiWidget
 	{
@@ -94,6 +95,9 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 		public Color LineColor { get; set; } = Color.Blue;
 
+		/// <summary>The marker on frames that had a garbage collection.</summary>
+		public Color GcMarkerColor { get; set; } = Color.Red;
+
 		public override void OnDraw(Graphics2D graphics2D)
 		{
 			RectangleDouble bounds = this.LocalBounds;
@@ -104,7 +108,7 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			{
 				double maxMs = Math.Max(samples.Max(), ReferenceMs);
 				double inset = 2 * DeviceScale;
-				double Y(double ms) => bounds.Bottom + inset + (1 - ms / maxMs) * (bounds.Height - 2 * inset);
+				double Y(double ms) => SampleY(bounds, inset, ms, maxMs);
 
 				var line = new VertexStorage();
 				for (int i = 0; i < samples.Length; i++)
@@ -122,10 +126,28 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 
 				graphics2D.Render(new Stroke(line, 1.5 * DeviceScale), this.LineColor);
 				graphics2D.Line(bounds.Left, Y(ReferenceMs), bounds.Right, Y(ReferenceMs), new Color(255, 153, 0, 178), DeviceScale);
+
+				// A square on every frame whose interval had a garbage collection, so a spike under one reads as a GC.
+				double half = 2 * DeviceScale;
+				int count = Math.Min(samples.Length, this.history.Count);
+				for (int i = 0; i < count; i++)
+				{
+					if (this.history[i].HadGc)
+					{
+						double x = bounds.Left + i * bounds.Width / (samples.Length - 1);
+						double y = Y(samples[i]);
+						graphics2D.FillRectangle(x - half, y - half, x + half, y + half, this.GcMarkerColor);
+					}
+				}
 			}
 
 			base.OnDraw(graphics2D);
 		}
+
+		/// <summary>Where a sample of <paramref name="ms"/> sits on the sparkline: agg's y points up, so the slower
+		/// the frame the higher it is drawn, from the inset bottom (0 ms) to the inset top (<paramref name="maxMs"/>).</summary>
+		public static double SampleY(RectangleDouble bounds, double inset, double ms, double maxMs)
+			=> bounds.Bottom + inset + ms / maxMs * (bounds.Height - 2 * inset);
 	}
 
 	/// <summary>

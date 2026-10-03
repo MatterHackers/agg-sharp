@@ -394,14 +394,14 @@ namespace MatterHackers.Agg.VertexSource
             }
         }
 
-        public ulong GetLongHashCode(ulong hash = 14695981039346656037)
+        public ulong GetLongHashCode(ulong hash = 14695981039346656037) // Vertices()' sequence, without its iterator
         {
-            foreach (var vertex in this.Vertices())
+            for (int i = 0; i < vertexDataManager.TotalVertices(); i++)
             {
-                hash = vertex.GetLongHashCode(hash);
+                hash = vertexDataManager[i].GetLongHashCode(hash);
             }
 
-            return hash;
+            return new VertexData(FlagsAndCommand.Stop, new Vector2(0, 0)).GetLongHashCode(hash);
         }
 
         /// <summary>

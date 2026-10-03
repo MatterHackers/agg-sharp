@@ -89,6 +89,27 @@ namespace MatterHackers.Agg.VertexSource
 			set => this.Generator.Width = value;
 		}
 
+		/// <summary>
+		/// Hashes the source and the stroke's parameters rather than generating the outline: the outline is a
+		/// function of exactly those, and generating it allocated on every GPU cache lookup. Markers only
+		/// record positions, so they do not change the outline.
+		/// </summary>
+		public override ulong GetLongHashCode(ulong hash = 14695981039346656037)
+		{
+			// Tags the parameter hash so it cannot line up with a vertex walk of the same numbers.
+			hash = 0x5374726f6b653031UL.GetLongHashCode(hash);
+			hash = this.VertexSource.GetLongHashCode(hash);
+			hash = this.Width.GetLongHashCode(hash);
+			hash = ((int)this.LineCap).GetLongHashCode(hash);
+			hash = ((int)this.LineJoin).GetLongHashCode(hash);
+			hash = ((int)this.InnerJoin).GetLongHashCode(hash);
+			hash = this.MiterLimit.GetLongHashCode(hash);
+			hash = this.InnerMiterLimit.GetLongHashCode(hash);
+			hash = this.ApproximationScale.GetLongHashCode(hash);
+			hash = this.Shorten.GetLongHashCode(hash);
+			return (((StrokeGenerator)this.Generator).AutoDetectOrientation ? 1 : 0).GetLongHashCode(hash);
+		}
+
 		public void MiterLimitTheta(double t)
 		{
 			this.Generator.MiterLimitTheta(t);

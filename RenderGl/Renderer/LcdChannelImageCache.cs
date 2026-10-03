@@ -41,7 +41,7 @@ namespace MatterHackers.RenderGl
 	/// </summary>
 	internal static class LcdChannelImageCache
 	{
-		// The three per-channel pass images an LcdBuffer composites through. Like Graphics2DGpu's aATextureImages these are
+		// The three per-channel pass images an LcdBuffer composites through. Like GpuAlphaRampImages these are
 		// cpu side ImageBuffers with no gl affinity, so one set is shared by every context and the per
 		// context part is left to ImageTexturePlugin, which already keys its textures by (pixel buffer,
 		// context) and re-uploads on InvalidateGlCaches through MarkAllImagesNeedRefresh.

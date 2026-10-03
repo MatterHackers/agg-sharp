@@ -414,22 +414,30 @@ namespace MatterHackers.Agg
 
         public static ulong GetLongHashCode(this int data, ulong hash = 14695981039346656037)
         {
-            return ComputeHash(BitConverter.GetBytes(data), hash);
+            System.Span<byte> bytes = stackalloc byte[4];
+            BitConverter.TryWriteBytes(bytes, data);
+            return ComputeHash(bytes, hash);
         }
 
         public static ulong GetLongHashCode(this double data, ulong hash = 14695981039346656037)
         {
-            return ComputeHash(BitConverter.GetBytes(data), hash);
+            System.Span<byte> bytes = stackalloc byte[8];
+            BitConverter.TryWriteBytes(bytes, data);
+            return ComputeHash(bytes, hash);
         }
 
         public static ulong GetLongHashCode(this ulong data, ulong hash = 14695981039346656037)
         {
-            return ComputeHash(BitConverter.GetBytes(data), hash);
+            System.Span<byte> bytes = stackalloc byte[8];
+            BitConverter.TryWriteBytes(bytes, data);
+            return ComputeHash(bytes, hash);
         }
 
         public static ulong GetLongHashCode(this long data, ulong hash = 14695981039346656037)
         {
-            return ComputeHash(BitConverter.GetBytes(data), hash);
+            System.Span<byte> bytes = stackalloc byte[8];
+            BitConverter.TryWriteBytes(bytes, data);
+            return ComputeHash(bytes, hash);
         }
         public static ulong GetLongHashCode(this byte[] data, ulong hash = 14695981039346656037)
         {
@@ -439,6 +447,14 @@ namespace MatterHackers.Agg
         // FNV-1a (64-bit) non-cryptographic hash function.
         // Adapted from: http://github.com/jakedouglas/fnv-java
         public static ulong ComputeHash(byte[] bytes, ulong hash = 14695981039346656037)
+        {
+            return ComputeHash((System.ReadOnlySpan<byte>)bytes, hash);
+        }
+
+        // The value hashes above write their bytes to the stack rather than through BitConverter.GetBytes:
+        // they run per vertex when a shape is hashed for the GPU tessellation cache, every frame, and a
+        // byte[] per value was most of what a steady-state frame allocated. Same bytes, same hash.
+        private static ulong ComputeHash(System.ReadOnlySpan<byte> bytes, ulong hash)
         {
             const ulong fnv64Prime = 0x100000001b3;
 

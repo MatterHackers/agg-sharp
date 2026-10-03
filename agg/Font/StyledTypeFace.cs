@@ -446,6 +446,22 @@ namespace MatterHackers.Agg.Font
 		}
 
 		/// <summary>
+		/// The vertices <see cref="GetGlyphForCodePoint"/> yields for an unstyled glyph (minus the final Stop),
+		/// from <see cref="PlainGlyphCache"/>; null when this face underlines, slants or styles its glyphs, which
+		/// the caller then draws through <see cref="GetGlyphForCodePoint"/> as before.
+		/// </summary>
+		internal VertexData[] GetCachedPlainGlyph(int codePoint, double resolutionScale)
+		{
+			if (DoUnderline || IsStyled)
+			{
+				return null;
+			}
+
+			TypeFace face = TypeFace.ResolveFace(codePoint);
+			return PlainGlyphCache.Get(this, face, EmScalingFor(face), resolutionScale, codePoint);
+		}
+
+		/// <summary>
 		/// The advance, in pixels, of the glyph that starts at <paramref name="characterIndex"/>. A surrogate pair
 		/// is one glyph: its leading half carries the whole advance and its trailing half none, so index-based
 		/// measuring (carets, selections, wrapping) stays aligned with the string.

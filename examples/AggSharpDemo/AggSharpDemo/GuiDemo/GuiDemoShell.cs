@@ -52,6 +52,12 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		/// <summary>shell.rs's MOBILE_PANEL_W: the open drawer's width (never wider than the page).</summary>
 		public const double MobileSidebarWidth = 300;
 
+		// The GC count and allocated bytes when the previous draw started (-1: no draw yet), so each frame's
+		// numbers cover the whole interval, including event handling and layout between draws.
+		private int previousFrameGen0 = -1;
+
+		private long previousFrameAllocated;
+
 		/// <param name="demoTheme">The theme to show; null starts agg-gui's default (System, Blue), with System
 		/// following <see cref="SystemAppearance"/> and falling back to dark, as agg-gui does, when the
 		/// platform cannot tell.</param>
@@ -192,12 +198,26 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 		}
 
 		/// <summary>Times the page's draw into the backend panel's history (agg-gui's "Mean CPU usage": the CPU
-		/// side of the frame; the GPU works on after it) and, in Continuous mode, asks for the next frame.</summary>
+		/// side of the frame; the GPU works on after it) and, in Continuous mode, asks for the next frame.
+		/// Each frame also records the gen0 collections and bytes allocated since the previous draw started, so the
+		/// panel can tell garbage collection pauses from other spikes.</summary>
 		public override void OnDraw(Graphics2D graphics2D)
 		{
+			int gen0AtStart = GC.CollectionCount(0);
+			long allocatedAtStart = GC.GetAllocatedBytesForCurrentThread();
 			long start = Stopwatch.GetTimestamp();
 			base.OnDraw(graphics2D);
-			this.BackendPanel.History.Push(Stopwatch.GetElapsedTime(start).TotalMilliseconds);
+			double ms = Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+			int gen0AtEnd = GC.CollectionCount(0);
+			long allocatedAtEnd = GC.GetAllocatedBytesForCurrentThread();
+
+			// The first frame has no previous start, so its interval is just its own draw.
+			bool hasPrevious = this.previousFrameGen0 >= 0;
+			int gen0Since = gen0AtEnd - (hasPrevious ? this.previousFrameGen0 : gen0AtStart);
+			long allocatedSince = allocatedAtEnd - (hasPrevious ? this.previousFrameAllocated : allocatedAtStart);
+			this.previousFrameGen0 = gen0AtStart;
+			this.previousFrameAllocated = allocatedAtStart;
+			this.BackendPanel.History.Push(new FrameSample(ms, gen0Since, gen0AtEnd != gen0AtStart, allocatedSince));
 
 			if (this.RedrawsContinuously)
 			{

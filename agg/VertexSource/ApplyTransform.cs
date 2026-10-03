@@ -45,14 +45,42 @@ namespace MatterHackers.Agg.VertexSource
 		{
 		}
 
+        /// <summary>
+        /// Under an <see cref="Affine"/> the output is fixed by the source and the six coefficients, so those
+        /// are hashed rather than walking (and allocating) the transformed vertices. Any other transform is
+        /// hashed by its output, as before.
+        /// </summary>
         public ulong GetLongHashCode(ulong hash = 14695981039346656037)
         {
+            if (TransformToApply is Affine affine)
+            {
+                return GetLongHashCode(VertexSource, affine, hash);
+            }
+
             foreach (var vertex in this.Vertices())
             {
                 hash = vertex.GetLongHashCode(hash);
             }
 
             return hash;
+        }
+
+        /// <summary>
+        /// The hash a <see cref="VertexSourceApplyTransform"/> of <paramref name="vertexSource"/> under
+        /// <paramref name="affine"/> has, without making one - so a cache lookup needs neither the wrapper
+        /// nor the boxed transform.
+        /// </summary>
+        public static ulong GetLongHashCode(IVertexSource vertexSource, Affine affine, ulong hash = 14695981039346656037)
+        {
+            // Tags the parameter hash so it cannot line up with a vertex walk of the same numbers.
+            hash = 0x4170706c79417866UL.GetLongHashCode(hash);
+            hash = vertexSource.GetLongHashCode(hash);
+            hash = affine.sx.GetLongHashCode(hash);
+            hash = affine.shy.GetLongHashCode(hash);
+            hash = affine.shx.GetLongHashCode(hash);
+            hash = affine.sy.GetLongHashCode(hash);
+            hash = affine.tx.GetLongHashCode(hash);
+            return affine.ty.GetLongHashCode(hash);
         }
 
         public VertexSourceApplyTransform(IVertexSource vertexSource, ITransform newTransformeToApply)

@@ -41,6 +41,7 @@ namespace MatterHackers.RenderGl
 	{
 		private readonly GL gl;
 		private readonly List<Vector2> verticesCache = new List<Vector2>();
+		private readonly double[] vertexCoordinates = new double[2];
 
 		public RenderTesselator(GL gl)
 		{
@@ -103,7 +104,10 @@ namespace MatterHackers.RenderGl
 
 			if (passOnToTesselator)
 			{
-				AddVertex(new double[] { x, y }, clientIndex);
+				// The tesselator copies the pair out before returning, so one array serves every vertex.
+				vertexCoordinates[0] = x;
+				vertexCoordinates[1] = y;
+				AddVertex(vertexCoordinates, clientIndex);
 			}
 
 			return clientIndex;

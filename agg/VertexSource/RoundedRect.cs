@@ -174,6 +174,32 @@ namespace MatterHackers.Agg.VertexSource
             }
         }
 
+		/// <summary>
+		/// Hashes the parameters that fix <see cref="Vertices"/> rather than the vertices themselves: walking
+		/// them builds a <see cref="JoinPaths"/> and a path per corner, which the GPU cache lookup did every
+		/// frame. A subclass may yield something else, so it hashes its vertices as before.
+		/// </summary>
+		public override ulong GetLongHashCode(ulong hash = 14695981039346656037)
+		{
+			if (GetType() != typeof(RoundedRect))
+			{
+				return base.GetLongHashCode(hash);
+			}
+
+			// Tags the parameter hash so it cannot line up with a vertex walk of the same numbers.
+			hash = 0x526f756e64526563UL.GetLongHashCode(hash);
+			hash = bounds.Left.GetLongHashCode(hash);
+			hash = bounds.Bottom.GetLongHashCode(hash);
+			hash = bounds.Right.GetLongHashCode(hash);
+			hash = bounds.Top.GetLongHashCode(hash);
+			hash = leftBottomRadius.GetLongHashCode(hash);
+			hash = rightBottomRadius.GetLongHashCode(hash);
+			hash = rightTopRadius.GetLongHashCode(hash);
+			hash = leftTopRadius.GetLongHashCode(hash);
+			hash = numSegments.GetLongHashCode(hash);
+			return resolutionScale.GetLongHashCode(hash);
+		}
+
 		public override IEnumerable<VertexData> Vertices()
 		{
 			var allPaths = new JoinPaths();

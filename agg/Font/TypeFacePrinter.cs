@@ -149,7 +149,7 @@ namespace MatterHackers.Agg.Font
 					typeFaceStyle = value;
 					totalSizeCache = default(Vector2);
 					// The memoised advances were measured in the old face.
-					fastAdvance.Clear();
+					fastAdvance?.Clear();
 					InvalidateVertices();
 				}
 			}
@@ -469,6 +469,11 @@ namespace MatterHackers.Agg.Font
 			}
 		}
 
+		/// <remarks>
+		/// Walks the lines by index rather than splitting the text, and replays unstyled glyphs from
+		/// <see cref="StyledTypeFace.GetCachedPlainGlyph"/>, so a steady draw allocates only this iterator: the
+		/// browser's GC collects mid-frame whenever its nursery fills, and text is drawn every frame.
+		/// </remarks>
 		public override IEnumerable<VertexData> Vertices()
 		{
 			if (text != null && text.Length > 0)
@@ -477,10 +482,16 @@ namespace MatterHackers.Agg.Font
 
 				currentOffset = GetBaseline(currentOffset);
 
-				string[] lines = text.Split('\n');
-				foreach (string line in lines)
+				// The same lines text.Split('\n') gives, a trailing empty one included.
+				for (int lineStart = 0; lineStart <= text.Length; )
 				{
-					currentOffset = GetXPositionForLineBasedOnJustification(currentOffset, line);
+					int lineEnd = text.IndexOf('\n', lineStart);
+					if (lineEnd < 0)
+					{
+						lineEnd = text.Length;
+					}
+
+					currentOffset = GetXPositionForLineBasedOnJustification(currentOffset, lineStart, lineEnd);
 
 					// Snap this line's baseline to a whole pixel so its horizontal stems land on pixel
 					// edges. Origin.Y is folded in first because Origin is baked into the vertex
@@ -496,35 +507,42 @@ namespace MatterHackers.Agg.Font
 						lineBaselineY = Math.Floor(lineBaselineY + 0.5);
 					}
 
-					for (int currentChar = 0; currentChar < line.Length; currentChar++)
+					// Indexing the whole text reads the same code points and advances as indexing the line would:
+					// a line's neighbours are '\n' or nothing, which pair with no surrogate.
+					for (int currentChar = lineStart; currentChar < lineEnd; currentChar++)
 					{
 						// A surrogate pair draws once, from its leading half; its trailing half has no glyph
-						int codePoint = StyledTypeFace.GetCodePointAt(line, currentChar);
-						IVertexSource currentGlyph = codePoint < 0 ? null : TypeFaceStyle.GetGlyphForCodePoint(codePoint, ResolutionScale);
-
-						if (currentGlyph != null)
+						int codePoint = StyledTypeFace.GetCodePointAt(text, currentChar);
+						if (codePoint >= 0)
 						{
-							foreach (VertexData vertexData in currentGlyph.Vertices())
+							VertexData[] cachedGlyph = TypeFaceStyle.GetCachedPlainGlyph(codePoint, ResolutionScale);
+							if (cachedGlyph != null)
 							{
-								if (vertexData.Command != FlagsAndCommand.Stop)
+								for (int i = 0; i < cachedGlyph.Length; i++)
 								{
-									var offsetVertex = new VertexData(
-										vertexData.Command,
-										new Vector2(
-											vertexData.Position.X + currentOffset.X + Origin.X,
-											vertexData.Position.Y + lineBaselineY));
-									yield return offsetVertex;
+									yield return Offset(cachedGlyph[i], currentOffset.X, lineBaselineY);
+								}
+							}
+							else if (TypeFaceStyle.GetGlyphForCodePoint(codePoint, ResolutionScale) is IVertexSource currentGlyph)
+							{
+								foreach (VertexData vertexData in currentGlyph.Vertices())
+								{
+									if (vertexData.Command != FlagsAndCommand.Stop)
+									{
+										yield return Offset(vertexData, currentOffset.X, lineBaselineY);
+									}
 								}
 							}
 						}
 
 						// get the advance for the next character
-						currentOffset.X += TypeFaceStyle.GetAdvanceForCharacter(line, currentChar);
+						currentOffset.X += TypeFaceStyle.GetAdvanceForCharacter(text, currentChar);
 					}
 
 					// before we go onto the next line we need to move down a line
 					currentOffset.X = 0;
 					currentOffset.Y -= LineAdvanceInPixels;
+					lineStart = lineEnd + 1;
 				}
 			}
 
@@ -532,9 +550,34 @@ namespace MatterHackers.Agg.Font
 			yield return endVertex;
 		}
 
+		private VertexData Offset(VertexData vertexData, double lineX, double lineBaselineY)
+		{
+			return new VertexData(
+				vertexData.Command,
+				new Vector2(
+					vertexData.Position.X + lineX + Origin.X,
+					vertexData.Position.Y + lineBaselineY));
+		}
+
+		/// <summary>
+		/// <see cref="GetXPositionForLineBasedOnJustification(Vector2, string)"/> for the line
+		/// text[<paramref name="lineStart"/>..<paramref name="lineEnd"/>), measured in place instead of as a substring.
+		/// </summary>
+		private Vector2 GetXPositionForLineBasedOnJustification(Vector2 currentOffset, int lineStart, int lineEnd)
+		{
+			// GetSize(line) measures [0, max(0, length - 1)] of the line; the same range of the whole text gives the
+			// same width, since a '\n' or the end of the text past an empty line adds no X.
+			GetSize(lineStart, lineStart + Math.Max(0, lineEnd - lineStart - 1), out Vector2 size, text);
+			return JustifyLine(currentOffset, size.X);
+		}
+
 		private Vector2 GetXPositionForLineBasedOnJustification(Vector2 currentOffset, string line)
 		{
-			Vector2 size = GetSize(line);
+			return JustifyLine(currentOffset, GetSize(line).X);
+		}
+
+		private Vector2 JustifyLine(Vector2 currentOffset, double lineWidth)
+		{
 			switch (Justification)
 			{
 				case Justification.Left:
@@ -542,11 +585,11 @@ namespace MatterHackers.Agg.Font
 					break;
 
 				case Justification.Center:
-					currentOffset.X = -size.X / 2;
+					currentOffset.X = -lineWidth / 2;
 					break;
 
 				case Justification.Right:
-					currentOffset.X = -size.X;
+					currentOffset.X = -lineWidth;
 					break;
 
 				default:
@@ -675,7 +718,8 @@ namespace MatterHackers.Agg.Font
 			return numLines;
 		}
 
-		private Dictionary<char, double> fastAdvance = new Dictionary<char, double>();
+		// Made on first use: Graphics2D.DrawString builds a printer per call and never measures offsets with it.
+		private Dictionary<char, double> fastAdvance;
 
 		public void GetOffset(int characterToMeasureStartIndexInclusive, int characterToMeasureEndIndexInclusive, out Vector2 offset)
 		{
@@ -711,6 +755,7 @@ namespace MatterHackers.Agg.Font
 				}
 				else
 				{
+					fastAdvance ??= new Dictionary<char, double>();
 					if (!fastAdvance.ContainsKey(text[index]))
 					{
 						fastAdvance[text[index]] = TypeFaceStyle.GetAdvanceForCharacter(text, index);
@@ -732,7 +777,7 @@ namespace MatterHackers.Agg.Font
 			{
 				measuredStyleEpoch = styleEpoch;
 				totalSizeCache = default(Vector2);
-				fastAdvance.Clear();
+				fastAdvance?.Clear();
 			}
 		}
 

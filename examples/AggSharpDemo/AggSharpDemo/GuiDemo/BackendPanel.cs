@@ -118,6 +118,11 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			this.fpsText = this.AddLive("Backend FPS", () => $"FPS: {this.History.Fps:0.0}");
 			this.fpsText.Visible = false;
 			this.AddLive("Backend Mean CPU", () => $"Mean CPU usage: {this.History.MeanMs:0.00} ms / frame");
+
+			// Garbage collection diagnostics: are the regular spikes on the graph collections?
+			this.AddLive("Backend GC Counts", () => $"GCs: gen0 {GC.CollectionCount(0)}, gen1 {GC.CollectionCount(1)}, gen2 {GC.CollectionCount(2)}");
+			this.AddLive("Backend Allocated", () => $"Allocated: {this.History.MeanAllocatedBytes / 1024:0.0} KB / frame (mean)");
+			this.AddLive("Backend Slow Frames With GC", () => this.SlowFramesWithGcDescription);
 			this.sparkline = new FrameSparkline(this.History)
 			{
 				Name = "Backend Sparkline",
@@ -231,6 +236,17 @@ namespace MatterHackers.AggSharpDemo.GuiDemo
 			{
 				GuiWidget top = this.TopmostParent();
 				return $"Screen size: {top.Width:0} x {top.Height:0} @ {GuiWidget.DeviceScale:0.##}x";
+			}
+		}
+
+		/// <summary>"Slow frames with GC: a of b" over the held frames, slow meaning over
+		/// <see cref="FrameHistory.SlowFactor"/> times the median.</summary>
+		public string SlowFramesWithGcDescription
+		{
+			get
+			{
+				this.History.CountSlowFrames(out int slow, out int slowWithGc);
+				return $"Slow frames with GC: {slowWithGc} of {slow}";
 			}
 		}
 

@@ -99,7 +99,7 @@ namespace MatterHackers.Agg.Tests
 			["PolygonMesh/Mesh.cs"] = 2435,
 			["PolygonMesh/RayTracer/Primitive/Shapes/Cylinder.cs"] = 891,
 			["RenderGl/GL/GL.cs"] = 847,
-			["RenderGl/Renderer/Graphics2DGpu.cs"] = 1159,
+			["RenderGl/Renderer/Graphics2DGpu.cs"] = 1142,
 			["RenderGl/Scene/WebGpuSceneRenderer.cs"] = 3020,
 			["Tesselate/ActiveRegion.cs"] = 1515,
 			["Tesselate/mesh.cs"] = 908,

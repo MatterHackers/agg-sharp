@@ -334,7 +334,8 @@ namespace MatterHackers.Agg.UI
 
 			graphics2D.PushTransform();
 
-			int numLines = Text.Split('\n').Length - 1;
+			// Counted rather than split: this runs every draw.
+			int numLines = Text.AsSpan().Count('\n');
 			if (Text.Contains("\r"))
 			{
 				Text = Text.Trim();

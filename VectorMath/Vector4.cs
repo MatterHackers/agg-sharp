@@ -924,7 +924,7 @@ namespace MatterHackers.VectorMath
 
 		public static ulong GetLongHashCode(double data, ulong hash = 14695981039346656037)
 		{
-			return ComputeHash(BitConverter.GetBytes(data), hash);
+			return LongHash.Of(data, hash);
 		}
 
 		// FNV-1a (64-bit) non-cryptographic hash function.

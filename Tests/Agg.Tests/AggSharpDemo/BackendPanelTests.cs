@@ -165,6 +165,59 @@ namespace MatterHackers.Agg.Tests.AggSharpDemo
 		}
 
 		[Test]
+		public async Task FrameHistoryKeepsEachFramesGcAndAllocationAndCountsSlowFramesWithGc()
+		{
+			var history = new FrameHistory();
+			history.Push(new FrameSample(10, 0, false, 1000));
+			history.Push(new FrameSample(10, 0, false, 3000));
+			history.Push(new FrameSample(30, 1, true, 2000));
+			history.Push(new FrameSample(25, 0, false, 2000));
+			history.Push(new FrameSample(12, 2, false, 2000));
+
+			await Assert.That(history[2].Gen0SinceLastFrame).IsEqualTo(1);
+			await Assert.That(history[2].GcDuringDraw).IsTrue();
+			await Assert.That(history[2].HadGc).IsTrue();
+			await Assert.That(history[3].HadGc).IsFalse();
+			await Assert.That(history[4].HadGc).IsTrue();
+			await Assert.That(history.MeanAllocatedBytes).IsEqualTo(2000);
+			await Assert.That(history.MedianMs).IsEqualTo(12);
+
+			// Slow is over twice the median (24 ms): the 30 and 25 ms frames, only the first of which had a GC.
+			history.CountSlowFrames(out int slow, out int slowWithGc);
+			await Assert.That(slow).IsEqualTo(2);
+			await Assert.That(slowWithGc).IsEqualTo(1);
+		}
+
+		[Test]
+		public async Task TheShellRecordsTheGcsAndAllocationsSinceThePreviousFrame()
+		{
+			GuiDemoShell shell = LaidOutShell();
+			var image = new ImageBuffer(1000, 700);
+			shell.OnDraw(image.NewGraphics2D());
+
+			// A collection between draws (as in event handling) belongs to the next frame, not lost.
+			System.GC.Collect(0);
+			shell.OnDraw(image.NewGraphics2D());
+
+			FrameHistory history = shell.BackendPanel.History;
+			await Assert.That(history.Count).IsEqualTo(2);
+			await Assert.That(history[0].AllocatedBytes).IsGreaterThan(0);
+			await Assert.That(history[1].Gen0SinceLastFrame).IsGreaterThanOrEqualTo(1);
+			await Assert.That(history[1].HadGc).IsTrue();
+			await Assert.That(shell.BackendPanel.SlowFramesWithGcDescription).StartsWith("Slow frames with GC: ");
+		}
+
+		[Test]
+		public async Task TheSparklineDrawsSlowerFramesHigher()
+		{
+			// agg's y points up, so the slowest frame is at the top of the track and 0 ms at the bottom.
+			var bounds = new RectangleDouble(0, 10, 100, 58);
+			await Assert.That(FrameSparkline.SampleY(bounds, 2, 0, 20)).IsEqualTo(12);
+			await Assert.That(FrameSparkline.SampleY(bounds, 2, 20, 20)).IsEqualTo(56);
+			await Assert.That(FrameSparkline.SampleY(bounds, 2, 15, 20)).IsGreaterThan(FrameSparkline.SampleY(bounds, 2, 5, 20));
+		}
+
+		[Test]
 		public async Task ThePanelHasNoSsaaControlOfItsOwn()
 		{
 			// agg-gui's SSAA selector lives only in the 3D Animation window (windows.rs's SsaaRow); a second one
